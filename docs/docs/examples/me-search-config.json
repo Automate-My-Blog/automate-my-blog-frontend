@@ -1,0 +1,322 @@
+{
+  "tenant_id": "660f8500-f39c-52e5-b827-557766551001",
+  "brand_name": "me-search",
+  "domain": "me-search.com",
+  "industry": "ecommerce_reviews",
+  "subscription_tier": "growth",
+  
+  "brand_config": {
+    "voice_tone": {
+      "warmth": 6,
+      "expertise": 9,
+      "formality": 5,
+      "enthusiasm": 6,
+      "description": "Knowledgeable product expert who provides thorough, unbiased reviews and buying guidance. Professional but approachable."
+    },
+    
+    "brand_values": [
+      "Honest, unbiased product reviews",
+      "Comprehensive comparison analysis", 
+      "Data-driven recommendations",
+      "Helping parents make informed decisions",
+      "Transparency in product testing and evaluation"
+    ],
+    
+    "target_audience": {
+      "primary": "Parents researching baby and children's products",
+      "demographics": {
+        "age_range": "25-45",
+        "income_level": "middle to upper-middle class",
+        "education": "college-educated",
+        "shopping_behavior": "research-heavy before purchasing"
+      },
+      "pain_points": [
+        "Overwhelming number of product choices",
+        "Difficulty distinguishing quality products",
+        "Concerns about product safety",
+        "Budget constraints vs quality needs",
+        "Time pressure for research"
+      ],
+      "goals": [
+        "Find the best products for their children",
+        "Make cost-effective purchasing decisions",
+        "Ensure product safety and quality",
+        "Save time on product research"
+      ]
+    },
+    
+    "topics": [
+      "baby gear reviews and comparisons",
+      "stroller buying guides",
+      "car seat safety and selection",
+      "nursery furniture recommendations",
+      "feeding products and bottles",
+      "baby monitor technology",
+      "toddler toys and development",
+      "children's clothing and shoes",
+      "safety product evaluations",
+      "budget vs premium product analysis"
+    ],
+    
+    "content_strategy": {
+      "primary_content_types": [
+        "product_comparisons",
+        "buying_guides",
+        "product_reviews",
+        "best_of_lists"
+      ],
+      "content_length": "1200-2000",
+      "publishing_frequency": "5x_weekly",
+      "optimal_days": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+      "content_mix": {
+        "buying_guides": 30,
+        "product_comparisons": 25,
+        "individual_reviews": 25,
+        "category_roundups": 20
+      }
+    },
+    
+    "visual_style": {
+      "color_palette": [
+        "#2563EB",
+        "#F8FAFC",
+        "#64748B",
+        "#10B981",
+        "#F59E0B"
+      ],
+      "image_style": "clean product photography, comparison charts, professional layouts",
+      "mood": "trustworthy, informative, organized",
+      "avoid_elements": [
+        "overly promotional imagery",
+        "cluttered product displays",
+        "distracting backgrounds",
+        "low-quality product photos"
+      ],
+      "preferred_elements": [
+        "clean white backgrounds",
+        "side-by-side product comparisons",
+        "feature highlight graphics",
+        "professional product photography",
+        "clear infographic elements"
+      ]
+    },
+    
+    "seo_strategy": {
+      "primary_keywords": [
+        "best baby products",
+        "stroller reviews",
+        "car seat comparison",
+        "baby gear buying guide",
+        "product recommendations"
+      ],
+      "secondary_keywords": [
+        "baby product reviews",
+        "nursery essentials",
+        "toddler gear guide",
+        "baby safety products",
+        "infant feeding products"
+      ],
+      "content_pillars": [
+        "Product Reviews & Comparisons",
+        "Safety & Quality Analysis",
+        "Budget-Friendly Options",
+        "Premium Product Evaluations"
+      ],
+      "target_difficulty": "medium_to_high",
+      "local_seo": false
+    },
+    
+    "brand_guidelines": {
+      "voice_examples": {
+        "good": [
+          "After testing 15 different strollers over 6 months, we found three clear winners that balance quality, features, and value.",
+          "Safety is non-negotiable when it comes to car seats. Here's what our rigorous testing revealed about the top-rated models.",
+          "We know choosing baby gear can feel overwhelming. Our comprehensive testing process cuts through the marketing noise to give you the facts."
+        ],
+        "avoid": [
+          "This stroller will change your life forever!",
+          "You NEED this product or you're failing as a parent!",
+          "Buy now before this amazing deal expires!"
+        ]
+      },
+      
+      "content_requirements": [
+        "Include detailed product specifications",
+        "Provide clear pros and cons for each product",
+        "Mention testing methodology when applicable",
+        "Include price ranges and value assessments",
+        "Link to verified retailer websites",
+        "Update content regularly with current pricing",
+        "Include safety certifications and standards"
+      ],
+      
+      "content_avoid": [
+        "Overly promotional language",
+        "Affiliate link disclosure violations", 
+        "Unsubstantiated claims",
+        "Outdated product information",
+        "Bias toward expensive products only"
+      ]
+    }
+  },
+  
+  "publishing_config": {
+    "auto_publish": true,
+    "require_approval": false,
+    "approval_workflow": [
+      "automated_quality_check",
+      "seo_optimization",
+      "price_verification"
+    ],
+    "webhook_url": "https://me-search.com/api/content-webhook",
+    "backup_webhook": "https://cms.me-search.com/api/posts",
+    "notification_email": "content@me-search.com",
+    "timezone": "America/Los_Angeles"
+  },
+  
+  "integrations": {
+    "cms": {
+      "type": "wordpress",
+      "api_endpoint": "https://me-search.com/wp-json/wp/v2/posts",
+      "authentication": "application_password",
+      "custom_fields": {
+        "post_type": "product_review",
+        "author": "me-search Team",
+        "category": ["Reviews", "Buying Guides"]
+      }
+    },
+    
+    "analytics": {
+      "google_analytics": {
+        "property_id": "GA4-XXXXXXXXX",
+        "conversion_goals": ["affiliate_click", "newsletter_signup", "product_comparison"]
+      },
+      "affiliate_tracking": {
+        "amazon_associates": true,
+        "other_programs": ["Target", "Buy Buy Baby", "Pottery Barn Kids"]
+      }
+    },
+    
+    "email_marketing": {
+      "platform": "convertkit",
+      "sequence_tags": ["product_research", "buying_guide_interest"],
+      "auto_add_content": true,
+      "newsletter_template": "weekly_product_roundup"
+    },
+    
+    "price_monitoring": {
+      "provider": "price_api_service",
+      "check_frequency": "daily",
+      "update_threshold": "5_percent_change",
+      "monitored_retailers": ["Amazon", "Target", "Buy Buy Baby", "Walmart"]
+    }
+  },
+  
+  "quality_thresholds": {
+    "minimum_brand_score": 80,
+    "minimum_seo_score": 85,
+    "minimum_readability_score": 80,
+    "auto_approve_threshold": 88,
+    "require_human_review": [
+      "safety_concerns",
+      "product_recalls",
+      "medical_device_reviews"
+    ]
+  },
+  
+  "content_calendar": {
+    "seasonal_themes": {
+      "january": "New Year baby gear organization and upgrades",
+      "february": "Valentine's gifts for new parents",
+      "march": "Spring baby gear and outdoor products",
+      "april": "Easter baby and toddler products",
+      "may": "Mother's Day gift guides",
+      "june": "Father's Day and summer baby gear",
+      "july": "Summer safety products and travel gear",
+      "august": "Back-to-school supplies for toddlers",
+      "september": "Fall baby clothing and gear transitions",
+      "october": "Halloween costumes and safety",
+      "november": "Black Friday deals and holiday shopping",
+      "december": "Holiday gifts and winter baby gear"
+    },
+    
+    "product_cycles": {
+      "quarterly_updates": [
+        "stroller_comparison_refresh",
+        "car_seat_safety_updates",
+        "best_baby_monitors_update"
+      ],
+      "annual_deep_dives": [
+        "comprehensive_nursery_guide",
+        "year_end_product_awards",
+        "safety_recall_roundup"
+      ]
+    },
+    
+    "trending_opportunities": {
+      "monitor_keywords": [
+        "viral baby products",
+        "tiktok baby gear",
+        "trending nursery styles",
+        "celebrity baby products"
+      ]
+    }
+  },
+  
+  "product_testing": {
+    "evaluation_criteria": {
+      "safety": {
+        "weight": 30,
+        "factors": ["certifications", "recalls", "testing_standards"]
+      },
+      "quality": {
+        "weight": 25,
+        "factors": ["materials", "construction", "durability"]
+      },
+      "functionality": {
+        "weight": 25,
+        "factors": ["ease_of_use", "features", "performance"]
+      },
+      "value": {
+        "weight": 20,
+        "factors": ["price_point", "comparable_alternatives", "longevity"]
+      }
+    },
+    
+    "testing_methodology": {
+      "duration": "minimum_30_days",
+      "conditions": "real_world_usage",
+      "documentation": "photo_and_video_evidence",
+      "comparison": "side_by_side_with_competitors"
+    }
+  },
+  
+  "performance_goals": {
+    "monthly_targets": {
+      "organic_traffic": 75000,
+      "affiliate_revenue": 15000,
+      "email_signups": 800,
+      "social_shares": 1200
+    },
+    
+    "content_kpis": {
+      "target_engagement_rate": 3.8,
+      "bounce_rate_threshold": 55,
+      "affiliate_conversion_rate": 2.8,
+      "average_session_duration": "4_minutes"
+    }
+  },
+  
+  "compliance": {
+    "ftc_disclosure": {
+      "affiliate_disclaimer": "Required on all product recommendation content",
+      "sponsored_content": "Clear disclosure for any paid partnerships",
+      "gift_disclosure": "Disclosure when products received for free"
+    },
+    "privacy": {
+      "gdpr_compliance": true,
+      "ccpa_compliance": true,
+      "cookie_consent": "required"
+    }
+  }
+}

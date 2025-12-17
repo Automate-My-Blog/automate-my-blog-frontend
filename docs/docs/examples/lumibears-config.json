@@ -1,0 +1,269 @@
+{
+  "tenant_id": "550e8400-e29b-41d4-a716-446655440000",
+  "brand_name": "Lumibears",
+  "domain": "lumibears.com",
+  "industry": "child_wellness",
+  "subscription_tier": "growth",
+  
+  "brand_config": {
+    "voice_tone": {
+      "warmth": 9,
+      "expertise": 8,
+      "formality": 3,
+      "enthusiasm": 7,
+      "description": "Warm, expert guidance with approachable, caring tone. Like a knowledgeable friend who happens to be a child development expert."
+    },
+    
+    "brand_values": [
+      "Child emotional wellness",
+      "Evidence-based parenting",
+      "Technology that connects rather than isolates",
+      "Supporting parents without judgment",
+      "Building resilient, emotionally intelligent children"
+    ],
+    
+    "target_audience": {
+      "primary": "Parents of children aged 2-12",
+      "demographics": {
+        "age_range": "28-45",
+        "income_level": "middle to upper-middle class",
+        "education": "college-educated",
+        "values": "prioritize child's emotional development"
+      },
+      "pain_points": [
+        "Managing children's big emotions",
+        "Screen time concerns and alternatives",
+        "Building emotional intelligence",
+        "Modern parenting overwhelm",
+        "Finding age-appropriate wellness tools"
+      ],
+      "goals": [
+        "Raise emotionally healthy children",
+        "Feel confident in parenting choices",
+        "Build strong family connections",
+        "Navigate technology thoughtfully"
+      ]
+    },
+    
+    "topics": [
+      "emotional intelligence development",
+      "child wellness and mental health",
+      "screen-free technology alternatives",
+      "parenting strategies for sensitive children",
+      "mindful parenting practices",
+      "child emotional regulation techniques",
+      "family wellness routines",
+      "technology and child development",
+      "building resilience in children",
+      "supporting anxious children"
+    ],
+    
+    "content_strategy": {
+      "primary_content_types": [
+        "practical_guides",
+        "research_summaries", 
+        "expert_interviews",
+        "product_comparisons"
+      ],
+      "content_length": "800-1200",
+      "publishing_frequency": "3x_weekly",
+      "optimal_days": ["Tuesday", "Thursday", "Saturday"],
+      "content_mix": {
+        "how_to_guides": 40,
+        "research_backed_articles": 25,
+        "product_education": 20,
+        "expert_insights": 15
+      }
+    },
+    
+    "visual_style": {
+      "color_palette": [
+        "#6B8CAE",
+        "#F4E5D3", 
+        "#8FBC8F",
+        "#E6E6FA",
+        "#F0F8FF"
+      ],
+      "image_style": "warm, family-focused, professional yet approachable",
+      "mood": "calm, nurturing, hopeful",
+      "avoid_elements": [
+        "stark corporate settings",
+        "overly posed family photos",
+        "bright/harsh lighting",
+        "cluttered backgrounds"
+      ],
+      "preferred_elements": [
+        "natural lighting",
+        "authentic family moments", 
+        "soft textures",
+        "nature elements",
+        "cozy home environments"
+      ]
+    },
+    
+    "seo_strategy": {
+      "primary_keywords": [
+        "emotional support bears",
+        "child wellness",
+        "emotional intelligence for kids",
+        "parenting anxious children",
+        "mindful parenting"
+      ],
+      "secondary_keywords": [
+        "children's emotional development",
+        "screen time alternatives",
+        "family wellness",
+        "sensitive children support",
+        "toddler emotional regulation"
+      ],
+      "content_pillars": [
+        "Emotional Intelligence Development",
+        "Mindful Technology Use", 
+        "Supporting Sensitive Children",
+        "Family Wellness Practices"
+      ],
+      "target_difficulty": "medium",
+      "local_seo": false
+    },
+    
+    "brand_guidelines": {
+      "voice_examples": {
+        "good": [
+          "Every parent knows the challenge of helping a child through big emotions. The good news? You don't need a psychology degree to support your child's emotional development.",
+          "Research shows that children who develop emotional intelligence early have better relationships and academic success. Here's how you can help your child build these crucial skills.",
+          "When your toddler has a meltdown, remember: they're not giving you a hard time, they're having a hard time. Here are gentle ways to help them through it."
+        ],
+        "avoid": [
+          "Parents must implement these scientifically-proven strategies immediately to ensure optimal child development outcomes.",
+          "If you're not doing these 5 things, you're failing your child's emotional development.",
+          "Transform your child into an emotional intelligence genius with these expert secrets!"
+        ]
+      },
+      
+      "content_requirements": [
+        "Always provide practical, actionable advice",
+        "Include research citations when making claims",
+        "Acknowledge parenting challenges without judgment",
+        "Offer alternatives for different family situations",
+        "Include age-appropriate guidance",
+        "Naturally integrate Lumi Bears when relevant"
+      ],
+      
+      "content_avoid": [
+        "Prescriptive 'must do' language",
+        "Shaming or guilt-inducing content",
+        "One-size-fits-all solutions",
+        "Overly technical jargon",
+        "Fear-based messaging"
+      ]
+    }
+  },
+  
+  "publishing_config": {
+    "auto_publish": false,
+    "require_approval": true,
+    "approval_workflow": [
+      "content_review",
+      "brand_alignment_check",
+      "final_approval"
+    ],
+    "webhook_url": "https://lumibears.com/api/autoblog-webhook",
+    "backup_webhook": "https://backup.lumibears.com/api/content",
+    "notification_email": "content@lumibears.com",
+    "timezone": "America/New_York"
+  },
+  
+  "integrations": {
+    "cms": {
+      "type": "custom_api",
+      "endpoint": "https://lumibears.com/api/blog-posts",
+      "authentication": "bearer_token",
+      "custom_fields": {
+        "category": "blog",
+        "author": "Lumi Team",
+        "featured": false
+      }
+    },
+    
+    "analytics": {
+      "google_analytics": {
+        "property_id": "GA4-XXXXXXXXX",
+        "conversion_goals": ["newsletter_signup", "product_interest"]
+      },
+      "social_media": {
+        "facebook_pixel": "XXXXXXXXX",
+        "pinterest_tag": "XXXXXXXXX"
+      }
+    },
+    
+    "email_marketing": {
+      "platform": "mailchimp",
+      "list_id": "XXXXXXXXX", 
+      "auto_add_content": true,
+      "newsletter_template": "family_wellness_weekly"
+    }
+  },
+  
+  "quality_thresholds": {
+    "minimum_brand_score": 85,
+    "minimum_seo_score": 80,
+    "minimum_readability_score": 85,
+    "auto_approve_threshold": 90,
+    "require_human_review": [
+      "medical_advice",
+      "controversial_topics",
+      "product_recommendations"
+    ]
+  },
+  
+  "content_calendar": {
+    "seasonal_themes": {
+      "january": "New Year wellness routines for families",
+      "february": "Building emotional connections",
+      "march": "Spring transitions and change management",
+      "april": "Easter and family traditions",
+      "may": "Mental Health Awareness Month content",
+      "june": "Summer activity planning",
+      "july": "Managing screen time during summer",
+      "august": "Back-to-school emotional preparation",
+      "september": "Establishing fall routines",
+      "october": "Halloween and managing fears",
+      "november": "Gratitude and thankfulness practices",
+      "december": "Holiday stress management"
+    },
+    
+    "content_series": [
+      {
+        "name": "Emotional Intelligence by Age",
+        "posts": 6,
+        "frequency": "bi_weekly",
+        "ages": ["2-3", "4-5", "6-7", "8-9", "10-11", "12+"]
+      },
+      {
+        "name": "Technology and Children",
+        "posts": 8,
+        "topics": ["screen_time", "educational_apps", "ai_safety", "digital_wellness"]
+      },
+      {
+        "name": "Supporting Sensitive Children",
+        "posts": 5,
+        "focus": "high_sensitivity_trait"
+      }
+    ]
+  },
+  
+  "performance_goals": {
+    "monthly_targets": {
+      "organic_traffic": 15000,
+      "email_signups": 200,
+      "social_shares": 500,
+      "average_time_on_page": "3_minutes"
+    },
+    
+    "content_kpis": {
+      "target_engagement_rate": 4.5,
+      "bounce_rate_threshold": 60,
+      "conversion_rate_target": 2.1
+    }
+  }
+}
