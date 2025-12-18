@@ -18,9 +18,15 @@ class AutoBlogAPI {
       },
     };
 
+    // Add timeout with fallback for older browsers
+    const timeoutSignal = typeof AbortSignal.timeout === 'function' 
+      ? AbortSignal.timeout(30000) 
+      : undefined;
+    
     const requestOptions = {
       ...defaultOptions,
       ...options,
+      ...(timeoutSignal && { signal: timeoutSignal }),
     };
 
     try {
@@ -41,6 +47,13 @@ class AutoBlogAPI {
       }
     } catch (error) {
       console.error('API request failed:', error);
+      console.error('Request URL:', url);
+      console.error('Request options:', requestOptions);
+      
+      if (error.name === 'AbortError') {
+        throw new Error('Request timed out. Please try again.');
+      }
+      
       throw new Error(`API Error: ${error.message}`);
     }
   }
