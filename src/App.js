@@ -3,6 +3,7 @@ import { Card, Button, Row, Col, Typography, Radio, Spin, Progress, Input, messa
 import { SearchOutlined, BulbOutlined, EditOutlined, CheckOutlined, ReloadOutlined, GlobalOutlined, ScanOutlined, EyeOutlined, SettingOutlined, ApiOutlined, CloudUploadOutlined, CodeOutlined, DownOutlined, CloudDownloadOutlined, FileMarkdownOutlined, FileTextOutlined, DatabaseOutlined, FileZipOutlined } from '@ant-design/icons';
 import './styles/mobile.css';
 import SEOHead from './components/SEOHead';
+import autoBlogAPI from './services/api';
 
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
@@ -156,8 +157,15 @@ const App = () => {
     }
   ];
 
+  // Load trending topics when reaching step 2
   useEffect(() => {
-    if (currentStep >= 2 && currentStep < 5) {
+    if (currentStep === 2) {
+      loadTrendingTopics();
+    }
+  }, [currentStep]);
+
+  useEffect(() => {
+    if (currentStep >= 3 && currentStep < 5) {
       const timer = setTimeout(() => {
         setCurrentStep(prev => prev + 1);
       }, 2000);
@@ -207,31 +215,115 @@ const App = () => {
     }
   }, [currentStep]);
 
-  const completeWebsiteAnalysis = () => {
-    // Extract business name from URL
-    const businessName = websiteUrl.replace(/^https?:\/\//, '').replace(/^www\./, '').split('.')[0];
-    
-    // Create mock analysis results
-    const analysisResults = {
-      businessType: 'Child Wellness & Parenting',
-      businessName: businessName.charAt(0).toUpperCase() + businessName.slice(1),
-      targetAudience: 'Parents of children aged 2-12',
-      contentFocus: 'Emotional wellness, child development, mindful parenting',
-      brandVoice: 'Warm, expert, supportive',
-      brandColors: {
-        primary: '#6B8CAE',
-        secondary: '#F4E5D3', 
-        accent: '#8FBC8F'
-      },
-      description: `${businessName.charAt(0).toUpperCase() + businessName.slice(1)} appears to be a family-focused website offering products and content related to child emotional wellness and parenting support. The site emphasizes evidence-based approaches to child development with a warm, supportive tone.`
-    };
+  const completeWebsiteAnalysis = async () => {
+    try {
+      // Show loading state
+      setIsLoading(true);
+      setScanningMessage('Analyzing website with AI...');
 
-    setStepResults(prev => ({
-      ...prev,
-      websiteAnalysis: analysisResults
-    }));
+      // Call real backend API
+      const response = await autoBlogAPI.analyzeWebsite(websiteUrl);
+      
+      if (response.success && response.analysis) {
+        // Use real AI analysis results
+        setStepResults(prev => ({
+          ...prev,
+          websiteAnalysis: {
+            businessType: response.analysis.businessType || 'Business',
+            businessName: response.analysis.businessName || 'Your Business',
+            targetAudience: response.analysis.targetAudience || 'Target Audience',
+            contentFocus: response.analysis.contentFocus || 'Content Focus',
+            brandVoice: response.analysis.brandVoice || 'Professional',
+            brandColors: response.analysis.brandColors || {
+              primary: '#6B8CAE',
+              secondary: '#F4E5D3',
+              accent: '#8FBC8F'
+            },
+            description: response.analysis.description || 'Business description generated from website analysis.'
+          }
+        }));
 
-    setTimeout(() => setCurrentStep(2), 1000);
+        // Move to next step
+        setTimeout(() => {
+          setIsLoading(false);
+          setCurrentStep(2);
+        }, 1000);
+
+      } else {
+        throw new Error('Analysis failed: Invalid response');
+      }
+
+    } catch (error) {
+      console.error('Website analysis error:', error);
+      setIsLoading(false);
+      message.error(`Website analysis failed: ${error.message}`);
+      
+      // Fall back to basic analysis on error
+      const businessName = websiteUrl.replace(/^https?:\/\//, '').replace(/^www\./, '').split('.')[0];
+      setStepResults(prev => ({
+        ...prev,
+        websiteAnalysis: {
+          businessType: 'Business',
+          businessName: businessName.charAt(0).toUpperCase() + businessName.slice(1),
+          targetAudience: 'General Audience',
+          contentFocus: 'Business Content',
+          brandVoice: 'Professional',
+          brandColors: {
+            primary: '#6B8CAE',
+            secondary: '#F4E5D3',
+            accent: '#8FBC8F'
+          },
+          description: 'Unable to analyze website. Please proceed with manual configuration.'
+        }
+      }));
+      
+      setTimeout(() => setCurrentStep(2), 1000);
+    }
+  };
+
+  const loadTrendingTopics = async () => {
+    try {
+      setIsLoading(true);
+      setScanningMessage('Generating trending topics with AI...');
+
+      const { businessType, targetAudience, contentFocus } = stepResults.websiteAnalysis;
+
+      // Call real backend API
+      const topics = await autoBlogAPI.getTrendingTopics(businessType, targetAudience, contentFocus);
+      
+      if (topics && topics.length > 0) {
+        // Use real AI-generated topics
+        setStepResults(prev => ({
+          ...prev,
+          trendingTopics: topics
+        }));
+      } else {
+        // Fallback to mock topics if API returns empty
+        setStepResults(prev => ({
+          ...prev,
+          trendingTopics: mockTopics
+        }));
+      }
+
+      // Move to next step after loading
+      setTimeout(() => {
+        setIsLoading(false);
+        setCurrentStep(3);
+      }, 1500);
+
+    } catch (error) {
+      console.error('Trending topics error:', error);
+      setIsLoading(false);
+      message.error(`Failed to generate topics: ${error.message}`);
+      
+      // Fall back to mock topics on error
+      setStepResults(prev => ({
+        ...prev,
+        trendingTopics: mockTopics
+      }));
+      
+      setTimeout(() => setCurrentStep(3), 1500);
+    }
   };
 
   const handleTopicSelect = (topicId) => {
@@ -281,7 +373,7 @@ const App = () => {
     setCurrentStep(1);
   };
 
-  const generateContent = () => {
+  const generateContent = async () => {
     if (!selectedTopic) {
       message.warning('Please select a topic first');
       return;
@@ -293,69 +385,76 @@ const App = () => {
       return;
     }
     
-    setIsLoading(true);
-    
-    // Simulate content generation
-    setTimeout(() => {
-      const topic = mockTopics.find(t => t.id === selectedTopic);
+    try {
+      setIsLoading(true);
+      setScanningMessage('Generating your blog post with AI...');
+      
+      // Find the selected topic from either real or mock topics
+      const topics = stepResults.trendingTopics || mockTopics;
+      const selectedTopicData = topics.find(t => t.id === selectedTopic);
+      
+      if (!selectedTopicData) {
+        throw new Error('Selected topic not found');
+      }
+
+      // Call real backend API to generate content
+      const blogPost = await autoBlogAPI.generateContent(
+        selectedTopicData, 
+        stepResults.websiteAnalysis,
+        'Make this engaging and actionable for the target audience.'
+      );
+      
+      if (blogPost && blogPost.content) {
+        // Store the complete blog post data for export later
+        setStepResults(prev => ({
+          ...prev,
+          finalContent: blogPost.content,
+          selectedContent: selectedTopicData,
+          generatedBlogPost: blogPost // Store full blog post data
+        }));
+        
+        setGeneratedContent(blogPost.content);
+        setCurrentStep(7);
+      } else {
+        throw new Error('No content generated');
+      }
+
+    } catch (error) {
+      console.error('Content generation error:', error);
+      message.error(`Failed to generate content: ${error.message}`);
+      
+      // Fall back to mock content on error
+      const topics = stepResults.trendingTopics || mockTopics;
+      const topic = topics.find(t => t.id === selectedTopic);
       const businessName = stepResults.websiteAnalysis.businessName || 'your business';
-      const sampleContent = `# ${topic.title}
+      const fallbackContent = `# ${topic.title}
 
 ${topic.subheader}
 
 ## Introduction
 
-In today's rapidly evolving world, parents face unique challenges that previous generations never encountered. This comprehensive guide provides evidence-based strategies and practical solutions to help you navigate modern parenting with confidence.
+This is a fallback blog post generated when the AI service is unavailable. In a production environment, this would be replaced with fully AI-generated content tailored to your business and audience.
 
-## Key Points to Remember
+## Key Points
 
-- **Evidence-Based Approach**: All recommendations are backed by current research in child development and psychology
-- **Age-Appropriate Strategies**: Techniques are tailored for different developmental stages
-- **Family-Centered Solutions**: Methods that work for the whole family, not just individual children
-
-## Practical Strategies
-
-### 1. Creating a Supportive Environment
-
-The foundation of success lies in creating an environment where children feel safe to express themselves and learn. Here's how to establish that foundation:
-
-- Set clear, consistent boundaries
-- Provide predictable routines
-- Celebrate small wins and progress
-- Practice patience and understanding
-
-### 2. Building Emotional Intelligence
-
-Helping children understand and manage their emotions is crucial for long-term success:
-
-- Validate their feelings before addressing behavior
-- Teach emotion vocabulary
-- Model healthy emotional expression
-- Practice problem-solving together
-
-### 3. Encouraging Independence
-
-While providing support, it's important to foster independence:
-
-- Offer choices within appropriate limits
-- Encourage problem-solving attempts
-- Gradually increase responsibilities
-- Celebrate independent successes
-
-## Expert Insights
-
-Leading child psychologists emphasize the importance of consistency and patience in implementing these strategies. Dr. Sarah Johnson notes: "The key is not perfection, but persistent, gentle guidance that helps children develop their own coping mechanisms."
+- **Evidence-Based Approach**: Content based on current best practices
+- **Audience-Focused**: Written specifically for your target demographic
+- **Actionable Insights**: Practical advice readers can implement
 
 ## Conclusion
 
-Remember that every child is unique, and what works for one may need adjustment for another. The most important thing is to stay connected with your child and adapt these strategies to fit your family's needs.
+*${businessName} is committed to providing valuable content that helps your audience achieve their goals.*`;
 
-*Ready to learn more about supporting your child's emotional development? ${businessName} offers resources and tools designed to help children build confidence and emotional regulation skills.*`;
-
-      setGeneratedContent(sampleContent);
+      setGeneratedContent(fallbackContent);
+      setStepResults(prev => ({
+        ...prev,
+        finalContent: fallbackContent,
+        selectedContent: topic
+      }));
       setCurrentStep(7);
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   const handleContentChange = (e) => {
@@ -398,8 +497,31 @@ Remember that every child is unique, and what works for one may need adjustment 
     message.success(`Downloaded ${filename} successfully!`);
   };
 
-  const exportAsMarkdown = () => {
+  const exportAsMarkdown = async () => {
     const post = getCurrentPost();
+    
+    try {
+      // Try backend API export first
+      if (stepResults.generatedBlogPost) {
+        const blob = await autoBlogAPI.exportContent(stepResults.generatedBlogPost, 'markdown');
+        if (blob instanceof Blob) {
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `${post.slug}.md`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+          message.success('Downloaded markdown file successfully!');
+          return;
+        }
+      }
+    } catch (error) {
+      console.warn('Backend export failed, using local generation:', error.message);
+    }
+    
+    // Fallback to local generation
     const markdown = `# ${post.title}
 
 ${post.subheader}
@@ -1294,7 +1416,7 @@ app.post('/api/autoblog-webhook', async (req, res) => {
             style={{ width: '100%' }}
           >
             <Row gutter={[16, 16]}>
-              {mockTopics.map((topic) => (
+              {(stepResults.trendingTopics || mockTopics).map((topic) => (
                 <Col key={topic.id} xs={24} md={12} lg={12}>
                   <Radio value={topic.id} style={{ width: '100%' }}>
                     <Card 
