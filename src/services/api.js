@@ -18,9 +18,9 @@ class AutoBlogAPI {
       },
     };
 
-    // Add timeout with fallback for older browsers
+    // Add timeout with fallback for older browsers (60s for DALL-E generation)
     const timeoutSignal = typeof AbortSignal.timeout === 'function' 
-      ? AbortSignal.timeout(30000) 
+      ? AbortSignal.timeout(60000) 
       : undefined;
     
     const requestOptions = {
