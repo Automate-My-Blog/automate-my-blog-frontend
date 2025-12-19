@@ -295,7 +295,9 @@ const App = () => {
         image: "loading",
         popularity: "Loading...",
         category: "Loading...",
-        isLoading: true
+        isLoading: true,
+        isContentLoading: true,
+        isImageLoading: true
       }));
 
       setStepResults(prev => ({
@@ -303,9 +305,9 @@ const App = () => {
         trendingTopics: skeletonTopics
       }));
 
-      // Advance to step 3 immediately to show skeleton cards
+      // Advance to step 5 immediately to show skeleton cards (Skip loading screens)
       setTimeout(() => {
-        setCurrentStep(3);
+        setCurrentStep(5);
       }, 500);
 
       const { businessType, targetAudience, contentFocus } = stepResults.websiteAnalysis;
@@ -314,17 +316,58 @@ const App = () => {
       const topics = await autoBlogAPI.getTrendingTopics(businessType, targetAudience, contentFocus);
       
       if (topics && topics.length > 0) {
-        // Use real AI-generated topics
+        // First, show topics content but keep images loading
+        const topicsWithContentLoaded = topics.map(topic => ({
+          ...topic,
+          isLoading: false,
+          isContentLoading: false,
+          isImageLoading: true // Images still loading
+        }));
+
         setStepResults(prev => ({
           ...prev,
-          trendingTopics: topics
+          trendingTopics: topicsWithContentLoaded
         }));
+
+        // Then progressively load images (simulate the backend processing)
+        setTimeout(() => {
+          const finalTopics = topics.map(topic => ({
+            ...topic,
+            isLoading: false,
+            isContentLoading: false,
+            isImageLoading: false
+          }));
+
+          setStepResults(prev => ({
+            ...prev,
+            trendingTopics: finalTopics
+          }));
+        }, 2000); // Images appear 2 seconds after content
       } else {
-        // Fallback to mock topics if API returns empty
+        // Fallback to mock topics with same progressive loading
+        const mockWithContentLoaded = mockTopics.map(topic => ({
+          ...topic,
+          isLoading: false,
+          isContentLoading: false,
+          isImageLoading: true
+        }));
+
         setStepResults(prev => ({
           ...prev,
-          trendingTopics: mockTopics
+          trendingTopics: mockWithContentLoaded
         }));
+
+        setTimeout(() => {
+          setStepResults(prev => ({
+            ...prev,
+            trendingTopics: mockTopics.map(topic => ({
+              ...topic,
+              isLoading: false,
+              isContentLoading: false,
+              isImageLoading: false
+            }))
+          }));
+        }, 2000);
       }
 
       // Complete loading (step 3 already set above)
@@ -337,13 +380,31 @@ const App = () => {
       setIsLoading(false);
       message.error(`Failed to generate topics: ${error.message}`);
       
-      // Fall back to mock topics on error
+      // Fall back to mock topics with progressive loading on error
+      const mockWithContentLoaded = mockTopics.map(topic => ({
+        ...topic,
+        isLoading: false,
+        isContentLoading: false,
+        isImageLoading: true
+      }));
+
       setStepResults(prev => ({
         ...prev,
-        trendingTopics: mockTopics
+        trendingTopics: mockWithContentLoaded
       }));
-      
-      setTimeout(() => setCurrentStep(3), 1500);
+
+      setTimeout(() => {
+        setStepResults(prev => ({
+          ...prev,
+          trendingTopics: mockTopics.map(topic => ({
+            ...topic,
+            isLoading: false,
+            isContentLoading: false,
+            isImageLoading: false
+          }))
+        }));
+        setCurrentStep(5);
+      }, 2000);
     }
   };
 
@@ -1466,9 +1527,47 @@ app.post('/api/autoblog-webhook', async (req, res) => {
                     <Card 
                       hoverable={!topic.isLoading}
                       cover={
-                        topic.isLoading ? (
-                          <div style={{ height: '200px', backgroundColor: '#f5f5f5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <Spin size="large" />
+                        topic.isImageLoading ? (
+                          <div style={{ 
+                            height: '200px', 
+                            backgroundColor: '#f5f5f5', 
+                            display: 'flex', 
+                            flexDirection: 'column',
+                            alignItems: 'center', 
+                            justifyContent: 'center',
+                            padding: '20px',
+                            textAlign: 'center'
+                          }}>
+                            <div style={{ 
+                              marginBottom: '12px',
+                              fontSize: '14px', 
+                              color: '#666',
+                              fontWeight: 500
+                            }}>
+                              🎨 Generating image...
+                            </div>
+                            <div style={{ 
+                              fontSize: '12px', 
+                              color: '#999'
+                            }}>
+                              (takes ~30 seconds)
+                            </div>
+                            <div style={{
+                              width: '40px',
+                              height: '4px',
+                              backgroundColor: '#e0e0e0',
+                              borderRadius: '2px',
+                              overflow: 'hidden',
+                              marginTop: '12px'
+                            }}>
+                              <div style={{
+                                width: '100%',
+                                height: '100%',
+                                backgroundColor: '#1890ff',
+                                borderRadius: '2px',
+                                animation: 'progress 2s ease-in-out infinite'
+                              }}></div>
+                            </div>
                           </div>
                         ) : (
                           <img 
@@ -1481,17 +1580,61 @@ app.post('/api/autoblog-webhook', async (req, res) => {
                       style={{ 
                         border: selectedTopic === topic.id ? `2px solid ${stepResults.websiteAnalysis.brandColors.primary}` : '1px solid #f0f0f0',
                         margin: '8px 0',
-                        opacity: topic.isLoading ? 0.7 : 1
+                        opacity: topic.isContentLoading ? 0.8 : 1,
+                        minHeight: '300px'
                       }}
                     >
-                      {topic.isLoading ? (
-                        <>
-                          <div style={{ marginBottom: '12px' }}>
-                            <div style={{ height: '22px', backgroundColor: '#f5f5f5', borderRadius: '4px', marginBottom: '8px', animation: 'pulse 1.5s ease-in-out infinite' }}></div>
+                      {topic.isContentLoading ? (
+                        <div style={{ padding: '16px', minHeight: '120px' }}>
+                          {/* Tags skeleton */}
+                          <div style={{ marginBottom: '12px', display: 'flex', gap: '8px' }}>
+                            <div style={{ 
+                              width: '60px', 
+                              height: '22px', 
+                              backgroundColor: '#f5f5f5', 
+                              borderRadius: '4px', 
+                              animation: 'pulse 1.5s ease-in-out infinite' 
+                            }}></div>
+                            <div style={{ 
+                              width: '80px', 
+                              height: '22px', 
+                              backgroundColor: '#f5f5f5', 
+                              borderRadius: '4px', 
+                              animation: 'pulse 1.5s ease-in-out infinite' 
+                            }}></div>
                           </div>
-                          <div style={{ height: '24px', backgroundColor: '#f5f5f5', borderRadius: '4px', marginBottom: '12px', animation: 'pulse 1.5s ease-in-out infinite' }}></div>
-                          <div style={{ height: '40px', backgroundColor: '#f5f5f5', borderRadius: '4px', animation: 'pulse 1.5s ease-in-out infinite' }}></div>
-                        </>
+                          {/* Title skeleton */}
+                          <div style={{ 
+                            height: '24px', 
+                            backgroundColor: '#f5f5f5', 
+                            borderRadius: '4px', 
+                            marginBottom: '8px', 
+                            animation: 'pulse 1.5s ease-in-out infinite' 
+                          }}></div>
+                          <div style={{ 
+                            height: '24px', 
+                            backgroundColor: '#f5f5f5', 
+                            borderRadius: '4px', 
+                            marginBottom: '12px', 
+                            width: '80%',
+                            animation: 'pulse 1.5s ease-in-out infinite' 
+                          }}></div>
+                          {/* Description skeleton */}
+                          <div style={{ 
+                            height: '16px', 
+                            backgroundColor: '#f5f5f5', 
+                            borderRadius: '4px', 
+                            marginBottom: '6px',
+                            animation: 'pulse 1.5s ease-in-out infinite' 
+                          }}></div>
+                          <div style={{ 
+                            height: '16px', 
+                            backgroundColor: '#f5f5f5', 
+                            borderRadius: '4px', 
+                            width: '90%',
+                            animation: 'pulse 1.5s ease-in-out infinite' 
+                          }}></div>
+                        </div>
                       ) : (
                         <>
                           <div style={{ marginBottom: '12px' }}>
