@@ -1154,6 +1154,282 @@ ${post.content}
     setSelectedCMS(cmsId);
   };
 
+  const renderBusinessOverview = () => {
+    const analysis = stepResults.websiteAnalysis;
+    const isComplete = currentStep >= 2;
+    
+    return (
+      <Card 
+        style={{ 
+          border: `2px solid ${analysis.brandColors.primary}`,
+          borderRadius: '12px',
+          background: `linear-gradient(135deg, ${analysis.brandColors.secondary}15, #ffffff)`
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+          <Title 
+            level={4} 
+            style={{ 
+              margin: 0, 
+              color: analysis.brandColors.primary,
+              fontSize: '18px',
+              fontWeight: 600
+            }}
+          >
+            🏢 {analysis.businessName || 'Analyzing...'} - Business Overview
+          </Title>
+          {isComplete && (
+            <Button 
+              icon={<SettingOutlined />} 
+              onClick={() => editStepResults(1)}
+              type="link"
+              style={{ color: analysis.brandColors.primary }}
+            >
+              Edit
+            </Button>
+          )}
+        </div>
+        
+        <Row gutter={[12, 12]}>
+          <Col xs={24} sm={12}>
+            <div style={{ 
+              padding: '12px', 
+              backgroundColor: analysis.brandColors.secondary + '20', 
+              borderRadius: '8px',
+              border: `1px solid ${analysis.brandColors.secondary}50`
+            }}>
+              <Text strong style={{ color: analysis.brandColors.primary }}>Industry:</Text>
+              <br />
+              <Text>{analysis.businessType}</Text>
+            </div>
+          </Col>
+          
+          <Col xs={24} sm={12}>
+            <div style={{ 
+              padding: '12px', 
+              backgroundColor: analysis.brandColors.secondary + '20', 
+              borderRadius: '8px',
+              border: `1px solid ${analysis.brandColors.secondary}50`
+            }}>
+              <Text strong style={{ color: analysis.brandColors.primary }}>Target Audience:</Text>
+              <br />
+              <Text>{analysis.targetAudience}</Text>
+            </div>
+          </Col>
+          
+          <Col xs={24} sm={12}>
+            <div style={{ 
+              padding: '12px', 
+              backgroundColor: analysis.brandColors.secondary + '20', 
+              borderRadius: '8px',
+              border: `1px solid ${analysis.brandColors.secondary}50`
+            }}>
+              <Text strong style={{ color: analysis.brandColors.primary }}>Brand Voice:</Text>
+              <br />
+              <Text>{analysis.brandVoice}</Text>
+            </div>
+          </Col>
+
+          {analysis.contentFocus && (
+            <Col xs={24} sm={12}>
+              <div style={{ 
+                padding: '12px', 
+                backgroundColor: analysis.brandColors.secondary + '20', 
+                borderRadius: '8px',
+                border: `1px solid ${analysis.brandColors.secondary}50`
+              }}>
+                <Text strong style={{ color: analysis.brandColors.primary }}>Content Focus:</Text>
+                <br />
+                <Text>{analysis.contentFocus}</Text>
+              </div>
+            </Col>
+          )}
+
+          {analysis.description && (
+            <Col xs={24}>
+              <div style={{ 
+                padding: '12px', 
+                backgroundColor: analysis.brandColors.secondary + '20', 
+                borderRadius: '8px',
+                border: `1px solid ${analysis.brandColors.secondary}50`
+              }}>
+                <Text strong style={{ color: analysis.brandColors.primary }}>Business Description:</Text>
+                <br />
+                <Text>{analysis.description}</Text>
+              </div>
+            </Col>
+          )}
+
+          {analysis.keywords && analysis.keywords.length > 0 && (
+            <Col xs={24}>
+              <div style={{ 
+                padding: '12px', 
+                backgroundColor: analysis.brandColors.secondary + '20', 
+                borderRadius: '8px',
+                border: `1px solid ${analysis.brandColors.secondary}50`
+              }}>
+                <Text strong style={{ color: analysis.brandColors.primary }}>Relevant Keywords:</Text>
+                <br />
+                <Space wrap style={{ marginTop: '8px' }}>
+                  {analysis.keywords.map((keyword, index) => (
+                    <Tag 
+                      key={index} 
+                      color={analysis.brandColors.primary}
+                      style={{ 
+                        borderRadius: '12px',
+                        fontSize: '11px'
+                      }}
+                    >
+                      {keyword}
+                    </Tag>
+                  ))}
+                </Space>
+              </div>
+            </Col>
+          )}
+        </Row>
+      </Card>
+    );
+  };
+
+  const renderContentStrategy = () => {
+    const analysis = stepResults.websiteAnalysis;
+    
+    return (
+      <Card 
+        style={{ 
+          marginBottom: '30px',
+          border: `2px solid ${analysis.brandColors.accent}`,
+          borderRadius: '12px'
+        }}
+      >
+        <div style={{ marginBottom: '20px' }}>
+          <Title 
+            level={4} 
+            style={{ 
+              margin: 0, 
+              color: analysis.brandColors.accent,
+              fontSize: '18px',
+              fontWeight: 600,
+              textAlign: 'center'
+            }}
+          >
+            📊 Content Strategy for {analysis.businessName}
+          </Title>
+        </div>
+        
+        <Row gutter={[16, 16]}>
+          {/* Target Audience Insights */}
+          <Col xs={24} lg={12}>
+            <div style={{ 
+              padding: '16px', 
+              backgroundColor: analysis.brandColors.accent + '10', 
+              borderRadius: '8px',
+              border: `1px solid ${analysis.brandColors.accent}30`
+            }}>
+              <Title level={5} style={{ color: analysis.brandColors.accent, marginBottom: '12px' }}>
+                🎯 Target Audience Strategy
+              </Title>
+              <Text>
+                <strong>Primary Audience:</strong> {analysis.targetAudience}
+              </Text>
+              <br /><br />
+              <Text>
+                Content targeting this audience can help drive <strong>{analysis.targetAudience.toLowerCase()}</strong> to 
+                your website when they search for information related to <strong>{analysis.businessType.toLowerCase()}</strong> on Google.
+              </Text>
+            </div>
+          </Col>
+
+          {/* Content Pillars */}
+          <Col xs={24} lg={12}>
+            <div style={{ 
+              padding: '16px', 
+              backgroundColor: analysis.brandColors.primary + '10', 
+              borderRadius: '8px',
+              border: `1px solid ${analysis.brandColors.primary}30`
+            }}>
+              <Title level={5} style={{ color: analysis.brandColors.primary, marginBottom: '12px' }}>
+                📝 Recommended Content Pillars
+              </Title>
+              {analysis.contentFocus ? (
+                <>
+                  <Text><strong>Content Focus:</strong> {analysis.contentFocus}</Text>
+                  <br /><br />
+                  <Text>
+                    Topics focusing on <strong>{analysis.contentFocus.toLowerCase()}</strong> can help establish 
+                    your expertise and attract people searching for {analysis.businessType.toLowerCase()} guidance.
+                  </Text>
+                </>
+              ) : (
+                <Text>
+                  Educational content about <strong>{analysis.businessType.toLowerCase()}</strong> can help potential 
+                  customers find your expertise when searching for industry-related information.
+                </Text>
+              )}
+            </div>
+          </Col>
+
+          {/* SEO Keywords Strategy */}
+          {analysis.keywords && analysis.keywords.length > 0 && (
+            <Col xs={24}>
+              <div style={{ 
+                padding: '16px', 
+                backgroundColor: analysis.brandColors.secondary + '30', 
+                borderRadius: '8px',
+                border: `1px solid ${analysis.brandColors.secondary}60`
+              }}>
+                <Title level={5} style={{ color: analysis.brandColors.primary, marginBottom: '12px' }}>
+                  🔍 Strategic Keyword Opportunities
+                </Title>
+                <Space wrap style={{ marginBottom: '12px' }}>
+                  {analysis.keywords.slice(0, 6).map((keyword, index) => (
+                    <Tag 
+                      key={index} 
+                      color={analysis.brandColors.primary}
+                      style={{ borderRadius: '12px', fontSize: '11px' }}
+                    >
+                      {keyword}
+                    </Tag>
+                  ))}
+                </Space>
+                <br />
+                <Text>
+                  Content optimized for these keywords can help <strong>{analysis.targetAudience.toLowerCase()}</strong> discover 
+                  your {analysis.businessType.toLowerCase()} services when they search for terms like{' '}
+                  <strong>"{analysis.keywords[0]}"</strong> and <strong>"{analysis.keywords[1] || analysis.keywords[0]}"</strong> on Google.
+                </Text>
+              </div>
+            </Col>
+          )}
+
+          {/* Brand Voice Alignment */}
+          <Col xs={24}>
+            <div style={{ 
+              padding: '16px', 
+              backgroundColor: analysis.brandColors.secondary + '20', 
+              borderRadius: '8px',
+              border: `1px solid ${analysis.brandColors.secondary}50`
+            }}>
+              <Title level={5} style={{ color: analysis.brandColors.primary, marginBottom: '12px' }}>
+                🎨 Brand Voice & Content Tone
+              </Title>
+              <Text>
+                <strong>Your Brand Voice:</strong> {analysis.brandVoice}
+              </Text>
+              <br /><br />
+              <Text>
+                Content written in a <strong>{analysis.brandVoice.toLowerCase()}</strong> tone helps build trust with{' '}
+                <strong>{analysis.targetAudience.toLowerCase()}</strong> and encourages them to choose your{' '}
+                <strong>{analysis.businessType.toLowerCase()}</strong> services over competitors.
+              </Text>
+            </div>
+          </Col>
+        </Row>
+      </Card>
+    );
+  };
+
   const generateCMSCode = (cmsId) => {
     const codeExamples = {
       wordpress: `// WordPress Plugin Integration
@@ -1307,14 +1583,10 @@ app.post('/api/autoblog-webhook', async (req, res) => {
           />
         )}
         
-        {/* Step Summary Cards - Only on desktop */}
-        {window.innerWidth > 767 && (
-          <div>
-            {steps.map((step, index) => (
-              <div key={index}>
-                {renderStepSummary(index)}
-              </div>
-            ))}
+        {/* Progressive Business Overview Card */}
+        {currentStep >= 1 && (
+          <div style={{ marginBottom: '20px' }}>
+            {renderBusinessOverview()}
           </div>
         )}
       </div>
@@ -1373,102 +1645,13 @@ app.post('/api/autoblog-webhook', async (req, res) => {
       )}
 
       {currentStep === 2 && (
-        <Card style={{ marginBottom: '20px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-            <Title level={3} style={{ margin: 0 }}>Website Analysis Complete ✓</Title>
-            <Button 
-              icon={<SettingOutlined />} 
-              onClick={() => editStepResults(1)}
-              type="link"
-            >
-              Edit Results
-            </Button>
-          </div>
-          
-          <Row gutter={[16, 16]}>
-            <Col xs={24} md={12}>
-              <div style={{ padding: '16px', backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
-                <Text strong>Business Name:</Text>
-                <br />
-                <Text>{stepResults.websiteAnalysis.businessName || 'Not detected'}</Text>
-              </div>
-            </Col>
-            <Col xs={24} md={12}>
-              <div style={{ padding: '16px', backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
-                <Text strong>Business Type:</Text>
-                <br />
-                <Text>{stepResults.websiteAnalysis.businessType}</Text>
-              </div>
-            </Col>
-            <Col xs={24} md={12}>
-              <div style={{ padding: '16px', backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
-                <Text strong>Target Audience:</Text>
-                <br />
-                <Text>{stepResults.websiteAnalysis.targetAudience}</Text>
-              </div>
-            </Col>
-            <Col xs={24} md={12}>
-              <div style={{ padding: '16px', backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
-                <Text strong>Brand Voice:</Text>
-                <br />
-                <Text>{stepResults.websiteAnalysis.brandVoice}</Text>
-              </div>
-            </Col>
-            <Col xs={24}>
-              <div style={{ padding: '16px', backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
-                <Text strong>Brand Colors:</Text>
-                <br />
-                <Space>
-                  <div style={{ 
-                    display: 'inline-block', 
-                    width: '20px', 
-                    height: '20px', 
-                    backgroundColor: stepResults.websiteAnalysis.brandColors.primary,
-                    borderRadius: '4px',
-                    border: '1px solid #ddd'
-                  }} />
-                  <Text>Primary: {stepResults.websiteAnalysis.brandColors.primary}</Text>
-                  
-                  <div style={{ 
-                    display: 'inline-block', 
-                    width: '20px', 
-                    height: '20px', 
-                    backgroundColor: stepResults.websiteAnalysis.brandColors.secondary,
-                    borderRadius: '4px',
-                    border: '1px solid #ddd'
-                  }} />
-                  <Text>Secondary: {stepResults.websiteAnalysis.brandColors.secondary}</Text>
-                  
-                  <div style={{ 
-                    display: 'inline-block', 
-                    width: '20px', 
-                    height: '20px', 
-                    backgroundColor: stepResults.websiteAnalysis.brandColors.accent,
-                    borderRadius: '4px',
-                    border: '1px solid #ddd'
-                  }} />
-                  <Text>Accent: {stepResults.websiteAnalysis.brandColors.accent}</Text>
-                </Space>
-              </div>
-            </Col>
-            {stepResults.websiteAnalysis.description && (
-              <Col xs={24}>
-                <div style={{ padding: '16px', backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
-                  <Text strong>Analysis Summary:</Text>
-                  <br />
-                  <Paragraph style={{ margin: '8px 0 0 0' }}>
-                    {stepResults.websiteAnalysis.description}
-                  </Paragraph>
-                </div>
-              </Col>
-            )}
-          </Row>
-          
-          <div style={{ textAlign: 'center', marginTop: '20px', padding: '20px', backgroundColor: '#f0f8ff', borderRadius: '8px' }}>
-            <Text style={{ fontSize: '16px' }}>
-              ✨ Analysis complete! Automatically generating trending topics...
-            </Text>
-          </div>
+        <Card style={{ marginBottom: '20px', textAlign: 'center' }}>
+          <Title level={3} style={{ color: stepResults.websiteAnalysis.brandColors.primary }}>
+            ✨ Analysis Complete!
+          </Title>
+          <Paragraph style={{ fontSize: '16px', margin: '16px 0' }}>
+            We've analyzed your website and understood your business. Automatically generating trending topics...
+          </Paragraph>
         </Card>
       )}
 
@@ -1481,9 +1664,15 @@ app.post('/api/autoblog-webhook', async (req, res) => {
           </Title>
           
           <Paragraph style={{ textAlign: 'center', marginBottom: '30px', color: '#666' }}>
-            Based on your {stepResults.websiteAnalysis.businessType.toLowerCase()} business analysis, here are trending topics perfect for your audience:
+            Based on your {stepResults.websiteAnalysis.businessType.toLowerCase()} business analysis, here's your content strategy:
           </Paragraph>
+
+          {/* Content Strategy Section */}
+          {renderContentStrategy()}
           
+          <Title level={3} style={{ textAlign: 'center', marginTop: '40px', marginBottom: '20px', color: stepResults.websiteAnalysis.brandColors.primary }}>
+            Choose Your First Post
+          </Title>
           
           <Radio.Group 
             value={selectedTopic} 
