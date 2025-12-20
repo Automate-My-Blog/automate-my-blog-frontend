@@ -1308,7 +1308,7 @@ ${post.content}
                 Target Audience
               </Text>
               <Text style={{ fontSize: '14px', lineHeight: '1.5' }}>
-                {analysis.targetAudience}
+                {analysis.decisionMakers || analysis.targetAudience}
               </Text>
             </div>
           </Col>
@@ -1325,7 +1325,7 @@ ${post.content}
                 Brand Voice
               </Text>
               <Text style={{ fontSize: '14px', lineHeight: '1.5' }}>
-                {analysis.brandVoice} communication style
+                {analysis.brandVoice}
               </Text>
             </div>
           </Col>
@@ -1385,12 +1385,36 @@ ${post.content}
 
     // Generate specific content ideas based on customer problems and language
     const generateContentIdeas = () => {
-      // Use new customer language if available, otherwise fallback to keywords
-      const searchTerms = analysis.customerLanguage && analysis.customerLanguage.length > 0 
-        ? analysis.customerLanguage 
-        : (analysis.keywords && analysis.keywords.length > 0 
-          ? analysis.keywords 
-          : [`${analysis.businessType.toLowerCase()} help`, `solutions for ${analysis.decisionMakers || analysis.targetAudience}`]);
+      // Use new customer language if available, otherwise create realistic fallbacks
+      let searchTerms = [];
+      
+      if (analysis.customerLanguage && analysis.customerLanguage.length > 0) {
+        searchTerms = analysis.customerLanguage;
+      } else if (analysis.keywords && analysis.keywords.length > 0) {
+        searchTerms = analysis.keywords;
+      } else {
+        // Create realistic fallbacks based on business type
+        const businessType = analysis.businessType.toLowerCase();
+        if (businessType.includes('comfort') || businessType.includes('children')) {
+          searchTerms = [
+            'bedtime anxiety',
+            'calming toys for kids',
+            'comfort items for children',
+            'helping anxious children sleep',
+            'emotional support for kids',
+            'soothing toys'
+          ];
+        } else {
+          // Generic fallback for other business types
+          const audience = analysis.decisionMakers || analysis.targetAudience || 'customers';
+          searchTerms = [
+            `best ${businessType} solutions`,
+            `${businessType} for ${audience}`,
+            `how to choose ${businessType}`,
+            `${businessType} guide`
+          ];
+        }
+      }
 
       return searchTerms.slice(0, 6).map((searchTerm, index) => {
         const templates = [
