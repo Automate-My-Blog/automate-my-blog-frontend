@@ -49,6 +49,7 @@ const App = () => {
       customerLanguage: [],
       contentIdeas: [],
       connectionMessage: '',
+      scenarios: [],
       brandColors: {
         primary: '#6B8CAE',
         secondary: '#F4E5D3',
@@ -220,12 +221,15 @@ const App = () => {
             // Map new customer psychology fields
             decisionMakers: response.analysis.decisionMakers || response.analysis.targetAudience || 'General Audience',
             endUsers: response.analysis.endUsers || 'Product users',
-            customerProblems: response.analysis.customerProblems || [],
             searchBehavior: response.analysis.searchBehavior || '',
+            connectionMessage: response.analysis.connectionMessage || '',
+            // New scenario-based structure
+            scenarios: response.analysis.scenarios || [],
+            // Backward compatibility fields
+            customerProblems: response.analysis.customerProblems || [],
             customerLanguage: response.analysis.customerLanguage || [],
             keywords: response.analysis.keywords || [],
-            contentIdeas: response.analysis.contentIdeas || [],
-            connectionMessage: response.analysis.connectionMessage || ''
+            contentIdeas: response.analysis.contentIdeas || []
           }
         }));
 
@@ -1479,87 +1483,105 @@ ${post.content}
           </Text>
         </div>
 
-        {/* Content Strategy Scenarios - One card per customer problem */}
+        {/* Content Strategy Scenarios - AI-Generated */}
         {(() => {
-          // Generate customer problems for scenarios
-          let customerProblems = [];
+          // Use AI-generated scenarios if available, otherwise create fallback scenarios
+          let scenarios = [];
           
-          if (analysis.customerProblems && analysis.customerProblems.length > 0) {
-            customerProblems = analysis.customerProblems;
+          if (analysis.scenarios && analysis.scenarios.length > 0) {
+            // Use AI-generated scenarios with proper structure
+            scenarios = analysis.scenarios.map(scenario => ({
+              problem: scenario.customerProblem,
+              searchTerms: scenario.customerLanguage || [],
+              seoKeywords: scenario.seoKeywords || [],
+              contentIdeas: scenario.contentIdeas || []
+            }));
           } else {
-            // Create realistic fallbacks based on business type
-            const businessType = analysis.businessType.toLowerCase();
-            if (businessType.includes('comfort') || businessType.includes('children')) {
-              customerProblems = [
-                'Child having trouble sleeping through the night',
-                'Dealing with bedtime anxiety and fears',
-                'Need for emotional comfort during difficult times',
-                'Finding ways to help sensitive children cope with stress'
-              ];
-            } else {
-              const audience = analysis.decisionMakers || analysis.targetAudience || 'customers';
-              customerProblems = [
-                `Finding reliable ${businessType} solutions`,
-                `Understanding which ${businessType} options work best`,
-                `Getting expert guidance for ${businessType} decisions`,
-                `Solving problems related to ${businessType}`
-              ];
-            }
-          }
-
-          // Get search terms
-          let searchTerms = [];
-          if (analysis.customerLanguage && analysis.customerLanguage.length > 0) {
-            searchTerms = analysis.customerLanguage;
-          } else if (analysis.keywords && analysis.keywords.length > 0) {
-            searchTerms = analysis.keywords;
-          } else {
-            const businessType = analysis.businessType.toLowerCase();
-            if (businessType.includes('comfort') || businessType.includes('children')) {
-              searchTerms = [
-                'bedtime anxiety',
-                'calming toys for kids', 
-                'comfort items for children',
-                'helping anxious children sleep',
-                'emotional support for kids',
-                'soothing toys'
-              ];
-            } else {
-              const audience = analysis.decisionMakers || analysis.targetAudience || 'customers';
-              searchTerms = [
-                `best ${businessType} solutions`,
-                `${businessType} help`,
-                `how to choose ${businessType}`,
-                `${businessType} guide`
-              ];
-            }
-          }
-
-          // Get content ideas
-          const contentIdeas = analysis.contentIdeas && analysis.contentIdeas.length > 0 
-            ? analysis.contentIdeas 
-            : generateContentIdeas();
-
-          // Create scenario cards by pairing problems with search terms and content ideas
-          const scenarios = customerProblems.map((problem, index) => {
-            // Get related search terms (distribute them across problems)
-            const relatedSearchTerms = searchTerms.slice(
-              Math.floor(index * searchTerms.length / customerProblems.length),
-              Math.floor((index + 1) * searchTerms.length / customerProblems.length)
-            );
+            // Fallback to existing logic for backward compatibility
+            let customerProblems = [];
             
-            // Get related content ideas (distribute them across problems)
-            const relatedContentIdeas = contentIdeas.slice(
-              Math.floor(index * contentIdeas.length / customerProblems.length),
-              Math.floor((index + 1) * contentIdeas.length / customerProblems.length)
-            );
+            if (analysis.customerProblems && analysis.customerProblems.length > 0) {
+              customerProblems = analysis.customerProblems;
+            } else {
+              const businessType = analysis.businessType.toLowerCase();
+              if (businessType.includes('comfort') || businessType.includes('children')) {
+                customerProblems = [
+                  'Child having trouble sleeping through the night',
+                  'Dealing with bedtime anxiety and fears',
+                  'Need for emotional comfort during difficult times',
+                  'Finding ways to help sensitive children cope with stress'
+                ];
+              } else {
+                const audience = analysis.decisionMakers || analysis.targetAudience || 'customers';
+                customerProblems = [
+                  `Finding reliable ${businessType} solutions`,
+                  `Understanding which ${businessType} options work best`,
+                  `Getting expert guidance for ${businessType} decisions`,
+                  `Solving problems related to ${businessType}`
+                ];
+              }
+            }
 
-            return {
-              problem,
-              searchTerms: relatedSearchTerms.length > 0 ? relatedSearchTerms : [searchTerms[index % searchTerms.length]],
-              contentIdeas: relatedContentIdeas.length > 0 ? relatedContentIdeas : [contentIdeas[index % contentIdeas.length]].filter(Boolean)
-            };
-          });
+            // Get search terms for fallback
+            let searchTerms = [];
+            if (analysis.customerLanguage && analysis.customerLanguage.length > 0) {
+              searchTerms = analysis.customerLanguage;
+            } else if (analysis.keywords && analysis.keywords.length > 0) {
+              searchTerms = analysis.keywords;
+            } else {
+              const businessType = analysis.businessType.toLowerCase();
+              if (businessType.includes('comfort') || businessType.includes('children')) {
+                searchTerms = [
+                  'bedtime anxiety',
+                  'calming toys for kids', 
+                  'comfort items for children',
+                  'helping anxious children sleep'
+                ];
+              } else {
+                const audience = analysis.decisionMakers || analysis.targetAudience || 'customers';
+                searchTerms = [
+                  `best ${businessType} solutions`,
+                  `${businessType} help`,
+                  `how to choose ${businessType}`,
+                  `${businessType} guide`
+                ];
+              }
+            }
+
+            // Get content ideas for fallback
+            const contentIdeas = analysis.contentIdeas && analysis.contentIdeas.length > 0 
+              ? analysis.contentIdeas 
+              : generateContentIdeas();
+
+            // Create fallback scenarios
+            scenarios = customerProblems.map((problem, index) => {
+              const relatedSearchTerms = searchTerms.slice(
+                Math.floor(index * searchTerms.length / customerProblems.length),
+                Math.floor((index + 1) * searchTerms.length / customerProblems.length)
+              );
+              
+              const relatedContentIdeas = contentIdeas.slice(
+                Math.floor(index * contentIdeas.length / customerProblems.length),
+                Math.floor((index + 1) * contentIdeas.length / customerProblems.length)
+              );
+
+              // Generate basic SEO keywords for fallback
+              const businessType = analysis.businessType.toLowerCase();
+              const seoKeywords = [
+                `${businessType} solutions`,
+                `best ${businessType}`,
+                `${businessType} guide`,
+                problem.toLowerCase().split(' ').slice(0, 2).join(' ')
+              ].filter((keyword, idx, arr) => arr.indexOf(keyword) === idx).slice(0, 3);
+
+              return {
+                problem,
+                searchTerms: relatedSearchTerms.length > 0 ? relatedSearchTerms : [searchTerms[index % searchTerms.length]],
+                seoKeywords,
+                contentIdeas: relatedContentIdeas.length > 0 ? relatedContentIdeas : [contentIdeas[index % contentIdeas.length]].filter(Boolean)
+              };
+            });
+          }
 
           return (
             <Row gutter={[24, 24]}>
@@ -1614,52 +1636,19 @@ ${post.content}
                         SEO Keywords
                       </Title>
                       <Space wrap>
-                        {(() => {
-                          // Generate SEO keywords for this scenario
-                          let seoKeywords = [];
-                          
-                          if (analysis.keywords && analysis.keywords.length > 0) {
-                            // Distribute keywords across scenarios
-                            const keywordsPerScenario = Math.ceil(analysis.keywords.length / customerProblems.length);
-                            const startIdx = index * keywordsPerScenario;
-                            const endIdx = Math.min(startIdx + keywordsPerScenario, analysis.keywords.length);
-                            seoKeywords = analysis.keywords.slice(startIdx, endIdx);
-                          } else {
-                            // Generate fallback SEO keywords based on the problem and business type
-                            const businessType = analysis.businessType.toLowerCase();
-                            const problemKeywords = scenario.problem.toLowerCase().split(' ').slice(0, 3);
-                            
-                            if (businessType.includes('comfort') || businessType.includes('children')) {
-                              seoKeywords = [
-                                ...problemKeywords.map(word => `${word} children`),
-                                `${businessType} solutions`,
-                                'parenting tips',
-                                'child development'
-                              ].filter((keyword, idx, arr) => arr.indexOf(keyword) === idx).slice(0, 4);
-                            } else {
-                              seoKeywords = [
-                                ...problemKeywords,
-                                `${businessType} solutions`,
-                                `best ${businessType}`,
-                                `${businessType} guide`
-                              ].filter((keyword, idx, arr) => arr.indexOf(keyword) === idx).slice(0, 4);
-                            }
-                          }
-                          
-                          return seoKeywords.map((keyword, keywordIndex) => (
-                            <Tag 
-                              key={keywordIndex}
-                              color={analysis.brandColors.primary}
-                              style={{ 
-                                borderRadius: '8px',
-                                fontSize: '12px',
-                                padding: '4px 8px'
-                              }}
-                            >
-                              {keyword}
-                            </Tag>
-                          ));
-                        })()}
+                        {scenario.seoKeywords && scenario.seoKeywords.map((keyword, keywordIndex) => (
+                          <Tag 
+                            key={keywordIndex}
+                            color={analysis.brandColors.primary}
+                            style={{ 
+                              borderRadius: '8px',
+                              fontSize: '12px',
+                              padding: '4px 8px'
+                            }}
+                          >
+                            {keyword}
+                          </Tag>
+                        ))}
                       </Space>
                     </div>
 
