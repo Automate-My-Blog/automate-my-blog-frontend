@@ -49,6 +49,9 @@ const App = () => {
       customerLanguage: [],
       contentIdeas: [],
       connectionMessage: '',
+      businessModel: '',
+      websiteGoals: '',
+      blogStrategy: '',
       scenarios: [],
       brandColors: {
         primary: '#6B8CAE',
@@ -223,6 +226,10 @@ const App = () => {
             endUsers: response.analysis.endUsers || 'Product users',
             searchBehavior: response.analysis.searchBehavior || '',
             connectionMessage: response.analysis.connectionMessage || '',
+            // Business goals analysis
+            businessModel: response.analysis.businessModel || '',
+            websiteGoals: response.analysis.websiteGoals || '',
+            blogStrategy: response.analysis.blogStrategy || '',
             // New scenario-based structure
             scenarios: response.analysis.scenarios || [],
             // Backward compatibility fields
@@ -1363,6 +1370,68 @@ ${post.content}
           </Col>
         </Row>
 
+        {/* Business Strategy - Only show if AI generated these fields */}
+        {(analysis.businessModel || analysis.websiteGoals || analysis.blogStrategy) && (
+          <Row gutter={[16, 16]} style={{ marginTop: '16px' }}>
+            {analysis.businessModel && (
+              <Col xs={24} lg={8}>
+                <div style={{ 
+                  padding: '16px', 
+                  backgroundColor: analysis.brandColors.accent + '08', 
+                  borderRadius: '8px',
+                  border: `1px solid ${analysis.brandColors.accent}20`,
+                  height: '100%'
+                }}>
+                  <Text strong style={{ color: analysis.brandColors.accent, fontSize: '16px', marginBottom: '8px', display: 'block' }}>
+                    Business Model
+                  </Text>
+                  <Text style={{ fontSize: '14px', lineHeight: '1.5' }}>
+                    {analysis.businessModel}
+                  </Text>
+                </div>
+              </Col>
+            )}
+
+            {analysis.websiteGoals && (
+              <Col xs={24} lg={8}>
+                <div style={{ 
+                  padding: '16px', 
+                  backgroundColor: analysis.brandColors.primary + '08', 
+                  borderRadius: '8px',
+                  border: `1px solid ${analysis.brandColors.primary}20`,
+                  height: '100%'
+                }}>
+                  <Text strong style={{ color: analysis.brandColors.primary, fontSize: '16px', marginBottom: '8px', display: 'block' }}>
+                    Website Goals
+                  </Text>
+                  <Text style={{ fontSize: '14px', lineHeight: '1.5' }}>
+                    {analysis.websiteGoals}
+                  </Text>
+                </div>
+              </Col>
+            )}
+
+            {analysis.blogStrategy && (
+              <Col xs={24} lg={8}>
+                <div style={{ 
+                  padding: '16px', 
+                  backgroundColor: analysis.brandColors.secondary + '40', 
+                  borderRadius: '8px',
+                  border: `1px solid ${analysis.brandColors.secondary}60`,
+                  height: '100%'
+                }}>
+                  <Text strong style={{ color: analysis.brandColors.primary, fontSize: '16px', marginBottom: '8px', display: 'block' }}>
+                    Blog Strategy
+                  </Text>
+                  <Text style={{ fontSize: '14px', lineHeight: '1.5' }}>
+                    {analysis.blogStrategy}
+                  </Text>
+                </div>
+              </Col>
+            )}
+          </Row>
+        )}
+
         {/* Keywords if available */}
         {analysis.keywords && analysis.keywords.length > 0 && (
           <div style={{ 
@@ -1671,12 +1740,37 @@ ${post.content}
                           <Text style={{ fontSize: '14px', fontWeight: 500, display: 'block', marginBottom: '4px' }}>
                             {idea.title}
                           </Text>
-                          <Text style={{ fontSize: '12px', color: '#666', fontStyle: 'italic' }}>
+                          <Text style={{ fontSize: '12px', color: '#666', fontStyle: 'italic', marginBottom: '4px' }}>
                             {idea.searchIntent}
                           </Text>
+                          {idea.businessAlignment && (
+                            <Text style={{ fontSize: '11px', color: analysis.brandColors.primary, fontWeight: 500, display: 'block' }}>
+                              💼 {idea.businessAlignment}
+                            </Text>
+                          )}
                         </div>
                       ))}
                     </div>
+
+                    {/* Conversion Path */}
+                    {scenario.conversionPath && (
+                      <div style={{ marginBottom: '20px' }}>
+                        <Title level={5} style={{ color: analysis.brandColors.accent, marginBottom: '8px', display: 'flex', alignItems: 'center' }}>
+                          <span style={{ marginRight: '8px' }}>🎯</span>
+                          Conversion Strategy
+                        </Title>
+                        <div style={{ 
+                          padding: '12px',
+                          backgroundColor: analysis.brandColors.accent + '05',
+                          borderRadius: '6px',
+                          border: `1px solid ${analysis.brandColors.accent}15`
+                        }}>
+                          <Text style={{ fontSize: '13px', lineHeight: '1.5' }}>
+                            {scenario.conversionPath}
+                          </Text>
+                        </div>
+                      </div>
+                    )}
 
                     {/* How This Connects */}
                     <div style={{ 
