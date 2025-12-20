@@ -1229,7 +1229,7 @@ ${post.content}
               fontWeight: 600
             }}
           >
-            🏢 {analysis.businessName || 'Analyzing...'} - Business Overview
+            {analysis.businessName || 'Analyzing...'}
           </Title>
           {isComplete && (
             <Button 
@@ -1632,71 +1632,78 @@ app.post('/api/autoblog-webhook', async (req, res) => {
               strokeColor="#6B8CAE"
               style={{ margin: '20px 0' }}
             />
-            
-            <Text strong>{steps[currentStep - 1]?.title}</Text>
           </>
         )}
       </div>
 
-      {/* Current Step Indicator */}
-      <div style={{ marginBottom: window.innerWidth <= 767 ? '15px' : '30px' }}>
-        {window.innerWidth <= 767 ? (
-          // Mobile: Show only current step
-          <div style={{ 
-            textAlign: 'center',
-            padding: '12px',
-            backgroundColor: '#f8f9fa',
-            borderRadius: '8px',
-            border: '1px solid #e0e0e0'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '8px' }}>
-              {currentStep < steps.length ? steps[currentStep].icon : <CheckOutlined />}
-              <Text strong style={{ marginLeft: '8px', fontSize: '14px' }}>
-                Step {currentStep + 1} of {steps.length}
+      {/* Current Step Indicator - Only show after analysis starts */}
+      {currentStep >= 1 && (
+        <div style={{ marginBottom: window.innerWidth <= 767 ? '15px' : '30px' }}>
+          {window.innerWidth <= 767 ? (
+            // Mobile: Show only current step
+            <div style={{ 
+              textAlign: 'center',
+              padding: '12px',
+              backgroundColor: '#f8f9fa',
+              borderRadius: '8px',
+              border: '1px solid #e0e0e0'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '8px' }}>
+                {currentStep < steps.length ? steps[currentStep].icon : <CheckOutlined />}
+                <Text strong style={{ marginLeft: '8px', fontSize: '14px' }}>
+                  Step {currentStep + 1} of {steps.length}
+                </Text>
+              </div>
+              <Text style={{ fontSize: '16px', fontWeight: 'bold' }}>
+                {steps[currentStep]?.title}
+              </Text>
+              <br />
+              <Text type="secondary" style={{ fontSize: '12px' }}>
+                {steps[currentStep]?.description}
               </Text>
             </div>
-            <Text style={{ fontSize: '16px', fontWeight: 'bold' }}>
-              {steps[currentStep]?.title}
-            </Text>
-            <br />
-            <Text type="secondary" style={{ fontSize: '12px' }}>
-              {steps[currentStep]?.description}
-            </Text>
-          </div>
-        ) : (
-          // Desktop: Show full horizontal steps
-          <Steps
-            current={currentStep}
-            size="small"
-            items={steps.map((step, index) => {
-              const isLocked = step.requiresLogin && !userAccount;
-              
-              return {
-                title: (
-                  <span>
-                    {step.title}
-                    {isLocked && <Text style={{ color: '#ff4d4f', fontSize: '11px', display: 'block' }}>
-                      Account Required
-                    </Text>}
-                  </span>
-                ),
-                icon: index < currentStep ? <CheckOutlined /> : (isLocked ? <LockOutlined style={{ opacity: 0.6 }} /> : step.icon),
-                status: index < currentStep ? 'finish' : index === currentStep ? 'process' : (isLocked ? 'error' : 'wait')
-              };
-            })}
-            style={{ marginBottom: '20px' }}
-          />
-        )}
-        
-      </div>
+          ) : (
+            // Desktop: Show full horizontal steps
+            <Steps
+              current={currentStep}
+              size="small"
+              items={steps.map((step, index) => {
+                const isLocked = step.requiresLogin && !userAccount;
+                
+                return {
+                  title: (
+                    <span>
+                      {step.title}
+                      {isLocked && <Text style={{ color: '#ff4d4f', fontSize: '11px', display: 'block' }}>
+                        Account Required
+                      </Text>}
+                    </span>
+                  ),
+                  icon: index < currentStep ? <CheckOutlined /> : (isLocked ? <LockOutlined style={{ opacity: 0.6 }} /> : step.icon),
+                  status: index < currentStep ? 'finish' : index === currentStep ? 'process' : (isLocked ? 'error' : 'wait')
+                };
+              })}
+              style={{ marginBottom: '20px' }}
+            />
+          )}
+        </div>
+      )}
 
       {/* Step Content */}
       {currentStep >= 1 && (
         <div data-step="1">
           <Card style={{ marginBottom: '20px' }}>
-            <Title level={3} style={{ textAlign: 'center', marginBottom: '20px' }}>
-              🔍 Analyzing Your Website
-            </Title>
+            {!analysisCompleted && (
+              <Title level={3} style={{ textAlign: 'center', marginBottom: '20px' }}>
+                🔍 Analyzing {websiteUrl}
+              </Title>
+            )}
+            
+            {analysisCompleted && (
+              <Title level={3} style={{ textAlign: 'center', marginBottom: '20px' }}>
+                About {stepResults.websiteAnalysis.businessName}
+              </Title>
+            )}
             
             {!analysisCompleted && currentStep === 1 && (
               <div style={{ textAlign: 'center' }}>
