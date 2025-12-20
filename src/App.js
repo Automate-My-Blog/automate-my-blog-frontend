@@ -47,6 +47,8 @@ const App = () => {
       customerProblems: [],
       searchBehavior: '',
       customerLanguage: [],
+      contentIdeas: [],
+      connectionMessage: '',
       brandColors: {
         primary: '#6B8CAE',
         secondary: '#F4E5D3',
@@ -206,7 +208,7 @@ const App = () => {
           websiteAnalysis: {
             businessType: response.analysis.businessType || 'Business',
             businessName: response.analysis.businessName || 'Your Business',
-            targetAudience: response.analysis.targetAudience || 'Target Audience',
+            targetAudience: response.analysis.decisionMakers || response.analysis.targetAudience || 'General Audience',
             contentFocus: response.analysis.contentFocus || 'Content Focus',
             brandVoice: response.analysis.brandVoice || 'Professional',
             brandColors: response.analysis.brandColors || {
@@ -214,7 +216,16 @@ const App = () => {
               secondary: '#F4E5D3',
               accent: '#8FBC8F'
             },
-            description: response.analysis.description || 'Business description generated from website analysis.'
+            description: response.analysis.description || 'Business description generated from website analysis.',
+            // Map new customer psychology fields
+            decisionMakers: response.analysis.decisionMakers || response.analysis.targetAudience || 'General Audience',
+            endUsers: response.analysis.endUsers || 'Product users',
+            customerProblems: response.analysis.customerProblems || [],
+            searchBehavior: response.analysis.searchBehavior || '',
+            customerLanguage: response.analysis.customerLanguage || [],
+            keywords: response.analysis.keywords || [],
+            contentIdeas: response.analysis.contentIdeas || [],
+            connectionMessage: response.analysis.connectionMessage || ''
           }
         }));
 
@@ -1435,7 +1446,10 @@ ${post.content}
       });
     };
 
-    const contentIdeas = generateContentIdeas();
+    // Use AI-generated content ideas if available, otherwise use fallback function
+    const contentIdeas = analysis.contentIdeas && analysis.contentIdeas.length > 0 
+      ? analysis.contentIdeas 
+      : generateContentIdeas();
     
     return (
       <Card 
@@ -1466,35 +1480,63 @@ ${post.content}
         </div>
 
         {/* Customer Problems */}
-        {analysis.customerProblems && analysis.customerProblems.length > 0 && (
-          <div style={{ 
-            marginBottom: '24px',
-            padding: '16px', 
-            backgroundColor: analysis.brandColors.primary + '08', 
-            borderRadius: '8px',
-            border: `1px solid ${analysis.brandColors.primary}20`
-          }}>
-            <Title level={5} style={{ color: analysis.brandColors.primary, marginBottom: '12px', display: 'flex', alignItems: 'center' }}>
-              <span style={{ marginRight: '8px' }}>🔍</span>
-              What Drives Customers to Search
-            </Title>
-            <Text style={{ fontSize: '15px', lineHeight: '1.6', marginBottom: '12px' }}>
-              {analysis.decisionMakers || analysis.targetAudience} search online when they're struggling with:
-            </Text>
-            <ul style={{ margin: '8px 0', paddingLeft: '20px' }}>
-              {analysis.customerProblems.map((problem, index) => (
-                <li key={index} style={{ marginBottom: '4px' }}>
-                  <Text>{problem}</Text>
-                </li>
-              ))}
-            </ul>
-            {analysis.searchBehavior && (
-              <Text style={{ fontSize: '14px', fontStyle: 'italic', marginTop: '12px', display: 'block' }}>
-                <strong>Search Behavior:</strong> {analysis.searchBehavior}
+        {(() => {
+          // Generate fallback problems if no customer data
+          let customerProblems = [];
+          
+          if (analysis.customerProblems && analysis.customerProblems.length > 0) {
+            customerProblems = analysis.customerProblems;
+          } else {
+            // Create realistic fallbacks based on business type
+            const businessType = analysis.businessType.toLowerCase();
+            if (businessType.includes('comfort') || businessType.includes('children')) {
+              customerProblems = [
+                'Child having trouble sleeping through the night',
+                'Dealing with bedtime anxiety and fears',
+                'Need for emotional comfort during difficult times',
+                'Finding ways to help sensitive children cope with stress'
+              ];
+            } else {
+              const audience = analysis.decisionMakers || analysis.targetAudience || 'customers';
+              customerProblems = [
+                `Finding reliable ${businessType} solutions`,
+                `Understanding which ${businessType} options work best`,
+                `Getting expert guidance for ${businessType} decisions`,
+                `Solving problems related to ${businessType}`
+              ];
+            }
+          }
+
+          return (
+            <div style={{ 
+              marginBottom: '24px',
+              padding: '16px', 
+              backgroundColor: analysis.brandColors.primary + '08', 
+              borderRadius: '8px',
+              border: `1px solid ${analysis.brandColors.primary}20`
+            }}>
+              <Title level={5} style={{ color: analysis.brandColors.primary, marginBottom: '12px', display: 'flex', alignItems: 'center' }}>
+                <span style={{ marginRight: '8px' }}>🔍</span>
+                What Drives Customers to Search
+              </Title>
+              <Text style={{ fontSize: '15px', lineHeight: '1.6', marginBottom: '12px' }}>
+                {analysis.decisionMakers || analysis.targetAudience} search online when they're struggling with:
               </Text>
-            )}
-          </div>
-        )}
+              <ul style={{ margin: '8px 0', paddingLeft: '20px' }}>
+                {customerProblems.map((problem, index) => (
+                  <li key={index} style={{ marginBottom: '4px' }}>
+                    <Text>{problem}</Text>
+                  </li>
+                ))}
+              </ul>
+              {analysis.searchBehavior && (
+                <Text style={{ fontSize: '14px', fontStyle: 'italic', marginTop: '12px', display: 'block' }}>
+                  <strong>Search Behavior:</strong> {analysis.searchBehavior}
+                </Text>
+              )}
+            </div>
+          );
+        })()}
 
         {/* Customer Language / Keywords */}
         <div style={{ marginBottom: '24px' }}>
@@ -1502,53 +1544,69 @@ ${post.content}
             <span style={{ marginRight: '8px' }}>💬</span>
             How Customers Actually Search
           </Title>
-          {(analysis.customerLanguage && analysis.customerLanguage.length > 0) ? (
-            <>
-              <Text style={{ marginBottom: '12px', display: 'block' }}>
-                Real phrases {analysis.decisionMakers || analysis.targetAudience} type into Google:
-              </Text>
-              <Space wrap style={{ marginBottom: '12px' }}>
-                {analysis.customerLanguage.map((phrase, index) => (
-                  <Tag 
-                    key={index} 
-                    color={analysis.brandColors.accent}
-                    style={{ 
-                      borderRadius: '12px',
-                      fontSize: '13px',
-                      padding: '6px 12px'
-                    }}
-                  >
-                    "{phrase}"
-                  </Tag>
-                ))}
-              </Space>
-            </>
-          ) : (analysis.keywords && analysis.keywords.length > 0) ? (
-            <>
-              <Text style={{ marginBottom: '12px', display: 'block' }}>
-                Target search terms for {analysis.businessType.toLowerCase()}:
-              </Text>
-              <Space wrap style={{ marginBottom: '12px' }}>
-                {analysis.keywords.map((keyword, index) => (
-                  <Tag 
-                    key={index} 
-                    color={analysis.brandColors.accent}
-                    style={{ 
-                      borderRadius: '12px',
-                      fontSize: '13px',
-                      padding: '6px 12px'
-                    }}
-                  >
-                    {keyword}
-                  </Tag>
-                ))}
-              </Space>
-            </>
-          ) : (
-            <Text style={{ color: '#666', fontStyle: 'italic' }}>
-              Customer research needed for {analysis.businessType.toLowerCase()} industry
-            </Text>
-          )}
+{(() => {
+            // Generate fallback search terms if no customer language data
+            let searchTerms = [];
+            
+            if (analysis.customerLanguage && analysis.customerLanguage.length > 0) {
+              searchTerms = analysis.customerLanguage;
+            } else if (analysis.keywords && analysis.keywords.length > 0) {
+              searchTerms = analysis.keywords;
+            } else {
+              // Create realistic fallbacks based on business type
+              const businessType = analysis.businessType.toLowerCase();
+              if (businessType.includes('comfort') || businessType.includes('children')) {
+                searchTerms = [
+                  'bedtime anxiety',
+                  'calming toys for kids', 
+                  'comfort items for children',
+                  'helping anxious children sleep',
+                  'emotional support for kids',
+                  'soothing toys'
+                ];
+              } else {
+                // Generic fallback for other business types
+                const audience = analysis.decisionMakers || analysis.targetAudience || 'customers';
+                searchTerms = [
+                  `best ${businessType} solutions`,
+                  `${businessType} help`,
+                  `how to choose ${businessType}`,
+                  `${businessType} guide`
+                ];
+              }
+            }
+
+            const isCustomerLanguage = analysis.customerLanguage && analysis.customerLanguage.length > 0;
+            const isKeywords = !isCustomerLanguage && analysis.keywords && analysis.keywords.length > 0;
+            
+            return (
+              <>
+                <Text style={{ marginBottom: '12px', display: 'block' }}>
+                  {isCustomerLanguage 
+                    ? `Real phrases ${analysis.decisionMakers || analysis.targetAudience} type into Google:`
+                    : isKeywords 
+                      ? `Target search terms for ${analysis.businessType.toLowerCase()}:`
+                      : `Common search phrases for ${analysis.businessType.toLowerCase()}:`
+                  }
+                </Text>
+                <Space wrap style={{ marginBottom: '12px' }}>
+                  {searchTerms.map((phrase, index) => (
+                    <Tag 
+                      key={index} 
+                      color={analysis.brandColors.accent}
+                      style={{ 
+                        borderRadius: '12px',
+                        fontSize: '13px',
+                        padding: '6px 12px'
+                      }}
+                    >
+                      {isCustomerLanguage ? `"${phrase}"` : phrase}
+                    </Tag>
+                  ))}
+                </Space>
+              </>
+            );
+          })()}
         </div>
 
         {/* Content Ideas */}
@@ -1567,9 +1625,16 @@ ${post.content}
                   border: '1px solid #e9ecef',
                   height: '100%'
                 }}>
-                  <Text strong style={{ color: analysis.brandColors.primary, fontSize: '14px', marginBottom: '8px', display: 'block' }}>
-                    "{idea.searchTerm}"
-                  </Text>
+                  {idea.customerNeed && (
+                    <Text strong style={{ color: analysis.brandColors.primary, fontSize: '14px', marginBottom: '8px', display: 'block' }}>
+                      Customer Need: {idea.customerNeed}
+                    </Text>
+                  )}
+                  {idea.searchTerm && (
+                    <Text strong style={{ color: analysis.brandColors.primary, fontSize: '14px', marginBottom: '8px', display: 'block' }}>
+                      "{idea.searchTerm}"
+                    </Text>
+                  )}
                   <Text style={{ fontSize: '15px', marginBottom: '8px', display: 'block', fontWeight: 500 }}>
                     {idea.title}
                   </Text>
@@ -1594,10 +1659,7 @@ ${post.content}
             How This Connects You with Customers
           </Title>
           <Text style={{ fontSize: '15px', lineHeight: '1.6' }}>
-            Every search represents someone with a real problem looking for help. When {analysis.decisionMakers || analysis.targetAudience} 
-            are struggling and turn to Google, your content becomes the trusted resource they find. Your {analysis.brandVoice.toLowerCase()} 
-            approach builds confidence, and your expertise guides them toward {analysis.contentFocus?.toLowerCase() || 'solutions'}. 
-            This is how traffic becomes trust, and trust becomes customers.
+            {analysis.connectionMessage || `Every search represents someone with a real problem looking for help. When ${analysis.decisionMakers || analysis.targetAudience} are struggling and turn to Google, your content becomes the trusted resource they find. Your ${analysis.brandVoice.toLowerCase()} approach builds confidence, and your expertise guides them toward ${analysis.contentFocus?.toLowerCase() || 'solutions'}. This is how traffic becomes trust, and trust becomes customers.`}
           </Text>
         </div>
       </Card>
