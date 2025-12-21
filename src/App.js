@@ -2463,46 +2463,15 @@ app.post('/api/autoblog-webhook', async (req, res) => {
                   
                   const webSearchStillLoading = availableTopics.length > 0 && !hasWebSearchData;
                   
-                  // If web search is still loading, show loading state instead of partial data
-                  if (webSearchStillLoading) {
-                    return (
-                      <div style={{ 
-                        textAlign: 'center', 
-                        padding: '60px 20px',
-                        color: '#666'
-                      }}>
-                        <div style={{ 
-                          fontSize: '48px', 
-                          marginBottom: '16px',
-                          animation: 'pulse 1.5s ease-in-out infinite'
-                        }}>
-                          🔍
-                        </div>
-                        <Title level={4} style={{ color: '#1890ff', margin: '0 0 8px 0' }}>
-                          Enhancing Content with Web Search
-                        </Title>
-                        <Text style={{ color: '#666', lineHeight: '1.5' }}>
-                          Analyzing current market trends, search volumes, and competitive intelligence to create targeted content strategies...
-                        </Text>
-                        <div style={{ 
-                          marginTop: '16px',
-                          fontSize: '12px',
-                          color: '#999'
-                        }}>
-                          This usually takes 20-30 seconds
-                        </div>
-                      </div>
-                    );
-                  }
-                  
-                  // Only show topics that have corresponding AI scenario data with web search enhancements
+                  // Show topics with appropriate loading states - enhanced topics if available, or basic topics with loading indicators
                   const enhancedTopics = availableTopics.map((topic, index) => {
                     const scenarioData = analysis.scenarios && analysis.scenarios[index] ? analysis.scenarios[index] : null;
                     return {
                       ...topic,
-                      scenario: scenarioData
+                      scenario: scenarioData,
+                      webSearchLoading: webSearchStillLoading && !scenarioData
                     };
-                  }).filter(topic => topic.scenario !== null);
+                  });
 
                   if (enhancedTopics.length === 0) {
                     return (
@@ -2529,6 +2498,33 @@ app.post('/api/autoblog-webhook', async (req, res) => {
 
                   return (
                     <div>
+                      {/* Web Search Enhancement Indicator */}
+                      {webSearchStillLoading && (
+                        <div style={{
+                          textAlign: 'center',
+                          marginBottom: '20px',
+                          padding: '12px',
+                          backgroundColor: '#e6f7ff',
+                          borderRadius: '6px',
+                          border: '1px solid #91d5ff'
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                            <div style={{ 
+                              fontSize: '16px',
+                              animation: 'pulse 1.5s ease-in-out infinite'
+                            }}>
+                              🔍
+                            </div>
+                            <Text style={{ fontSize: '13px', color: '#1890ff', fontWeight: 500 }}>
+                              Enhancing topics with web search data...
+                            </Text>
+                          </div>
+                          <Text style={{ fontSize: '11px', color: '#666', marginTop: '4px', display: 'block' }}>
+                            Analyzing search volumes, competitive intelligence, and customer insights
+                          </Text>
+                        </div>
+                      )}
+                      
                       <Row gutter={window.innerWidth <= 767 ? [8, 8] : [16, 16]}>
                         {/* Only show first 2 topics for lead generation */}
                         {enhancedTopics.slice(0, 2).map((topic) => (
@@ -2714,7 +2710,30 @@ app.post('/api/autoblog-webhook', async (req, res) => {
                                         }}
                                       >
                                         {/* Strategy Content */}
-                                        {topic.scenario ? (
+                                        {topic.webSearchLoading ? (
+                                          <div style={{ padding: '16px 0' }}>
+                                            <div style={{ 
+                                              textAlign: 'center', 
+                                              padding: '20px',
+                                              color: '#666'
+                                            }}>
+                                              <div style={{ 
+                                                fontSize: '24px', 
+                                                marginBottom: '8px',
+                                                animation: 'pulse 1.5s ease-in-out infinite'
+                                              }}>
+                                                🔍
+                                              </div>
+                                              <Text style={{ fontSize: '14px', color: '#1890ff', fontWeight: 500 }}>
+                                                Enhancing with Web Search Data
+                                              </Text>
+                                              <br />
+                                              <Text style={{ fontSize: '12px', color: '#999' }}>
+                                                Analyzing search volumes, competition & customer insights...
+                                              </Text>
+                                            </div>
+                                          </div>
+                                        ) : topic.scenario ? (
                                           <div style={{ padding: '16px 0' }}>
                                             
                                             {/* Target Persona */}
