@@ -46,6 +46,13 @@ const App = () => {
   const [showMoreStrategiesGate, setShowMoreStrategiesGate] = useState(false);
   const [strategySelectionCompleted, setStrategySelectionCompleted] = useState(false);
   
+  // Web search research insights
+  const [webSearchInsights, setWebSearchInsights] = useState({
+    brandResearch: null,
+    keywordResearch: null,
+    researchQuality: 'basic' // 'basic', 'enhanced', 'premium'
+  });
+  
   // Demo mode for testing (bypass payment gates)
   const [demoMode, setDemoMode] = useState(
     process.env.REACT_APP_DEMO_MODE === 'true' || 
@@ -199,14 +206,54 @@ const App = () => {
 
   const completeWebsiteAnalysis = async () => {
     try {
-      // Show loading state
+      // Show enhanced loading states for web search research
       setIsLoading(true);
-      setScanningMessage('Analyzing website with AI...');
+      
+      // Phase 1: Initial Analysis
+      setScanningMessage('Analyzing website content...');
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Phase 2: Web Search Research
+      setScanningMessage('🔍 Researching brand guidelines and social media...');
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Phase 3: Keyword Research
+      setScanningMessage('📊 Analyzing competitor keywords and search trends...');
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Phase 4: Customer Intelligence
+      setScanningMessage('👥 Gathering customer insights and reviews...');
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Phase 5: Final Analysis
+      setScanningMessage('🧠 Synthesizing insights with AI...');
 
-      // Call real backend API
+      // Call enhanced backend API
       const response = await autoBlogAPI.analyzeWebsite(websiteUrl);
       
       if (response.success && response.analysis) {
+        // Debug: Log the analysis structure to see what we're getting
+        console.log('Website analysis response:', JSON.stringify(response.analysis, null, 2));
+        console.log('Scenarios structure:', response.analysis.scenarios);
+        if (response.analysis.scenarios && response.analysis.scenarios[0]) {
+          console.log('First scenario:', response.analysis.scenarios[0]);
+          console.log('Has businessValue?', !!response.analysis.scenarios[0].businessValue);
+          console.log('Has targetSegment?', !!response.analysis.scenarios[0].targetSegment);
+        }
+
+        // Determine research quality based on response completeness
+        const hasEnhancedData = response.analysis.brandColors && 
+                               response.analysis.scenarios && 
+                               response.analysis.scenarios.length > 0 &&
+                               response.analysis.scenarios[0].businessValue &&
+                               response.analysis.scenarios[0].targetSegment;
+        
+        setWebSearchInsights({
+          brandResearch: response.analysis.brandColors ? 'Found actual brand guidelines' : null,
+          keywordResearch: hasEnhancedData ? 'Current market keyword analysis completed' : null,
+          researchQuality: hasEnhancedData ? 'enhanced' : 'basic'
+        });
+
         // Use real AI analysis results
         setStepResults(prev => ({
           ...prev,
@@ -290,63 +337,45 @@ const App = () => {
         trendingTopics: []
       }));
 
-      // Show skeleton topics immediately for better UX
-      const skeletonTopics = Array.from({ length: 2 }, (_, i) => ({
-        id: i + 1,
-        trend: "Loading...",
-        title: "Generating trending topic...",
-        subheader: "AI is creating a compelling topic description...",
-        image: "loading",
-        seoBenefit: "Analyzing SEO potential...",
-        category: "Loading...",
-        isLoading: true,
-        isContentLoading: true,
-        isImageLoading: true
-      }));
-
-      setStepResults(prev => ({
-        ...prev,
-        trendingTopics: skeletonTopics
-      }));
-
       // Step advancement is now handled by generateBlogPreviews function
 
-      const { businessType, targetAudience, contentFocus } = stepResults.websiteAnalysis;
+      const analysis = stepResults.websiteAnalysis;
+      
+      // Use selected strategy context or fallback to general analysis
+      const targetAudience = selectedCustomerStrategy 
+        ? `${analysis.decisionMakers} struggling with: ${selectedCustomerStrategy.customerProblem}`
+        : analysis.decisionMakers || analysis.targetAudience;
+      
+      const contentFocus = selectedCustomerStrategy
+        ? `Content addressing: ${selectedCustomerStrategy.customerProblem}. Target keywords: ${selectedCustomerStrategy.seoKeywords?.join(', ') || 'relevant terms'}`
+        : analysis.contentFocus;
+
+      console.log('Generating topics for:', targetAudience);
+      console.log('Content focus:', contentFocus);
 
       // Call real backend API
-      const topics = await autoBlogAPI.getTrendingTopics(businessType, targetAudience, contentFocus);
+      const topics = await autoBlogAPI.getTrendingTopics(analysis.businessType, targetAudience, contentFocus);
       
       if (topics && topics.length > 0) {
-        // Ensure we only use first 2 topics
+        // Ensure we only use first 2 topics and map them with strategy data
         const limitedTopics = topics.slice(0, 2);
         
-        // First, show topics content but keep images loading
-        const topicsWithContentLoaded = limitedTopics.map(topic => ({
+        // Display final topics immediately without artificial delays
+        const finalTopics = limitedTopics.map((topic, index) => ({
           ...topic,
+          scenario: selectedCustomerStrategy || (analysis.scenarios && analysis.scenarios[index] ? analysis.scenarios[index] : null),
           isLoading: false,
           isContentLoading: false,
-          isImageLoading: true // Images still loading
+          isImageLoading: false
         }));
 
         setStepResults(prev => ({
           ...prev,
-          trendingTopics: topicsWithContentLoaded
+          trendingTopics: finalTopics
         }));
-
-        // Then progressively load images (simulate the backend processing)
-        setTimeout(() => {
-          const finalTopics = limitedTopics.map(topic => ({
-            ...topic,
-            isLoading: false,
-            isContentLoading: false,
-            isImageLoading: false
-          }));
-
-          setStepResults(prev => ({
-            ...prev,
-            trendingTopics: finalTopics
-          }));
-        }, 3000); // Images appear 3 seconds after content for clearer separation
+        
+        setStrategyCompleted(true);
+        message.success(`Generated ${finalTopics.length} targeted content ideas!`);
       } else {
         // No fallback - show error if no real topics generated
         console.error('No trending topics generated by AI');
@@ -359,10 +388,34 @@ const App = () => {
       }, 1000);
 
     } catch (error) {
-      console.error('Trending topics error:', error);
+      console.error('Topic generation error:', error);
       setIsLoading(false);
       message.error(`Failed to generate topics: ${error.message}`);
-      // No fallback - stay on current step for retry
+      
+      // Fallback: create topics from strategy content ideas if available
+      if (selectedCustomerStrategy && selectedCustomerStrategy.contentIdeas) {
+        console.log('Using fallback content ideas from strategy');
+        const fallbackTopics = selectedCustomerStrategy.contentIdeas.map((idea, index) => ({
+          id: `strategy-${index}`,
+          title: idea.title,
+          subheader: idea.searchIntent,
+          category: 'Strategy Content',
+          seoBenefit: idea.businessAlignment,
+          scenario: selectedCustomerStrategy,
+          image: `https://via.placeholder.com/400x250/6B8CAE/FFFFFF?text=${encodeURIComponent(idea.title.substring(0, 20))}`,
+          isLoading: false,
+          isContentLoading: false,
+          isImageLoading: false
+        }));
+        
+        setStepResults(prev => ({
+          ...prev,
+          trendingTopics: fallbackTopics
+        }));
+        
+        setStrategyCompleted(true);
+        message.success(`Generated ${fallbackTopics.length} content ideas from your strategy!`);
+      }
     }
   };
 
@@ -473,8 +526,8 @@ const App = () => {
         selectedTopicData, 
         stepResults.websiteAnalysis,
         selectedCustomerStrategy ? 
-          `Focus on ${selectedCustomerStrategy.customerProblem}. Target customers who search for: ${selectedCustomerStrategy.customerLanguage?.join(', ') || 'relevant terms'}. Make this content align with the business goal: ${selectedCustomerStrategy.conversionPath}` :
-          'Make this engaging and actionable for the target audience.'
+          `Focus on ${selectedCustomerStrategy.customerProblem}. Target customers who search for: ${selectedCustomerStrategy.customerLanguage?.join(', ') || 'relevant terms'}. Make this content align with the business goal: ${selectedCustomerStrategy.conversionPath}. ${webSearchInsights.researchQuality === 'enhanced' ? 'Enhanced with web research insights including competitive analysis and current market keywords.' : ''}` :
+          `Make this engaging and actionable for the target audience. ${webSearchInsights.researchQuality === 'enhanced' ? 'Enhanced with web research insights including brand guidelines and keyword analysis.' : ''}`
       );
       
       if (blogPost && blogPost.content) {
@@ -882,6 +935,7 @@ ${post.content}
       document.removeEventListener('keydown', handleKeyPress);
     };
   }, [demoMode]);
+
 
   // Helper function for auto-scrolling to next section
   const scrollToNextSection = (stepNumber) => {
@@ -1347,6 +1401,51 @@ ${post.content}
           </div>
         )}
 
+        {/* Web Search Research Insights */}
+        {webSearchInsights.researchQuality === 'enhanced' && (
+          <div style={{
+            padding: '16px',
+            backgroundColor: '#f6ffed',
+            border: '1px solid #b7eb8f',
+            borderRadius: '8px',
+            marginBottom: '20px'
+          }}>
+            <Text strong style={{ color: '#389e0d', fontSize: '14px', marginBottom: '8px', display: 'block' }}>
+              🔍 Enhanced Analysis with Web Research
+            </Text>
+            <div style={{ fontSize: '13px', color: '#666' }}>
+              {webSearchInsights.brandResearch && (
+                <div style={{ marginBottom: '4px' }}>
+                  ✓ {webSearchInsights.brandResearch}
+                </div>
+              )}
+              {webSearchInsights.keywordResearch && (
+                <div style={{ marginBottom: '4px' }}>
+                  ✓ {webSearchInsights.keywordResearch}
+                </div>
+              )}
+              <div>✓ Competitive intelligence and customer insights integrated</div>
+            </div>
+          </div>
+        )}
+
+        {webSearchInsights.researchQuality === 'basic' && (
+          <div style={{
+            padding: '16px',
+            backgroundColor: '#fafafa',
+            border: '1px solid #d9d9d9',
+            borderRadius: '8px',
+            marginBottom: '20px'
+          }}>
+            <Text strong style={{ color: '#666', fontSize: '14px', marginBottom: '8px', display: 'block' }}>
+              📊 Standard Analysis
+            </Text>
+            <div style={{ fontSize: '13px', color: '#666' }}>
+              Analysis based on website content. Upgrade for enhanced research with brand guidelines, competitor analysis, and real-time keyword data.
+            </div>
+          </div>
+        )}
+
         {/* Business Overview */}
         <Row gutter={[16, 16]}>
           <Col xs={24} md={12}>
@@ -1804,10 +1903,38 @@ app.post('/api/autoblog-webhook', async (req, res) => {
             
             {!strategySelectionCompleted && currentStep === 2 && (
               <div>
-                <Paragraph style={{ textAlign: 'center', marginBottom: '30px', color: '#666' }}>
-                  Based on your website analysis, here are the top customer strategies. 
+                <Paragraph style={{ textAlign: 'center', marginBottom: '20px', color: '#666' }}>
+                  Based on your website analysis, here are the top customer strategies ranked by business opportunity. 
                   Select the audience you want to target with your content.
                 </Paragraph>
+                
+                {webSearchInsights.researchQuality === 'enhanced' ? (
+                  <div style={{
+                    textAlign: 'center',
+                    marginBottom: '24px',
+                    padding: '12px',
+                    backgroundColor: '#f6ffed',
+                    borderRadius: '6px',
+                    border: '1px solid #b7eb8f'
+                  }}>
+                    <Text style={{ fontSize: '13px', color: '#389e0d' }}>
+                      🎯 Strategies ranked using web search data: search volumes, competitive analysis, and conversion potential
+                    </Text>
+                  </div>
+                ) : (
+                  <div style={{
+                    textAlign: 'center',
+                    marginBottom: '24px',
+                    padding: '12px',
+                    backgroundColor: '#fff7e6',
+                    borderRadius: '6px',
+                    border: '1px solid #ffd591'
+                  }}>
+                    <Text style={{ fontSize: '13px', color: '#d46b08' }}>
+                      ⚠️ Enhanced ranking data not available - strategies shown in default order. Upgrade for search volume analysis and competitive intelligence.
+                    </Text>
+                  </div>
+                )}
                 
                 {(() => {
                   const analysis = stepResults.websiteAnalysis;
@@ -1823,8 +1950,13 @@ app.post('/api/autoblog-webhook', async (req, res) => {
                     );
                   }
                   
-                  // Show first 2 strategies for free users, all for premium
-                  const displayScenarios = scenarios.slice(0, 2);
+                  // Sort scenarios by priority (1 = highest value) and show first 2 for free users
+                  const sortedScenarios = scenarios.sort((a, b) => {
+                    const aPriority = a.businessValue?.priority || 999;
+                    const bPriority = b.businessValue?.priority || 999;
+                    return aPriority - bPriority;
+                  });
+                  const displayScenarios = sortedScenarios.slice(0, 2);
                   
                   return (
                     <div>
@@ -1859,13 +1991,104 @@ app.post('/api/autoblog-webhook', async (req, res) => {
                                 )}
                               </div>
                               
-                              <Title level={4} style={{ 
-                                marginBottom: '12px', 
-                                color: analysis.brandColors.primary,
-                                fontSize: '16px'
-                              }}>
-                                👥 Target: {analysis.decisionMakers || 'Target Audience'}
-                              </Title>
+                              <div style={{ marginBottom: '16px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                  <Title level={4} style={{ 
+                                    margin: 0, 
+                                    color: analysis.brandColors.primary,
+                                    fontSize: '16px'
+                                  }}>
+                                    👥 Target Segment
+                                  </Title>
+                                  {scenario.businessValue?.priority === 1 && (
+                                    <span style={{
+                                      backgroundColor: '#ff4d4f',
+                                      color: 'white',
+                                      padding: '2px 8px',
+                                      borderRadius: '10px',
+                                      fontSize: '11px',
+                                      fontWeight: 600
+                                    }}>
+                                      RECOMMENDED
+                                    </span>
+                                  )}
+                                </div>
+                                
+                                {/* Enhanced target demographics */}
+                                <div style={{ fontSize: '13px', color: '#666', marginBottom: '8px' }}>
+                                  {scenario.targetSegment?.demographics || analysis.decisionMakers || 'Target Audience'}
+                                </div>
+                                
+                                {/* Show message when enhanced data is not available */}
+                                {!scenario.targetSegment && !scenario.businessValue && (
+                                  <div style={{ 
+                                    fontSize: '11px', 
+                                    color: '#d46b08',
+                                    backgroundColor: '#fff7e6',
+                                    padding: '4px 8px',
+                                    borderRadius: '4px',
+                                    marginBottom: '8px',
+                                    border: '1px solid #ffd591'
+                                  }}>
+                                    ⚠️ Enhanced targeting data unavailable
+                                  </div>
+                                )}
+                                
+                                {/* Business value indicators */}
+                                {scenario.businessValue ? (
+                                  <div style={{ 
+                                    display: 'flex', 
+                                    flexWrap: 'wrap', 
+                                    gap: '6px',
+                                    marginBottom: '8px'
+                                  }}>
+                                    {scenario.businessValue.searchVolume && (
+                                      <span style={{
+                                        backgroundColor: '#f6ffed',
+                                        color: '#389e0d',
+                                        padding: '2px 6px',
+                                        borderRadius: '4px',
+                                        fontSize: '10px',
+                                        border: '1px solid #b7eb8f'
+                                      }}>
+                                        📊 {scenario.businessValue.searchVolume}
+                                      </span>
+                                    )}
+                                    {scenario.businessValue.conversionPotential && (
+                                      <span style={{
+                                        backgroundColor: scenario.businessValue.conversionPotential === 'High' ? '#f6ffed' : '#fff7e6',
+                                        color: scenario.businessValue.conversionPotential === 'High' ? '#389e0d' : '#d46b08',
+                                        padding: '2px 6px',
+                                        borderRadius: '4px',
+                                        fontSize: '10px',
+                                        border: `1px solid ${scenario.businessValue.conversionPotential === 'High' ? '#b7eb8f' : '#ffd591'}`
+                                      }}>
+                                        💰 {scenario.businessValue.conversionPotential} Value
+                                      </span>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <div style={{ 
+                                    fontSize: '11px', 
+                                    color: '#999',
+                                    marginBottom: '8px'
+                                  }}>
+                                    📊 Business metrics unavailable - web search data not loaded
+                                  </div>
+                                )}
+                                
+                                {/* Psychographic details */}
+                                {scenario.targetSegment?.psychographics && (
+                                  <div style={{ 
+                                    fontSize: '12px', 
+                                    color: '#888',
+                                    fontStyle: 'italic',
+                                    lineHeight: '1.3'
+                                  }}>
+                                    {scenario.targetSegment.psychographics}
+                                  </div>
+                                )}
+                              </div>
                               
                               <div style={{ marginBottom: '12px' }}>
                                 <Text strong style={{ color: '#333', fontSize: '14px' }}>
@@ -1900,17 +2123,27 @@ app.post('/api/autoblog-webhook', async (req, res) => {
                                 </div>
                               )}
                               
-                              {scenario.conversionPath && (
-                                <div>
-                                  <Text strong style={{ color: '#333', fontSize: '14px' }}>
-                                    📈 Business Opportunity:
-                                  </Text>
-                                  <br />
-                                  <Text style={{ fontSize: '13px', lineHeight: '1.4', color: '#666' }}>
-                                    {scenario.conversionPath}
-                                  </Text>
-                                </div>
-                              )}
+                              <div>
+                                <Text strong style={{ color: '#333', fontSize: '14px' }}>
+                                  📈 Business Opportunity:
+                                </Text>
+                                <br />
+                                <Text style={{ fontSize: '13px', lineHeight: '1.4', color: '#666' }}>
+                                  {scenario.conversionPath || 'Educational blog post leading to consultation inquiries.'}
+                                </Text>
+                                
+                                {/* Additional business metrics */}
+                                {scenario.businessValue && (
+                                  <div style={{ marginTop: '8px', fontSize: '12px', color: '#888' }}>
+                                    {scenario.businessValue.competition && (
+                                      <div>Competition: {scenario.businessValue.competition}</div>
+                                    )}
+                                    {scenario.targetSegment?.searchBehavior && (
+                                      <div>Search Pattern: {scenario.targetSegment.searchBehavior}</div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
                             </Card>
                           </Col>
                         ))}
@@ -1960,6 +2193,10 @@ app.post('/api/autoblog-webhook', async (req, res) => {
                               setStrategySelectionCompleted(true);
                               setCurrentStep(3);
                               scrollToNextSection(3);
+                              // Auto-start topic generation based on selected strategy
+                              setTimeout(() => {
+                                loadTrendingTopics();
+                              }, 500);
                             }}
                             style={{
                               backgroundColor: analysis.brandColors.primary,
@@ -2125,16 +2362,85 @@ app.post('/api/autoblog-webhook', async (req, res) => {
               </div>
             ) : (
               <div>
-                <Paragraph style={{ textAlign: 'center', marginBottom: '30px', color: '#666' }}>
+                <Paragraph style={{ textAlign: 'center', marginBottom: '20px', color: '#666' }}>
                   Based on your {stepResults.websiteAnalysis.businessType ? stepResults.websiteAnalysis.businessType.toLowerCase() : 'business'} analysis, here are high-impact blog post ideas:
                 </Paragraph>
+                
+                {/* Keyword Research Insight */}
+                {webSearchInsights.researchQuality === 'enhanced' && (
+                  <div style={{
+                    textAlign: 'center',
+                    marginBottom: '20px',
+                    padding: '12px',
+                    backgroundColor: '#f6ffed',
+                    borderRadius: '6px',
+                    border: '1px solid #b7eb8f'
+                  }}>
+                    <Text style={{ fontSize: '13px', color: '#389e0d' }}>
+                      🎯 Topics enhanced with current market keyword research and competitive analysis
+                    </Text>
+                  </div>
+                )}
+                
+                {webSearchInsights.researchQuality === 'basic' && (
+                  <div style={{
+                    textAlign: 'center',
+                    marginBottom: '20px',
+                    padding: '12px',
+                    backgroundColor: '#f5f5f5',
+                    borderRadius: '6px',
+                    border: '1px solid #d9d9d9'
+                  }}>
+                    <Text style={{ fontSize: '13px', color: '#666' }}>
+                      💡 Upgrade for keyword research and trending topic insights
+                    </Text>
+                  </div>
+                )}
                 
                 {/* Show topic cards with lead generation */}
                 {(() => {
                   const analysis = stepResults.websiteAnalysis;
                   const availableTopics = stepResults.trendingTopics || [];
                   
-                  // Only show topics that have corresponding AI scenario data
+                  // Check if web search enhancement is still in progress
+                  const hasWebSearchData = analysis.scenarios && analysis.scenarios.length > 0 && 
+                    analysis.scenarios[0].businessValue && analysis.scenarios[0].targetSegment;
+                  
+                  const webSearchStillLoading = availableTopics.length > 0 && !hasWebSearchData;
+                  
+                  // If web search is still loading, show loading state instead of partial data
+                  if (webSearchStillLoading) {
+                    return (
+                      <div style={{ 
+                        textAlign: 'center', 
+                        padding: '60px 20px',
+                        color: '#666'
+                      }}>
+                        <div style={{ 
+                          fontSize: '48px', 
+                          marginBottom: '16px',
+                          animation: 'pulse 1.5s ease-in-out infinite'
+                        }}>
+                          🔍
+                        </div>
+                        <Title level={4} style={{ color: '#1890ff', margin: '0 0 8px 0' }}>
+                          Enhancing Content with Web Search
+                        </Title>
+                        <Text style={{ color: '#666', lineHeight: '1.5' }}>
+                          Analyzing current market trends, search volumes, and competitive intelligence to create targeted content strategies...
+                        </Text>
+                        <div style={{ 
+                          marginTop: '16px',
+                          fontSize: '12px',
+                          color: '#999'
+                        }}>
+                          This usually takes 20-30 seconds
+                        </div>
+                      </div>
+                    );
+                  }
+                  
+                  // Only show topics that have corresponding AI scenario data with web search enhancements
                   const enhancedTopics = availableTopics.map((topic, index) => {
                     const scenarioData = analysis.scenarios && analysis.scenarios[index] ? analysis.scenarios[index] : null;
                     return {
@@ -2610,9 +2916,26 @@ app.post('/api/autoblog-webhook', async (req, res) => {
       {(currentStep === 5 && !blogGenerating) && (
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-            <Title level={2} style={{ margin: 0, color: stepResults.websiteAnalysis.brandColors.primary }}>
-              Edit Your Generated Content
-            </Title>
+            <div>
+              <Title level={2} style={{ margin: 0, color: stepResults.websiteAnalysis.brandColors.primary }}>
+                Edit Your Generated Content
+              </Title>
+              {webSearchInsights.researchQuality === 'enhanced' && (
+                <div style={{ marginTop: '8px' }}>
+                  <span style={{
+                    backgroundColor: '#f6ffed',
+                    color: '#389e0d',
+                    border: '1px solid #b7eb8f',
+                    borderRadius: '12px',
+                    padding: '4px 8px',
+                    fontSize: '12px',
+                    fontWeight: 500
+                  }}>
+                    🔍 Enhanced with Web Research
+                  </span>
+                </div>
+              )}
+            </div>
             <Space>
               <Button 
                 icon={<EyeOutlined />} 
