@@ -1956,7 +1956,7 @@ app.post('/api/autoblog-webhook', async (req, res) => {
               🎯 Choose Your Target Strategy
             </Title>
             
-            {!strategySelectionCompleted && currentStep === 2 && (
+            {currentStep >= 2 && (
               <div>
                 <Paragraph style={{ textAlign: 'center', marginBottom: '20px', color: '#666' }}>
                   Based on your website analysis, here are the top customer strategies ranked by business opportunity. 
@@ -2024,7 +2024,9 @@ app.post('/api/autoblog-webhook', async (req, res) => {
                                 border: selectedCustomerStrategy?.index === index ? `2px solid ${analysis.brandColors.primary}` : '1px solid #f0f0f0',
                                 borderRadius: '12px',
                                 minHeight: '300px',
-                                cursor: 'pointer'
+                                cursor: 'pointer',
+                                opacity: selectedCustomerStrategy && selectedCustomerStrategy.index !== index ? 0.5 : 1,
+                                transition: 'all 0.3s ease'
                               }}
                               onClick={() => {
                                 setSelectedCustomerStrategy({
@@ -2269,17 +2271,6 @@ app.post('/api/autoblog-webhook', async (req, res) => {
               </div>
             )}
             
-            {strategySelectionCompleted && (
-              <div style={{ textAlign: 'center', padding: '20px' }}>
-                <CheckOutlined style={{ fontSize: '48px', color: '#52c41a', marginBottom: '16px' }} />
-                <Title level={4} style={{ color: '#52c41a', marginBottom: '8px' }}>
-                  Strategy Selected!
-                </Title>
-                <Text style={{ fontSize: '14px', color: '#666' }}>
-                  Targeting: {selectedCustomerStrategy?.customerProblem || 'Selected customer strategy'}
-                </Text>
-              </div>
-            )}
           </Card>
         </div>
       )}
