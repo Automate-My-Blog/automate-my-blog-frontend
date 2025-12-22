@@ -338,18 +338,17 @@ const App = () => {
       
       // Check if web search enhancement completed successfully
       if (!analysis.webSearchStatus?.enhancementComplete) {
-        console.log('Web search enhancement incomplete, showing appropriate loading message');
+        console.log('Web search enhancement incomplete, waiting for completion...');
         setIsLoading(true);
         setScanningMessage('Enhancing analysis with web search data...');
         
-        // Wait a bit and retry, or show enhanced loading state
+        // Wait and retry - do NOT proceed with basic analysis
         setTimeout(() => {
           if (stepResults.websiteAnalysis.webSearchStatus?.enhancementComplete) {
             loadTrendingTopics(); // Retry now that enhancement is complete
           } else {
-            // Continue with basic analysis if enhancement is taking too long
-            setScanningMessage('Generating trending topics with enhanced analysis...');
-            proceedWithTopicGeneration();
+            console.log('Web search still incomplete, continuing to wait...');
+            loadTrendingTopics(); // Keep retrying until enhancement completes
           }
         }, 2000);
         return;
