@@ -2646,7 +2646,10 @@ app.post('/api/autoblog-webhook', async (req, res) => {
                                 <>
                                   <div style={{ marginBottom: '12px' }}>
                                     <Tag color="blue">{topic.category}</Tag>
-                                    <Tag color="green" style={{ fontSize: '11px' }}>{topic.seoBenefit}</Tag>
+                                    <Tag color="purple">{contentStrategy.goal}</Tag>
+                                    <Tag color="orange">{contentStrategy.voice}</Tag>
+                                    <Tag color="cyan">{contentStrategy.template}</Tag>
+                                    <Tag color="green">{contentStrategy.length}</Tag>
                                   </div>
                                   <Title level={4} style={{ marginBottom: '8px', fontSize: '16px' }}>
                                     {topic.title}
@@ -2686,6 +2689,19 @@ app.post('/api/autoblog-webhook', async (req, res) => {
                                       }}
                                     >
                                       Generate Post
+                                    </Button>
+                                    
+                                    <Button
+                                      size="large"
+                                      onClick={() => setShowMoreStrategiesGate(true)}
+                                      style={{
+                                        width: '100%',
+                                        marginTop: '8px',
+                                        borderColor: analysis.brandColors.primary,
+                                        color: analysis.brandColors.primary
+                                      }}
+                                    >
+                                      Edit Strategy
                                     </Button>
                                     
                                     {/* Expandable Strategy Section */}
