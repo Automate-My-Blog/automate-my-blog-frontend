@@ -894,7 +894,7 @@ ${post.content}
     }
   };
 
-  const progressPercent = ((currentStep + 1) / 6) * 100;
+  const progressPercent = Math.round(((currentStep + 1) / 6) * 100);
 
   // Content Strategy Helper Functions
   const getStrategyDisplayText = (type, value) => {
