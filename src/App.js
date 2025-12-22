@@ -280,6 +280,12 @@ const App = () => {
             blogStrategy: response.analysis.blogStrategy || '',
             // New scenario-based structure
             scenarios: response.analysis.scenarios || [],
+            // Web search enhancement status
+            webSearchStatus: response.analysis.webSearchStatus || {
+              businessResearchSuccess: false,
+              keywordResearchSuccess: false,
+              enhancementComplete: false
+            },
             // Backward compatibility fields
             customerProblems: response.analysis.customerProblems || [],
             customerLanguage: response.analysis.customerLanguage || [],
@@ -327,6 +333,37 @@ const App = () => {
   };
 
   const loadTrendingTopics = async () => {
+    try {
+      const analysis = stepResults.websiteAnalysis;
+      
+      // Check if web search enhancement completed successfully
+      if (!analysis.webSearchStatus?.enhancementComplete) {
+        console.log('Web search enhancement incomplete, showing appropriate loading message');
+        setIsLoading(true);
+        setScanningMessage('Enhancing analysis with web search data...');
+        
+        // Wait a bit and retry, or show enhanced loading state
+        setTimeout(() => {
+          if (stepResults.websiteAnalysis.webSearchStatus?.enhancementComplete) {
+            loadTrendingTopics(); // Retry now that enhancement is complete
+          } else {
+            // Continue with basic analysis if enhancement is taking too long
+            setScanningMessage('Generating trending topics with enhanced analysis...');
+            proceedWithTopicGeneration();
+          }
+        }, 2000);
+        return;
+      }
+      
+      proceedWithTopicGeneration();
+    } catch (error) {
+      console.error('Topic generation error:', error);
+      setIsLoading(false);
+      message.error(`Failed to generate topics: ${error.message}`);
+    }
+  };
+  
+  const proceedWithTopicGeneration = async () => {
     try {
       setIsLoading(true);
       setScanningMessage('Generating trending topics with AI...');
