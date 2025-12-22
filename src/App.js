@@ -327,18 +327,15 @@ const App = () => {
   };
 
   const loadTrendingTopics = async () => {
-    // Prevent concurrent topic generation calls
-    if (isLoading) {
-      console.log('Topic generation already in progress, skipping duplicate call');
-      return;
-    }
-    
     try {
       setIsLoading(true);
       setScanningMessage('Generating trending topics with AI...');
       
-      // Keep existing topics during loading to prevent content flashing
-      // Don't reset to empty array - let enhanced content replace previous content directly
+      // Reset previous topics to avoid lingering data
+      setStepResults(prev => ({
+        ...prev,
+        trendingTopics: []
+      }));
 
       // Step advancement is now handled by generateBlogPreviews function
 
@@ -2470,78 +2467,7 @@ app.post('/api/autoblog-webhook', async (req, res) => {
                     };
                   });
 
-                  // Show loading skeleton during topic generation instead of "No Content Ideas Available"
                   if (enhancedTopics.length === 0) {
-                    // If currently loading, show skeleton instead of error message
-                    if (isLoading) {
-                      return (
-                        <div>
-                          <Row gutter={window.innerWidth <= 767 ? [8, 8] : [16, 16]}>
-                            {[1, 2].map((index) => (
-                              <Col key={`skeleton-${index}`} xs={24} md={12} lg={12}>
-                                <Card 
-                                  style={{
-                                    border: '1px solid #f0f0f0',
-                                    margin: '8px 0',
-                                    minHeight: '300px'
-                                  }}
-                                >
-                                  <div style={{ padding: '16px', minHeight: '120px' }}>
-                                    <div style={{ marginBottom: '12px', display: 'flex', gap: '8px' }}>
-                                      <div style={{ 
-                                        width: '60px', 
-                                        height: '22px', 
-                                        backgroundColor: '#f5f5f5', 
-                                        borderRadius: '4px', 
-                                        animation: 'pulse 1.5s ease-in-out infinite' 
-                                      }}></div>
-                                      <div style={{ 
-                                        width: '80px', 
-                                        height: '22px', 
-                                        backgroundColor: '#f5f5f5', 
-                                        borderRadius: '4px', 
-                                        animation: 'pulse 1.5s ease-in-out infinite' 
-                                      }}></div>
-                                    </div>
-                                    <div style={{ 
-                                      height: '24px', 
-                                      backgroundColor: '#f5f5f5', 
-                                      borderRadius: '4px', 
-                                      marginBottom: '8px', 
-                                      animation: 'pulse 1.5s ease-in-out infinite' 
-                                    }}></div>
-                                    <div style={{ 
-                                      height: '24px', 
-                                      backgroundColor: '#f5f5f5', 
-                                      borderRadius: '4px', 
-                                      marginBottom: '12px', 
-                                      width: '80%',
-                                      animation: 'pulse 1.5s ease-in-out infinite' 
-                                    }}></div>
-                                    <div style={{ 
-                                      height: '16px', 
-                                      backgroundColor: '#f5f5f5', 
-                                      borderRadius: '4px', 
-                                      marginBottom: '6px',
-                                      animation: 'pulse 1.5s ease-in-out infinite' 
-                                    }}></div>
-                                    <div style={{ 
-                                      height: '16px', 
-                                      backgroundColor: '#f5f5f5', 
-                                      borderRadius: '4px', 
-                                      width: '90%',
-                                      animation: 'pulse 1.5s ease-in-out infinite' 
-                                    }}></div>
-                                  </div>
-                                </Card>
-                              </Col>
-                            ))}
-                          </Row>
-                        </div>
-                      );
-                    }
-                    
-                    // Only show error message when not loading
                     return (
                       <div style={{ 
                         textAlign: 'center', 
