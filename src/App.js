@@ -2049,6 +2049,24 @@ app.post('/api/autoblog-webhook', async (req, res) => {
                     >
                       Choose Strategy
                     </Button>
+                    
+                    {user && (
+                      <div style={{ marginTop: '16px' }}>
+                        <Button 
+                          type="text"
+                          icon={<DatabaseOutlined />}
+                          onClick={() => setNavContext()}
+                          style={{ 
+                            color: '#52c41a',
+                            fontSize: '13px',
+                            height: 'auto',
+                            padding: '4px 8px'
+                          }}
+                        >
+                          Access Full Dashboard
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -3086,6 +3104,20 @@ app.post('/api/autoblog-webhook', async (req, res) => {
               >
                 {previewMode ? 'Edit Mode' : 'Preview Mode'}
               </Button>
+              
+              {user && (
+                <Button 
+                  type="text"
+                  icon={<DatabaseOutlined />}
+                  onClick={() => setNavContext()}
+                  style={{ 
+                    color: '#52c41a',
+                    fontSize: '13px'
+                  }}
+                >
+                  Dashboard
+                </Button>
+              )}
             </Space>
           </div>
 
@@ -3566,6 +3598,27 @@ app.post('/api/autoblog-webhook', async (req, res) => {
                 Back to Edit Content
               </Button>
             </Space>
+            
+            {user && (
+              <div style={{ marginTop: '20px' }}>
+                <Button 
+                  type="primary"
+                  size="large"
+                  icon={<DatabaseOutlined />}
+                  onClick={() => setNavContext()}
+                  style={{ 
+                    backgroundColor: '#52c41a',
+                    borderColor: '#52c41a',
+                    boxShadow: '0 2px 8px rgba(82, 196, 26, 0.3)'
+                  }}
+                >
+                  Explore Full Dashboard
+                </Button>
+                <div style={{ marginTop: '8px', fontSize: '13px', color: '#666' }}>
+                  Manage all your posts, projects, and analytics
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
