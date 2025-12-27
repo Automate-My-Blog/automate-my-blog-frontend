@@ -9,14 +9,25 @@ import {
   UserOutlined,
   LogoutOutlined,
   EditOutlined,
+  SearchOutlined,
+  TeamOutlined,
+  LineChartOutlined,
+  SafetyOutlined,
+  DatabaseOutlined,
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import NewPostTab from './NewPostTab';
 import OverviewTab from './OverviewTab';
 import PostsTab from './PostsTab';
+import DiscoveryTab from './DiscoveryTab';
 import ProjectsTab from './ProjectsTab';
 import AnalyticsTab from './AnalyticsTab';
 import SettingsTab from './SettingsTab';
+// ADMIN COMPONENTS - Super user only
+import AdminUsersTab from './AdminUsersTab';
+import AdminAnalyticsTab from './AdminAnalyticsTab';
+import AdminContentTab from './AdminContentTab';
+import AdminSystemTab from './AdminSystemTab';
 
 const { Header, Sider, Content } = Layout;
 
@@ -24,7 +35,7 @@ const DashboardLayout = ({ user: propUser, loginContext, workflowContent, showDa
   const [activeTab, setActiveTab] = useState('newpost');
   const [collapsed, setCollapsed] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
-  const { user: contextUser, logout } = useAuth();
+  const { user: contextUser, logout, isAdmin, isSuperAdmin, hasPermission } = useAuth();
   
   // Use prop user if provided, otherwise fall back to context user
   const user = propUser || contextUser;
@@ -41,7 +52,8 @@ const DashboardLayout = ({ user: propUser, loginContext, workflowContent, showDa
   const animationDuration = '1s';
   const easing = 'cubic-bezier(0.4, 0, 0.2, 1)';
 
-  const menuItems = [
+  // Base menu items available to all users
+  const baseMenuItems = [
     {
       key: 'newpost',
       icon: <EditOutlined />,
@@ -56,6 +68,11 @@ const DashboardLayout = ({ user: propUser, loginContext, workflowContent, showDa
       key: 'posts',
       icon: <FileTextOutlined />,
       label: 'Posts',
+    },
+    {
+      key: 'discovery',
+      icon: <SearchOutlined />,
+      label: 'Discovery',
     },
     {
       key: 'projects',
@@ -73,6 +90,45 @@ const DashboardLayout = ({ user: propUser, loginContext, workflowContent, showDa
       label: 'Settings',
     },
   ];
+
+  // Admin menu items - conditionally added based on permissions
+  const adminMenuItems = [];
+  
+  // Admin Users tab - for organization admins and super admins
+  if (hasPermission('manage_team') || hasPermission('manage_users')) {
+    adminMenuItems.push({
+      key: 'admin-users',
+      icon: <TeamOutlined style={{ color: 'red' }} />,
+      label: 'Admin Users',
+    });
+  }
+  
+  // Platform-wide admin tabs - super admin only
+  if (isSuperAdmin && hasPermission('view_platform_analytics')) {
+    adminMenuItems.push({
+      key: 'admin-analytics',
+      icon: <LineChartOutlined style={{ color: 'red' }} />,
+      label: 'Admin Analytics',
+    });
+  }
+  
+  if (isSuperAdmin && hasPermission('manage_users')) {
+    adminMenuItems.push({
+      key: 'admin-content',
+      icon: <SafetyOutlined style={{ color: 'red' }} />,
+      label: 'Admin Content',
+    });
+  }
+  
+  if (isSuperAdmin && hasPermission('manage_system_settings')) {
+    adminMenuItems.push({
+      key: 'admin-system',
+      icon: <DatabaseOutlined style={{ color: 'red' }} />,
+      label: 'Admin System',
+    });
+  }
+
+  const menuItems = [...baseMenuItems, ...adminMenuItems];
 
   const userMenuItems = [
     {
@@ -99,12 +155,23 @@ const DashboardLayout = ({ user: propUser, loginContext, workflowContent, showDa
         return <OverviewTab />;
       case 'posts':
         return <PostsTab />;
+      case 'discovery':
+        return <DiscoveryTab />;
       case 'projects':
         return <ProjectsTab />;
       case 'analytics':
         return <AnalyticsTab />;
       case 'settings':
         return <SettingsTab />;
+      // ADMIN TABS - Super user components
+      case 'admin-users':
+        return <AdminUsersTab />;
+      case 'admin-analytics':
+        return <AdminAnalyticsTab />;
+      case 'admin-content':
+        return <AdminContentTab />;
+      case 'admin-system':
+        return <AdminSystemTab />;
       default:
         return <NewPostTab workflowContent={workflowContent} showWorkflow={!!workflowContent} />;
     }
@@ -145,7 +212,7 @@ const DashboardLayout = ({ user: propUser, loginContext, workflowContent, showDa
             textAlign: 'center'
           }}>
             <h3 style={{ margin: 0, fontSize: collapsed ? '14px' : '18px' }}>
-              {collapsed ? 'AB' : 'AutoBlog'}
+              {collapsed ? 'AMB' : 'Automate My Blog'}
             </h3>
           </div>
           
@@ -195,7 +262,7 @@ const DashboardLayout = ({ user: propUser, loginContext, workflowContent, showDa
                       overflow: 'hidden',
                       textOverflow: 'ellipsis'
                     }}>
-                      {user?.profile?.firstName} {user?.profile?.lastName}
+                      {user?.firstName} {user?.lastName}
                     </div>
                     <div style={{ 
                       fontSize: '12px',
@@ -229,7 +296,7 @@ const DashboardLayout = ({ user: propUser, loginContext, workflowContent, showDa
           justifyContent: 'space-around',
           boxShadow: '0 -2px 8px rgba(0,0,0,0.15)'
         }}>
-          {menuItems.slice(0, 5).map((item) => (
+          {menuItems.slice(0, 6).map((item) => (
             <Button
               key={item.key}
               type={activeTab === item.key ? 'primary' : 'text'}

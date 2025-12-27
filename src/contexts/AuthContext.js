@@ -17,6 +17,16 @@ export const AuthProvider = ({ children }) => {
   const [currentOrganization, setCurrentOrganization] = useState(null);
   const [loginContext, setLoginContext] = useState(null); // 'gate' or 'nav'
 
+  // ROLE-BASED PERMISSIONS: Check user permissions from database
+  const isAdmin = user && (user.role === 'admin' || user.role === 'super_admin');
+  const isSuperAdmin = user && user.role === 'super_admin';
+  const userPermissions = user?.permissions || [];
+  
+  // Permission checker utility
+  const hasPermission = (permission) => {
+    return userPermissions.includes(permission);
+  };
+
   useEffect(() => {
     checkAuthStatus();
   }, []);
@@ -27,8 +37,13 @@ export const AuthProvider = ({ children }) => {
       if (token) {
         const response = await autoBlogAPI.me();
         setUser(response.user);
-        if (response.user.organizations?.length > 0) {
-          setCurrentOrganization(response.user.organizations[0]);
+        // Handle new database structure with organization data
+        if (response.user.organizationId) {
+          setCurrentOrganization({
+            id: response.user.organizationId,
+            name: response.user.organizationName,
+            role: response.user.organizationRole
+          });
         }
       }
     } catch (error) {
@@ -44,8 +59,13 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('accessToken', response.accessToken);
     localStorage.setItem('refreshToken', response.refreshToken);
     setUser(response.user);
-    if (response.user.organizations?.length > 0) {
-      setCurrentOrganization(response.user.organizations[0]);
+    // Handle new database structure with organization data
+    if (response.user.organizationId) {
+      setCurrentOrganization({
+        id: response.user.organizationId,
+        name: response.user.organizationName,
+        role: response.user.organizationRole
+      });
     }
     
     // Store login context for routing decisions
@@ -94,6 +114,10 @@ export const AuthProvider = ({ children }) => {
     logout,
     loading,
     isAuthenticated: !!user,
+    isAdmin,
+    isSuperAdmin,
+    hasPermission,
+    userPermissions,
     loginContext,
     clearLoginContext,
     setNavContext,
