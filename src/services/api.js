@@ -790,6 +790,91 @@ class AutoBlogAPI {
       throw new Error(`Failed to process referral signup: ${error.message}`);
     }
   }
+
+  /**
+   * User Profile Management
+   */
+  async updateProfile(profileData) {
+    try {
+      const response = await this.makeRequest('/api/v1/user/profile', {
+        method: 'PUT',
+        body: JSON.stringify(profileData),
+      });
+      return response.data;
+    } catch (error) {
+      throw new Error(`Failed to update profile: ${error.message}`);
+    }
+  }
+
+  async changePassword(oldPassword, newPassword) {
+    try {
+      const response = await this.makeRequest('/api/v1/user/change-password', {
+        method: 'POST',
+        body: JSON.stringify({
+          oldPassword,
+          newPassword,
+        }),
+      });
+      return response.data;
+    } catch (error) {
+      throw new Error(`Failed to change password: ${error.message}`);
+    }
+  }
+
+  /**
+   * Subscription Management
+   */
+  async getUsageHistory(limit = 30) {
+    try {
+      const response = await this.makeRequest(`/api/v1/user/usage-history?limit=${limit}`, {
+        method: 'GET',
+      });
+      return response.data;
+    } catch (error) {
+      throw new Error(`Failed to get usage history: ${error.message}`);
+    }
+  }
+
+  async requestPlanChange(planType, reason = '') {
+    try {
+      const response = await this.makeRequest('/api/v1/user/request-plan-change', {
+        method: 'POST',
+        body: JSON.stringify({
+          planType,
+          reason,
+        }),
+      });
+      return response.data;
+    } catch (error) {
+      throw new Error(`Failed to request plan change: ${error.message}`);
+    }
+  }
+
+  /**
+   * Billing Management
+   */
+  async getBillingHistory(limit = 50) {
+    try {
+      const response = await this.makeRequest(`/api/v1/user/billing-history?limit=${limit}`, {
+        method: 'GET',
+      });
+      return response.data;
+    } catch (error) {
+      throw new Error(`Failed to get billing history: ${error.message}`);
+    }
+  }
+
+  async updateBillingInfo(billingData) {
+    try {
+      const response = await this.makeRequest('/api/v1/user/billing-info', {
+        method: 'PUT',
+        body: JSON.stringify(billingData),
+      });
+      return response.data;
+    } catch (error) {
+      throw new Error(`Failed to update billing info: ${error.message}`);
+    }
+  }
 }
 
 // Create singleton instance
