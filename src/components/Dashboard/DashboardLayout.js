@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Layout, Menu, Button, Avatar, Dropdown, Space } from 'antd';
+import { Layout, Menu, Button, Avatar, Dropdown, Space, Alert, message } from 'antd';
 import {
   DashboardOutlined,
   FileTextOutlined,
@@ -14,6 +14,8 @@ import {
   LineChartOutlined,
   SafetyOutlined,
   DatabaseOutlined,
+  UserSwitchOutlined,
+  CloseOutlined,
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import NewPostTab from './NewPostTab';
@@ -35,7 +37,16 @@ const DashboardLayout = ({ user: propUser, loginContext, workflowContent, showDa
   const [activeTab, setActiveTab] = useState('newpost');
   const [collapsed, setCollapsed] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
-  const { user: contextUser, logout, isAdmin, isSuperAdmin, hasPermission } = useAuth();
+  const { 
+    user: contextUser, 
+    logout, 
+    isAdmin, 
+    isSuperAdmin, 
+    hasPermission,
+    isImpersonating,
+    impersonationData,
+    endImpersonation
+  } = useAuth();
   
   // Use prop user if provided, otherwise fall back to context user
   const user = propUser || contextUser;
@@ -45,6 +56,20 @@ const DashboardLayout = ({ user: propUser, loginContext, workflowContent, showDa
     setActiveTab(newTab);
     if (onActiveTabChange) {
       onActiveTabChange(newTab);
+    }
+  };
+
+  // Handle ending impersonation
+  const handleEndImpersonation = async () => {
+    try {
+      const result = await endImpersonation();
+      if (result.success) {
+        message.success('Returned to your admin account');
+      } else {
+        message.error('Failed to end impersonation');
+      }
+    } catch (error) {
+      message.error('Failed to end impersonation');
     }
   };
   
@@ -374,6 +399,60 @@ const DashboardLayout = ({ user: propUser, loginContext, workflowContent, showDa
             {renderContent()}
           </div>
         </div>
+      )}
+
+      {/* Impersonation Banner */}
+      {isImpersonating && impersonationData && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 1000,
+          background: '#ff4d4f',
+          color: 'white',
+          padding: '8px 16px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <UserSwitchOutlined style={{ fontSize: '16px' }} />
+            <span style={{ fontWeight: 500 }}>
+              Acting as {user?.firstName} {user?.lastName} ({user?.email})
+            </span>
+            {impersonationData.originalAdmin && (
+              <span style={{ opacity: 0.9 }}>
+                • Admin: {impersonationData.originalAdmin.firstName} {impersonationData.originalAdmin.lastName}
+              </span>
+            )}
+          </div>
+          <Button
+            type="text"
+            size="small"
+            icon={<CloseOutlined />}
+            onClick={handleEndImpersonation}
+            style={{
+              color: 'white',
+              border: '1px solid rgba(255,255,255,0.5)',
+              borderRadius: '4px'
+            }}
+          >
+            Exit Impersonation
+          </Button>
+        </div>
+      )}
+
+      {/* Push content down when impersonation banner is visible */}
+      {isImpersonating && (
+        <style>
+          {`
+            body {
+              padding-top: 44px !important;
+            }
+          `}
+        </style>
       )}
     </>
   );

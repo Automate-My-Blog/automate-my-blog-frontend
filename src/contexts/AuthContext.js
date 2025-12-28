@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import autoBlogAPI from '../services/api';
+import { getStoredInviteCode, clearStoredReferralInfo } from '../utils/referralUtils';
 
 const AuthContext = createContext();
 
@@ -16,6 +17,7 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [currentOrganization, setCurrentOrganization] = useState(null);
   const [loginContext, setLoginContext] = useState(null); // 'gate' or 'nav'
+  const [impersonationData, setImpersonationData] = useState(null); // stores original admin info
 
   // ROLE-BASED PERMISSIONS: Check user permissions from database
   const isAdmin = user && (user.role === 'admin' || user.role === 'super_admin');
@@ -85,6 +87,41 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('refreshToken', response.refreshToken);
       }
       setLoginContext(context);
+      
+      // Process referral/invite after successful registration
+      const inviteCode = getStoredInviteCode();
+      if (inviteCode) {
+        try {
+          console.log('Processing referral signup for invite code:', inviteCode);
+          const referralResult = await autoBlogAPI.processReferralSignup(response.user.id, inviteCode);
+          console.log('Referral processing result:', referralResult);
+          
+          // Clear stored codes after successful processing
+          clearStoredReferralInfo();
+          
+          // Show success message based on referral type
+          if (referralResult?.type === 'referral') {
+            // Will be handled by the RegisterModal component
+            return { 
+              ...response, 
+              context, 
+              referralProcessed: true, 
+              referralType: 'customer',
+              rewardValue: referralResult.rewardValue 
+            };
+          } else if (referralResult?.type === 'organization_member') {
+            return { 
+              ...response, 
+              context, 
+              referralProcessed: true, 
+              referralType: 'organization' 
+            };
+          }
+        } catch (error) {
+          console.error('Failed to process referral signup:', error);
+          // Don't fail registration if referral processing fails
+        }
+      }
     }
     
     return { ...response, context };
@@ -106,6 +143,98 @@ export const AuthProvider = ({ children }) => {
     setLoginContext('nav');
   };
 
+  // Impersonation functionality
+  const startImpersonation = async (impersonationToken, targetUser) => {
+    try {
+      // Store the current user as the original admin
+      const originalAdmin = { ...user };
+      setImpersonationData({
+        originalAdmin,
+        originalToken: localStorage.getItem('accessToken')
+      });
+
+      // Replace the token and update the user
+      localStorage.setItem('accessToken', impersonationToken);
+      
+      // Create the impersonated user object
+      const impersonatedUser = {
+        ...targetUser,
+        isImpersonating: true,
+        originalAdmin
+      };
+      
+      setUser(impersonatedUser);
+      
+      // Handle organization for impersonated user
+      if (targetUser.organizationId) {
+        setCurrentOrganization({
+          id: targetUser.organizationId,
+          name: targetUser.organizationName,
+          role: targetUser.organizationRole
+        });
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Failed to start impersonation:', error);
+      return { success: false, error: error.message };
+    }
+  };
+
+  const endImpersonation = async () => {
+    try {
+      // Check if currently impersonating (either from state or JWT token)
+      const isImpersonatingFromToken = user?.isImpersonating || user?.originalAdmin;
+      
+      if (!impersonationData && !isImpersonatingFromToken) {
+        throw new Error('Not currently impersonating');
+      }
+
+      // Call the API to end impersonation
+      const response = await autoBlogAPI.endImpersonation();
+      
+      // If we have impersonation data, restore from it
+      if (impersonationData) {
+        // Restore the original admin user and token
+        localStorage.setItem('accessToken', impersonationData.originalToken);
+        setUser(impersonationData.originalAdmin);
+        
+        // Restore original organization
+        if (impersonationData.originalAdmin.organizationId) {
+          setCurrentOrganization({
+            id: impersonationData.originalAdmin.organizationId,
+            name: impersonationData.originalAdmin.organizationName,
+            role: impersonationData.originalAdmin.organizationRole
+          });
+        } else {
+          setCurrentOrganization(null);
+        }
+      } else if (response.originalAdmin) {
+        // Fallback: restore from API response
+        console.log('Restoring admin session from API response');
+        
+        // Clear current token and get fresh session for original admin
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        
+        // Force a fresh auth check to get the original admin's session
+        setUser(null);
+        setCurrentOrganization(null);
+        
+        // Trigger auth check which should restore the admin session
+        checkAuthStatus();
+      }
+
+      // Clear impersonation data
+      setImpersonationData(null);
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Failed to end impersonation:', error);
+      return { success: false, error: error.message };
+    }
+  };
+
   const value = {
     user,
     currentOrganization,
@@ -121,6 +250,11 @@ export const AuthProvider = ({ children }) => {
     loginContext,
     clearLoginContext,
     setNavContext,
+    // Impersonation functionality
+    isImpersonating: !!impersonationData,
+    impersonationData,
+    startImpersonation,
+    endImpersonation,
   };
 
   return (

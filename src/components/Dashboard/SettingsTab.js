@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { Card, Tabs, Typography, Tag, Button, Row, Col, Input, message, Alert, Space, QRCode } from 'antd';
-import { UserOutlined, BankOutlined, CreditCardOutlined, StarOutlined, GiftOutlined, CopyOutlined, MailOutlined, ShareAltOutlined } from '@ant-design/icons';
+import React, { useState, useEffect } from 'react';
+import { Card, Tabs, Typography, Tag, Button, Row, Col, Input, message, Alert, Space, QRCode, Spin, Table, Statistic } from 'antd';
+import { UserOutlined, BankOutlined, CreditCardOutlined, StarOutlined, GiftOutlined, CopyOutlined, MailOutlined, ShareAltOutlined, TeamOutlined, SendOutlined } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
+import autoBlogAPI from '../../services/api';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -12,12 +13,259 @@ const ProfileSettings = () => (
   </div>
 );
 
-const OrganizationSettings = () => (
-  <div style={{ padding: '20px 0' }}>
-    <h4>Organization Settings</h4>
-    <p>Organization management coming soon...</p>
-  </div>
-);
+const OrganizationSettings = () => {
+  const [loading, setLoading] = useState(true);
+  const [sendingInvite, setSendingInvite] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteRole, setInviteRole] = useState('member');
+  const [orgData, setOrgData] = useState(null);
+  const { user } = useAuth();
+
+  useEffect(() => {
+    loadOrganizationData();
+  }, []);
+
+  const loadOrganizationData = async () => {
+    try {
+      setLoading(true);
+      const data = await autoBlogAPI.getOrganizationMembers();
+      console.log('Organization API response:', data); // Debug logging
+      setOrgData(data);
+    } catch (error) {
+      console.error('Error loading organization data:', error);
+      console.error('Error details:', error.message); // More detailed error logging
+      message.error('Failed to load organization data: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSendOrgInvite = async () => {
+    if (!inviteEmail.trim()) {
+      message.error('Please enter an email address');
+      return;
+    }
+
+    setSendingInvite(true);
+    try {
+      await autoBlogAPI.sendOrganizationInvite(inviteEmail.trim(), inviteRole);
+      message.success('Organization invitation sent successfully!');
+      setInviteEmail('');
+      loadOrganizationData(); // Refresh data
+    } catch (error) {
+      console.error('Failed to send organization invite:', error);
+      message.error('Failed to send invitation: ' + error.message);
+    } finally {
+      setSendingInvite(false);
+    }
+  };
+
+  const handleRemoveMember = async (memberId, memberEmail) => {
+    try {
+      await autoBlogAPI.removeOrganizationMember(memberId);
+      message.success(`Removed ${memberEmail} from organization`);
+      loadOrganizationData(); // Refresh data
+    } catch (error) {
+      console.error('Failed to remove member:', error);
+      message.error('Failed to remove member: ' + error.message);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div style={{ padding: '20px 0', textAlign: 'center' }}>
+        <Spin size="large" />
+        <p style={{ marginTop: '16px' }}>Loading organization data...</p>
+      </div>
+    );
+  }
+
+  if (!orgData?.organization) {
+    return (
+      <div style={{ padding: '20px 0' }}>
+        <Alert
+          message="No Organization"
+          description="You are not currently part of an organization. Organizations allow you to collaborate with team members without referral rewards."
+          type="info"
+          showIcon
+        />
+      </div>
+    );
+  }
+
+  const columns = [
+    {
+      title: 'Member',
+      key: 'member',
+      render: (text, record) => (
+        <div>
+          <Text strong>{record.first_name} {record.last_name}</Text>
+          <br />
+          <Text style={{ color: '#666', fontSize: '12px' }}>{record.email}</Text>
+        </div>
+      ),
+    },
+    {
+      title: 'Role',
+      dataIndex: 'role',
+      key: 'role',
+      render: (role) => (
+        <Tag color={role === 'owner' ? 'red' : role === 'admin' ? 'blue' : 'default'}>
+          {role.toUpperCase()}
+        </Tag>
+      ),
+    },
+    {
+      title: 'Joined',
+      dataIndex: 'joined_at',
+      key: 'joined_at',
+      render: (date) => new Date(date).toLocaleDateString(),
+    },
+    {
+      title: 'Last Login',
+      dataIndex: 'last_login_at',
+      key: 'last_login_at',
+      render: (date) => date ? new Date(date).toLocaleDateString() : 'Never',
+    },
+    {
+      title: 'Actions',
+      key: 'actions',
+      render: (text, record) => {
+        // Don't show remove button for owners or current user
+        if (record.role === 'owner' || record.id === user?.id) {
+          return null;
+        }
+        
+        return (
+          <Button
+            size="small"
+            danger
+            onClick={() => handleRemoveMember(record.id, record.email)}
+          >
+            Remove
+          </Button>
+        );
+      },
+    },
+  ];
+
+  return (
+    <div style={{ padding: '20px 0' }}>
+      {/* Organization Overview */}
+      <Card style={{ marginBottom: '24px', border: '2px solid #1890ff' }}>
+        <Row justify="space-between" align="middle" style={{ marginBottom: '16px' }}>
+          <Col>
+            <Title level={4} style={{ margin: 0, color: '#1890ff' }}>🏢 {orgData.organization.name}</Title>
+          </Col>
+          <Col>
+            <Tag color="blue">✓ Database Connected</Tag>
+          </Col>
+        </Row>
+        
+        <Row gutter={[16, 16]} style={{ marginBottom: '20px' }}>
+          <Col xs={24} sm={8}>
+            <Card size="small" style={{ textAlign: 'center', backgroundColor: '#f0f9ff' }}>
+              <Statistic
+                title="Total Members"
+                value={orgData.members?.length || 0}
+                prefix={<TeamOutlined style={{ color: '#1890ff' }} />}
+                valueStyle={{ color: '#1890ff', fontSize: '20px' }}
+              />
+            </Card>
+          </Col>
+          <Col xs={24} sm={8}>
+            <Card size="small" style={{ textAlign: 'center', backgroundColor: '#f0f9ff' }}>
+              <Statistic
+                title="Your Role"
+                value={orgData.organization.userRole?.toUpperCase() || 'MEMBER'}
+                valueStyle={{ color: '#1890ff', fontSize: '16px' }}
+              />
+            </Card>
+          </Col>
+          <Col xs={24} sm={8}>
+            <Card size="small" style={{ textAlign: 'center', backgroundColor: '#f0f9ff' }}>
+              <Statistic
+                title="Active Members"
+                value={orgData.members?.filter(m => m.status === 'active')?.length || 0}
+                prefix={<UserOutlined style={{ color: '#52c41a' }} />}
+                valueStyle={{ color: '#52c41a', fontSize: '20px' }}
+              />
+            </Card>
+          </Col>
+        </Row>
+        
+        <Alert
+          message="Team Collaboration"
+          description="Organization members can collaborate without referral rewards. Use the Referrals tab for customer acquisition with $15 rewards."
+          type="info"
+          style={{ marginBottom: '16px' }}
+        />
+      </Card>
+
+      {/* Invite New Team Member */}
+      {['owner', 'admin'].includes(orgData.organization.userRole) && (
+        <Card style={{ marginBottom: '24px', border: '2px solid #52c41a' }}>
+          <Row justify="space-between" align="middle" style={{ marginBottom: '16px' }}>
+            <Col>
+              <Title level={4} style={{ margin: 0, color: '#52c41a' }}>➕ Invite Team Member</Title>
+            </Col>
+          </Row>
+          
+          <Space direction="vertical" style={{ width: '100%' }}>
+            <Text strong>Invite a new team member to your organization</Text>
+            <Input
+              placeholder="Enter email address"
+              value={inviteEmail}
+              onChange={(e) => setInviteEmail(e.target.value)}
+              style={{ width: '300px' }}
+            />
+            <Space>
+              <Text>Role:</Text>
+              <Button.Group>
+                <Button 
+                  type={inviteRole === 'member' ? 'primary' : 'default'}
+                  onClick={() => setInviteRole('member')}
+                >
+                  Member
+                </Button>
+                <Button 
+                  type={inviteRole === 'admin' ? 'primary' : 'default'}
+                  onClick={() => setInviteRole('admin')}
+                >
+                  Admin
+                </Button>
+              </Button.Group>
+            </Space>
+            <Button 
+              type="primary" 
+              icon={<MailOutlined />}
+              onClick={handleSendOrgInvite}
+              loading={sendingInvite}
+              style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
+            >
+              {sendingInvite ? 'Sending Invitation...' : 'Send Team Invitation'}
+            </Button>
+            <Text style={{ fontSize: '12px', color: '#666' }}>
+              Team invitations do not provide referral rewards - they're for collaboration only
+            </Text>
+          </Space>
+        </Card>
+      )}
+
+      {/* Organization Members */}
+      <Card>
+        <Title level={4}>Organization Members</Title>
+        <Table
+          columns={columns}
+          dataSource={orgData.members || []}
+          rowKey="id"
+          pagination={false}
+          size="small"
+        />
+      </Card>
+    </div>
+  );
+};
 
 const BillingSettings = () => (
   <div style={{ padding: '20px 0' }}>
@@ -28,73 +276,140 @@ const BillingSettings = () => (
 
 const ReferralSettings = () => {
   const [inviteEmails, setInviteEmails] = useState('');
-  const [referralPostsEarned] = useState(0); // This would come from localStorage in real implementation
+  const [loading, setLoading] = useState(true);
+  const [sendingInvite, setSendingInvite] = useState(false);
+  const [referralData, setReferralData] = useState(null);
+  const [stats, setStats] = useState(null);
   
-  // Generate user's unique referral code (would use actual user ID in real implementation)
-  const userId = 'user123'; // Mock user ID
-  const referralCode = `AMB${userId.toUpperCase()}`;
-  const referralLink = `https://automate.ly/r/${referralCode}`;
+  // Load referral data on component mount
+  useEffect(() => {
+    loadReferralData();
+  }, []);
   
-  const handleCopyLink = () => {
-    navigator.clipboard.writeText(referralLink);
-    message.success('Referral link copied to clipboard!');
+  const loadReferralData = async () => {
+    try {
+      setLoading(true);
+      const [linkData, statsData] = await Promise.all([
+        autoBlogAPI.generateReferralLink(),
+        autoBlogAPI.getReferralStats()
+      ]);
+      
+      console.log('Referral link data:', linkData); // Debug logging
+      console.log('Referral stats data:', statsData); // Debug logging
+      
+      setReferralData(linkData);
+      setStats(statsData);
+    } catch (error) {
+      console.error('Error loading referral data:', error);
+      console.error('Error details:', error.message); // More detailed error logging
+      message.error('Failed to load referral data: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
   };
   
-  const handleSendInvites = () => {
+  const handleCopyLink = () => {
+    if (referralData?.referralLink) {
+      navigator.clipboard.writeText(referralData.referralLink);
+      message.success('Referral link copied to clipboard!');
+    }
+  };
+  
+  const handleSendInvites = async () => {
     if (!inviteEmails.trim()) {
       message.error('Please enter at least one email address');
       return;
     }
-    // Mock functionality - would integrate with email API
-    message.info('Email invitations require email_invitations database table');
+    
+    setSendingInvite(true);
+    const emails = inviteEmails.split(',').map(email => email.trim()).filter(email => email);
+    let successCount = 0;
+    let errorCount = 0;
+    
+    for (const email of emails) {
+      try {
+        await autoBlogAPI.sendReferralInvite(email, 'Join me on Automate My Blog and we both get 1 free blog post!');
+        successCount++;
+      } catch (error) {
+        console.error(`Failed to send invite to ${email}:`, error);
+        errorCount++;
+      }
+    }
+    
+    if (successCount > 0) {
+      message.success(`Successfully sent ${successCount} invitation${successCount > 1 ? 's' : ''}!`);
+      setInviteEmails('');
+      loadReferralData(); // Refresh stats
+    }
+    
+    if (errorCount > 0) {
+      message.warning(`Failed to send ${errorCount} invitation${errorCount > 1 ? 's' : ''}. Please check the email addresses.`);
+    }
+    
+    setSendingInvite(false);
   };
   
+  if (loading) {
+    return (
+      <div style={{ padding: '20px 0', textAlign: 'center' }}>
+        <Spin size="large" />
+        <p style={{ marginTop: '16px' }}>Loading referral data...</p>
+      </div>
+    );
+  }
+
   return (
     <div style={{ padding: '20px 0' }}>
-      {/* Referral Benefits Display - GREEN (works with localStorage) */}
+      {/* Referral Statistics Dashboard */}
       <Card style={{ marginBottom: '24px', border: '2px solid #52c41a' }}>
         <Row justify="space-between" align="middle" style={{ marginBottom: '16px' }}>
           <Col>
-            <Title level={4} style={{ margin: 0, color: '#52c41a' }}>🎁 Referral Benefits</Title>
+            <Title level={4} style={{ margin: 0, color: '#52c41a' }}>🎁 Your Referral Statistics</Title>
           </Col>
           <Col>
-            <Tag color="green">✓ Working with localStorage</Tag>
+            <Tag color="green">✓ Live Database Data</Tag>
           </Col>
         </Row>
         
         <Row gutter={[16, 16]} style={{ marginBottom: '20px' }}>
           <Col xs={24} sm={12}>
             <Card size="small" style={{ textAlign: 'center', backgroundColor: '#f6ffed' }}>
-              <Text style={{ fontSize: '24px', fontWeight: 600, color: '#52c41a' }}>{referralPostsEarned}</Text>
-              <br />
-              <Text style={{ color: '#666', fontSize: '12px' }}>Free Posts Earned from Referrals</Text>
+              <Statistic
+                title="Successful Referrals"
+                value={stats?.successfulReferrals || 0}
+                prefix={<TeamOutlined style={{ color: '#52c41a' }} />}
+                valueStyle={{ color: '#52c41a', fontSize: '20px' }}
+              />
             </Card>
           </Col>
           <Col xs={24} sm={12}>
             <Card size="small" style={{ textAlign: 'center', backgroundColor: '#f6ffed' }}>
-              <Text style={{ fontSize: '24px', fontWeight: 600, color: '#52c41a' }}>1</Text>
-              <br />
-              <Text style={{ color: '#666', fontSize: '12px' }}>Posts per Successful Referral</Text>
+              <Statistic
+                title="Invites Sent"
+                value={stats?.inviteStats?.totalSent || 0}
+                prefix={<SendOutlined style={{ color: '#722ed1' }} />}
+                valueStyle={{ color: '#722ed1', fontSize: '20px' }}
+              />
             </Card>
           </Col>
         </Row>
         
         <Alert
           message="How it works"
-          description="When someone signs up using your referral link, you both get 1 free blog post!"
+          description="Send your referral link to friends. When they sign up, you both get 1 free blog post!"
           type="success"
           style={{ marginBottom: '16px' }}
         />
       </Card>
       
-      {/* Referral Link Generation - GREEN (works with localStorage/frontend) */}
+      {/* Personal Referral Link */}
       <Card style={{ marginBottom: '24px', border: '2px solid #52c41a' }}>
         <Row justify="space-between" align="middle" style={{ marginBottom: '16px' }}>
           <Col>
-            <Title level={4} style={{ margin: 0, color: '#52c41a' }}>🔗 Your Referral Link</Title>
+            <Title level={4} style={{ margin: 0, color: '#52c41a' }}>🔗 Your Personal Referral Link</Title>
           </Col>
           <Col>
-            <Tag color="green">✓ Working with current system</Tag>
+            <Tag color="green">✓ {referralData?.referralCode}</Tag>
           </Col>
         </Row>
         
@@ -102,7 +417,7 @@ const ReferralSettings = () => {
           <Col xs={24} md={16}>
             <Input.Group compact>
               <Input
-                value={referralLink}
+                value={referralData?.referralLink || ''}
                 style={{ width: 'calc(100% - 120px)' }}
                 readOnly
               />
@@ -116,12 +431,12 @@ const ReferralSettings = () => {
               </Button>
             </Input.Group>
             <Text style={{ fontSize: '12px', color: '#666', display: 'block', marginTop: '8px' }}>
-              Share this link with friends to earn free blog posts
+              {referralData?.description || 'Share this link to earn 1 free blog post for each new customer!'}
             </Text>
           </Col>
           <Col xs={24} md={8}>
             <div style={{ textAlign: 'center' }}>
-              <QRCode value={referralLink} size={100} />
+              <QRCode value={referralData?.referralLink || ''} size={100} />
               <br />
               <Text style={{ fontSize: '12px', color: '#666', marginTop: '8px', display: 'block' }}>
                 QR Code for mobile sharing
@@ -131,56 +446,46 @@ const ReferralSettings = () => {
         </Row>
       </Card>
       
-      {/* Email Invitations - RED (requires database) */}
-      <Card style={{ marginBottom: '24px', border: '2px solid #f5222d' }}>
+      {/* Email Invitations - Now Working */}
+      <Card style={{ marginBottom: '24px', border: '2px solid #52c41a' }}>
         <Row justify="space-between" align="middle" style={{ marginBottom: '16px' }}>
           <Col>
-            <Title level={4} style={{ margin: 0, color: '#f5222d' }}>📧 Email Invitations</Title>
+            <Title level={4} style={{ margin: 0, color: '#52c41a' }}>📧 Send Referral Invitations</Title>
           </Col>
           <Col>
-            <Tag color="red">❌ Requires email_invitations table</Tag>
+            <Tag color="green">✓ Database Connected</Tag>
           </Col>
         </Row>
         
         <Alert
-          message="Database Requirements for Email Invitations"
-          description={
-            <div>
-              <strong>Missing Tables for Email Functionality:</strong>
-              <br />• email_invitations table (sender_id, email, sent_date)
-              <br />• user_referrals table (user_id, referral_code, created_at)
-              <br />• referral_rewards table (user_id, reward_type, amount)
-            </div>
-          }
-          type="error"
+          message="Email Invitation System Active"
+          description="Send personalized invitations to friends. They'll get your referral link and both of you will receive 1 free blog post when they sign up!"
+          type="success"
           showIcon
           style={{ marginBottom: '20px' }}
         />
         
-        <div style={{ padding: '16px', backgroundColor: '#fff2f0', borderRadius: '4px' }}>
-          <Space direction="vertical" style={{ width: '100%' }}>
-            <Text strong style={{ color: '#f5222d' }}>Invite Friends by Email (Demo)</Text>
-            <Input.TextArea
-              placeholder="Enter email addresses separated by commas\ne.g. friend1@email.com, friend2@email.com"
-              value={inviteEmails}
-              onChange={(e) => setInviteEmails(e.target.value)}
-              rows={3}
-              style={{ opacity: 0.7 }}
-            />
-            <Button 
-              type="primary" 
-              icon={<MailOutlined />}
-              onClick={handleSendInvites}
-              disabled
-              style={{ backgroundColor: '#f5222d', borderColor: '#f5222d' }}
-            >
-              Send Invitations (Requires Backend)
-            </Button>
-            <Text style={{ fontSize: '12px', color: '#f5222d' }}>
-              Email invitation system requires backend integration with email service
-            </Text>
-          </Space>
-        </div>
+        <Space direction="vertical" style={{ width: '100%' }}>
+          <Text strong style={{ color: '#52c41a' }}>Invite Friends by Email</Text>
+          <Input.TextArea
+            placeholder="Enter email addresses separated by commas&#10;e.g. friend1@email.com, friend2@email.com"
+            value={inviteEmails}
+            onChange={(e) => setInviteEmails(e.target.value)}
+            rows={3}
+          />
+          <Button 
+            type="primary" 
+            icon={<MailOutlined />}
+            onClick={handleSendInvites}
+            loading={sendingInvite}
+            style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
+          >
+            {sendingInvite ? 'Sending Invitations...' : 'Send Invitations'}
+          </Button>
+          <Text style={{ fontSize: '12px', color: '#666' }}>
+            Each invitation will include your personal referral link and a message about the free blog post reward
+          </Text>
+        </Space>
       </Card>
       
       {/* Social Sharing - GREEN (pure frontend) */}
@@ -198,11 +503,11 @@ const ReferralSettings = () => {
           <Button 
             icon={<ShareAltOutlined />}
             onClick={() => {
-              if (navigator.share) {
+              if (navigator.share && referralData?.referralLink) {
                 navigator.share({
                   title: 'Join Automate My Blog',
                   text: 'Get 1 free blog post when you sign up!',
-                  url: referralLink,
+                  url: referralData.referralLink,
                 });
               } else {
                 handleCopyLink();
@@ -214,7 +519,7 @@ const ReferralSettings = () => {
           <Button 
             onClick={() => {
               const subject = 'Get 1 free blog post with Automate My Blog';
-              const body = `Hi! I'm using Automate My Blog to create amazing content. Sign up with my referral link and we both get a free blog post:\n\n${referralLink}\n\nHappy blogging!`;
+              const body = `Hi! I'm using Automate My Blog to create amazing content. Sign up with my referral link and we both get 1 free blog post:\n\n${referralData?.referralLink || ''}\n\nHappy blogging!`;
               window.open(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
             }}
           >
@@ -224,7 +529,7 @@ const ReferralSettings = () => {
         
         <Alert
           message="Share your referral link anywhere"
-          description="Copy the link above and share it on social media, in emails, or with friends directly. No backend required!"
+          description="Copy the link above and share it on social media, in emails, or with friends directly. Both you and your friend get 1 free blog post!"
           type="info"
           style={{ marginTop: '16px' }}
         />

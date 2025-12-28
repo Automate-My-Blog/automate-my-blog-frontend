@@ -583,6 +583,65 @@ class AutoBlogAPI {
   }
 
   /**
+   * Admin API methods for user management and impersonation
+   */
+  
+  // Get all users for admin management
+  async getAdminUsers(options = {}) {
+    try {
+      const queryParams = new URLSearchParams();
+      Object.keys(options).forEach(key => {
+        if (options[key] !== undefined && options[key] !== null) {
+          queryParams.append(key, options[key]);
+        }
+      });
+      
+      const endpoint = queryParams.toString() 
+        ? `/api/v1/admin/users?${queryParams.toString()}`
+        : '/api/v1/admin/users';
+      
+      const response = await this.makeRequest(endpoint);
+      return response;
+    } catch (error) {
+      throw new Error(`Failed to get admin users: ${error.message}`);
+    }
+  }
+
+  // Get specific user details for admin
+  async getAdminUserDetails(userId) {
+    try {
+      const response = await this.makeRequest(`/api/v1/admin/users/${userId}`);
+      return response;
+    } catch (error) {
+      throw new Error(`Failed to get user details: ${error.message}`);
+    }
+  }
+
+  // Start impersonation session
+  async startImpersonation(userId) {
+    try {
+      const response = await this.makeRequest(`/api/v1/admin/impersonate/${userId}`, {
+        method: 'POST'
+      });
+      return response;
+    } catch (error) {
+      throw new Error(`Failed to start impersonation: ${error.message}`);
+    }
+  }
+
+  // End impersonation session
+  async endImpersonation() {
+    try {
+      const response = await this.makeRequest('/api/v1/admin/impersonate', {
+        method: 'DELETE'
+      });
+      return response;
+    } catch (error) {
+      throw new Error(`Failed to end impersonation: ${error.message}`);
+    }
+  }
+
+  /**
    * Get usage statistics for dashboard
    */
   async getUsageStatistics() {
@@ -607,6 +666,128 @@ class AutoBlogAPI {
       return { success: true, stats: stats };
     } catch (error) {
       return { success: false, message: error.message };
+    }
+  }
+
+  /**
+   * =========================================================================
+   * REFERRAL SYSTEM API METHODS
+   * =========================================================================
+   */
+
+  /**
+   * Generate user's personal referral link
+   */
+  async generateReferralLink() {
+    try {
+      const response = await this.makeRequest('/api/v1/referrals/link', {
+        method: 'GET',
+      });
+      return response.data;
+    } catch (error) {
+      throw new Error(`Failed to generate referral link: ${error.message}`);
+    }
+  }
+
+  /**
+   * Send referral invitation for customer acquisition (with $15 rewards)
+   */
+  async sendReferralInvite(email, personalMessage = '') {
+    try {
+      const response = await this.makeRequest('/api/v1/referrals/invite', {
+        method: 'POST',
+        body: JSON.stringify({
+          email,
+          personalMessage,
+        }),
+      });
+      return response.data;
+    } catch (error) {
+      throw new Error(`Failed to send referral invite: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get comprehensive referral statistics and earnings
+   */
+  async getReferralStats() {
+    try {
+      const response = await this.makeRequest('/api/v1/referrals/stats', {
+        method: 'GET',
+      });
+      return response.data;
+    } catch (error) {
+      throw new Error(`Failed to get referral stats: ${error.message}`);
+    }
+  }
+
+  /**
+   * =========================================================================
+   * ORGANIZATION MANAGEMENT API METHODS  
+   * =========================================================================
+   */
+
+  /**
+   * Send organization team member invitation (no rewards)
+   */
+  async sendOrganizationInvite(email, role = 'member') {
+    try {
+      const response = await this.makeRequest('/api/v1/organization/invite', {
+        method: 'POST',
+        body: JSON.stringify({
+          email,
+          role,
+        }),
+      });
+      return response.data;
+    } catch (error) {
+      throw new Error(`Failed to send organization invite: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get organization members list with roles and details
+   */
+  async getOrganizationMembers() {
+    try {
+      const response = await this.makeRequest('/api/v1/organization/members', {
+        method: 'GET',
+      });
+      return response.data;
+    } catch (error) {
+      throw new Error(`Failed to get organization members: ${error.message}`);
+    }
+  }
+
+  /**
+   * Remove organization member
+   */
+  async removeOrganizationMember(memberId) {
+    try {
+      const response = await this.makeRequest(`/api/v1/organization/members/${memberId}`, {
+        method: 'DELETE',
+      });
+      return response;
+    } catch (error) {
+      throw new Error(`Failed to remove organization member: ${error.message}`);
+    }
+  }
+
+  /**
+   * Process referral signup and grant rewards (called during registration)
+   */
+  async processReferralSignup(userId, inviteCode) {
+    try {
+      const response = await this.makeRequest('/api/v1/referrals/process-signup', {
+        method: 'POST',
+        body: JSON.stringify({
+          userId,
+          inviteCode,
+        }),
+      });
+      return response.data;
+    } catch (error) {
+      throw new Error(`Failed to process referral signup: ${error.message}`);
     }
   }
 }

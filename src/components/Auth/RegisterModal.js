@@ -7,6 +7,7 @@ const RegisterModal = ({ onClose, onSwitchToLogin, context = null }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [referralInfo, setReferralInfo] = useState(null);
   const { register } = useAuth();
 
   const onFinish = async (values) => {
@@ -14,13 +15,22 @@ const RegisterModal = ({ onClose, onSwitchToLogin, context = null }) => {
     setError('');
     
     try {
-      await register({
+      const result = await register({
         email: values.email,
         password: values.password,
         firstName: values.firstName,
         lastName: values.lastName,
         organizationName: values.organizationName,
       }, context);
+      
+      // Check if referral was processed
+      if (result.referralProcessed) {
+        setReferralInfo({
+          type: result.referralType,
+          rewardValue: result.rewardValue
+        });
+      }
+      
       setSuccess(true);
     } catch (error) {
       setError(error.message || 'Registration failed. Please try again.');
@@ -34,12 +44,32 @@ const RegisterModal = ({ onClose, onSwitchToLogin, context = null }) => {
       <div style={{ padding: '40px 20px', textAlign: 'center' }}>
         <Alert
           message="Account Created Successfully!"
-          description="Please check your email for verification instructions."
+          description="Your account has been created and you are now signed in."
           type="success"
           style={{ marginBottom: '20px' }}
         />
-        <Button type="primary" onClick={onSwitchToLogin}>
-          Sign In Now
+        
+        {/* Show referral success message */}
+        {referralInfo?.type === 'customer' && (
+          <Alert
+            message="🎉 Referral Bonus Activated!"
+            description="You've received 1 free blog post! Your friend who referred you also got 1 free blog post. Check the Settings > Referrals tab to see your rewards."
+            type="success"
+            style={{ marginBottom: '20px' }}
+          />
+        )}
+        
+        {referralInfo?.type === 'organization' && (
+          <Alert
+            message="Welcome to the Team!"
+            description="You've been added to the organization and can now collaborate with your team members."
+            type="info"
+            style={{ marginBottom: '20px' }}
+          />
+        )}
+        
+        <Button type="primary" onClick={onClose}>
+          Get Started
         </Button>
       </div>
     );

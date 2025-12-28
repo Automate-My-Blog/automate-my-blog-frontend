@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import WorkflowContainerV2 from './components/Workflow/WorkflowContainer-v2';
 import DashboardLayout from './components/Dashboard/DashboardLayout';
 import SEOHead from './components/SEOHead';
+import { storeReferralInfo } from './utils/referralUtils';
 import './styles/design-system.css';
 import './styles/mobile.css';
 
@@ -13,6 +14,11 @@ const AppContent = () => {
 
   // Check if user wants dashboard view (logged in and requested navigation)
   const showDashboard = user && loginContext === 'nav';
+
+  // Store referral information on app load
+  useEffect(() => {
+    storeReferralInfo();
+  }, []);
 
   // Handle window resize for responsive layout
   useEffect(() => {

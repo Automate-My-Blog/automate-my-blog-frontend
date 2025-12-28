@@ -1,410 +1,479 @@
-// ADMIN ONLY - Super User Component for User Management
-// This component is only accessible to admin users and provides user oversight functionality
 import React, { useState, useEffect } from 'react';
-import { 
-  Card, 
-  Table, 
-  Tag, 
-  Button, 
-  Space, 
-  Input, 
-  Select, 
-  Statistic, 
-  Row, 
-  Col,
-  Alert,
-  Typography,
-  Badge,
-  Tooltip,
+import {
+  Table,
+  Button,
+  Input,
+  Select,
+  Space,
+  Card,
+  Tag,
   Modal,
-  Descriptions,
-  Timeline
+  message,
+  Tooltip,
+  Avatar,
+  Typography,
+  Row,
+  Col,
+  Pagination,
+  Spin,
+  Alert
 } from 'antd';
-import { 
-  UserOutlined, 
-  SearchOutlined, 
-  ExclamationCircleOutlined,
+import {
+  UserOutlined,
+  SearchOutlined,
+  EyeOutlined,
+  UserSwitchOutlined,
   CrownOutlined,
-  CheckCircleOutlined,
-  ClockCircleOutlined,
-  DollarOutlined
+  TeamOutlined,
+  MailOutlined,
+  CalendarOutlined
 } from '@ant-design/icons';
-import { format } from 'date-fns';
-import api from '../../services/api';
+import { useAuth } from '../../contexts/AuthContext';
+import autoBlogAPI from '../../services/api';
 
-const { Title, Text } = Typography;
-const { Search } = Input;
+const { Text, Title } = Typography;
 const { Option } = Select;
 
-// ADMIN COMPONENT - Only for super users
 const AdminUsersTab = () => {
+  const { user, hasPermission, startImpersonation } = useAuth();
   const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 10,
+    total: 0
+  });
+  const [filters, setFilters] = useState({
+    search: '',
+    role: 'all',
+    status: 'active',
+    sortBy: 'created_at',
+    order: 'DESC'
+  });
   const [selectedUser, setSelectedUser] = useState(null);
-  const [showUserModal, setShowUserModal] = useState(false);
+  const [userModalVisible, setUserModalVisible] = useState(false);
+  const [impersonating, setImpersonating] = useState(false);
 
+  // Load users on component mount and when filters/pagination change
   useEffect(() => {
     loadUsers();
-  }, []);
+  }, [pagination.current, pagination.pageSize, filters]);
 
   const loadUsers = async () => {
     setLoading(true);
     try {
-      // Use existing API to get posts and derive user info
-      const result = await api.getBlogPosts();
-      
-      if (result.success) {
-        // Create mock user data from existing posts (real data available)
-        const realUsers = result.posts.reduce((acc, post) => {
-          const userId = post.userId || 'anonymous';
-          if (!acc[userId]) {
-            acc[userId] = {
-              id: userId,
-              email: userId === 'anonymous' ? 'anonymous@example.com' : `user${userId}@example.com`,
-              plan: 'payasyougo', // Real data from localStorage
-              status: 'active', // This would require new DB field
-              postsCount: 0,
-              exportsCount: 0,
-              createdAt: post.createdAt,
-              lastActivity: post.updatedAt
-            };
-          }
-          acc[userId].postsCount++;
-          acc[userId].exportsCount += post.exportCount || 0;
-          return acc;
-        }, {});
+      const response = await autoBlogAPI.getAdminUsers({
+        limit: pagination.pageSize,
+        offset: (pagination.current - 1) * pagination.pageSize,
+        search: filters.search,
+        role: filters.role,
+        status: filters.status,
+        sortBy: filters.sortBy,
+        order: filters.order
+      });
 
-        const userArray = Object.values(realUsers);
-        setUsers(userArray.length > 0 ? userArray : getDummyUsers());
+      if (response.success) {
+        setUsers(response.data.users);
+        setPagination(prev => ({
+          ...prev,
+          total: response.data.pagination.total
+        }));
       } else {
-        setUsers(getDummyUsers());
+        message.error('Failed to load users');
       }
     } catch (error) {
-      console.error('Error loading users:', error);
-      setUsers(getDummyUsers());
+      console.error('Failed to load users:', error);
+      message.error(`Failed to load users: ${error.message}`);
     } finally {
       setLoading(false);
     }
   };
 
-  // DUMMY DATA - Fallback users for demonstration
-  const getDummyUsers = () => [
-    {
-      id: 'user_1',
-      email: 'john@startup.com',
-      plan: 'creator',
-      status: 'active',
-      postsCount: 12,
-      exportsCount: 25,
-      createdAt: '2024-01-10T10:00:00Z',
-      lastActivity: '2024-01-26T14:30:00Z',
-      isDummy: true
-    },
-    {
-      id: 'user_2', 
-      email: 'sarah@agency.com',
-      plan: 'professional',
-      status: 'active',
-      postsCount: 45,
-      exportsCount: 120,
-      createdAt: '2023-12-15T09:00:00Z',
-      lastActivity: '2024-01-26T11:15:00Z',
-      isDummy: true
-    },
-    {
-      id: 'user_3',
-      email: 'mike@company.com', 
-      plan: 'payasyougo',
-      status: 'suspended', // Requires new DB field
-      postsCount: 3,
-      exportsCount: 5,
-      createdAt: '2024-01-20T16:20:00Z',
-      lastActivity: '2024-01-23T10:05:00Z',
-      isDummy: true
-    }
-  ];
+  const handleSearch = (value) => {
+    setFilters(prev => ({ ...prev, search: value }));
+    setPagination(prev => ({ ...prev, current: 1 }));
+  };
 
-  const getPlanColor = (plan) => {
-    switch (plan) {
-      case 'professional': return 'purple';
-      case 'creator': return 'blue';
-      case 'payasyougo': return 'orange';
-      case 'enterprise': return 'gold';
-      default: return 'default';
+  const handleFilterChange = (field, value) => {
+    setFilters(prev => ({ ...prev, [field]: value }));
+    setPagination(prev => ({ ...prev, current: 1 }));
+  };
+
+  const handlePaginationChange = (page, pageSize) => {
+    setPagination(prev => ({
+      ...prev,
+      current: page,
+      pageSize: pageSize
+    }));
+  };
+
+  const handleViewUser = async (userId) => {
+    setLoading(true);
+    try {
+      const response = await autoBlogAPI.getAdminUserDetails(userId);
+      if (response.success) {
+        setSelectedUser(response.user);
+        setUserModalVisible(true);
+      } else {
+        message.error('Failed to load user details');
+      }
+    } catch (error) {
+      console.error('Failed to load user details:', error);
+      message.error(`Failed to load user details: ${error.message}`);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'active': return 'green';
-      case 'suspended': return 'red';
-      case 'trial': return 'orange';
-      default: return 'default';
+  const handleImpersonate = async (targetUser) => {
+    setImpersonating(true);
+    try {
+      const response = await autoBlogAPI.startImpersonation(targetUser.id);
+      if (response.success) {
+        // Use the auth context impersonation function
+        await startImpersonation(response.impersonationToken, response.targetUser);
+        message.success(`Now impersonating ${targetUser.firstName} ${targetUser.lastName}`);
+      } else {
+        message.error('Failed to start impersonation');
+      }
+    } catch (error) {
+      console.error('Impersonation failed:', error);
+      message.error(`Impersonation failed: ${error.message}`);
+    } finally {
+      setImpersonating(false);
     }
+  };
+
+  const getRoleColor = (role) => {
+    switch (role) {
+      case 'super_admin':
+        return 'red';
+      case 'admin':
+        return 'orange';
+      case 'user':
+        return 'blue';
+      default:
+        return 'default';
+    }
+  };
+
+  const getRoleIcon = (role) => {
+    switch (role) {
+      case 'super_admin':
+        return <CrownOutlined />;
+      case 'admin':
+        return <TeamOutlined />;
+      case 'user':
+        return <UserOutlined />;
+      default:
+        return <UserOutlined />;
+    }
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'Never';
+    return new Date(dateString).toLocaleString();
   };
 
   const columns = [
     {
       title: 'User',
-      dataIndex: 'email',
-      key: 'email',
-      render: (email, record) => (
-        <div>
-          <div style={{ fontWeight: 500 }}>{email}</div>
-          {record.isDummy && (
-            <Tag size="small" color="blue">DUMMY DATA</Tag>
-          )}
-        </div>
-      )
+      key: 'user',
+      render: (_, record) => (
+        <Space>
+          <Avatar 
+            size="small" 
+            icon={<UserOutlined />}
+            style={{ backgroundColor: '#1890ff' }}
+          >
+            {record.firstName?.[0]}{record.lastName?.[0]}
+          </Avatar>
+          <div>
+            <Text strong>{record.firstName} {record.lastName}</Text>
+            <br />
+            <Text type="secondary" style={{ fontSize: '12px' }}>
+              {record.email}
+            </Text>
+          </div>
+        </Space>
+      ),
+    },
+    {
+      title: 'Role',
+      dataIndex: 'role',
+      key: 'role',
+      render: (role) => (
+        <Tag color={getRoleColor(role)} icon={getRoleIcon(role)}>
+          {role?.replace('_', ' ').toUpperCase()}
+        </Tag>
+      ),
+      filters: [
+        { text: 'Super Admin', value: 'super_admin' },
+        { text: 'Admin', value: 'admin' },
+        { text: 'User', value: 'user' },
+      ],
+    },
+    {
+      title: 'Organization',
+      dataIndex: 'organizationName',
+      key: 'organizationName',
+      render: (orgName) => (
+        <Text>{orgName || <Text type="secondary">No Organization</Text>}</Text>
+      ),
     },
     {
       title: 'Plan',
-      dataIndex: 'plan', 
-      key: 'plan',
+      dataIndex: 'planTier',
+      key: 'planTier',
       render: (plan) => (
-        <Tag color={getPlanColor(plan)}>
-          {plan.charAt(0).toUpperCase() + plan.slice(1).replace('payasyougo', 'Pay-as-you-go')}
+        <Tag color={plan === 'free' ? 'default' : 'green'}>
+          {plan?.toUpperCase()}
         </Tag>
-      )
+      ),
     },
     {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
       render: (status) => (
-        <div style={{ 
-          border: status !== 'active' ? '2px solid red' : '1px solid #d9d9d9',
-          padding: '4px 8px',
-          borderRadius: '4px',
-          display: 'inline-block'
-        }}>
-          <Tag color={getStatusColor(status)}>
-            {status.charAt(0).toUpperCase() + status.slice(1)}
-          </Tag>
-          {status !== 'active' && (
-            <Text style={{ fontSize: '10px', color: 'red', display: 'block' }}>
-              Requires DB field: user_status
-            </Text>
-          )}
-        </div>
-      )
+        <Tag color={status === 'active' ? 'green' : 'red'}>
+          {status?.toUpperCase()}
+        </Tag>
+      ),
     },
     {
-      title: 'Posts',
-      dataIndex: 'postsCount',
-      key: 'postsCount',
-      sorter: (a, b) => a.postsCount - b.postsCount
-    },
-    {
-      title: 'Exports', 
-      dataIndex: 'exportsCount',
-      key: 'exportsCount',
-      sorter: (a, b) => a.exportsCount - b.exportsCount
-    },
-    {
-      title: 'Last Activity',
-      dataIndex: 'lastActivity',
-      key: 'lastActivity',
-      render: (date) => format(new Date(date), 'MMM dd, yyyy')
+      title: 'Last Login',
+      dataIndex: 'lastLoginAt',
+      key: 'lastLoginAt',
+      render: (date) => (
+        <Text style={{ fontSize: '12px' }}>
+          {formatDate(date)}
+        </Text>
+      ),
     },
     {
       title: 'Actions',
       key: 'actions',
       render: (_, record) => (
         <Space>
-          <Button 
-            size="small" 
-            onClick={() => {
-              setSelectedUser(record);
-              setShowUserModal(true);
-            }}
-          >
-            View Details
-          </Button>
-          <div style={{ 
-            border: '2px solid red', 
-            padding: '2px 6px', 
-            borderRadius: '4px',
-            display: 'inline-block'
-          }}>
-            <Button size="small" type="text" style={{ color: 'red' }}>
-              Suspend
-            </Button>
-            <Text style={{ fontSize: '9px', color: 'red', display: 'block' }}>
-              Needs user_roles table
-            </Text>
-          </div>
+          <Tooltip title="View Details">
+            <Button 
+              type="text" 
+              icon={<EyeOutlined />} 
+              onClick={() => handleViewUser(record.id)}
+            />
+          </Tooltip>
+          {hasPermission('impersonate_users') && record.id !== user?.id && (
+            <Tooltip title="Impersonate User">
+              <Button 
+                type="text" 
+                icon={<UserSwitchOutlined />} 
+                onClick={() => handleImpersonate(record)}
+                loading={impersonating}
+              />
+            </Tooltip>
+          )}
         </Space>
-      )
-    }
+      ),
+    },
   ];
+
+  if (!hasPermission('view_all_users') && !hasPermission('manage_users')) {
+    return (
+      <Alert
+        message="Access Denied"
+        description="You don't have permission to view user management."
+        type="error"
+        showIcon
+      />
+    );
+  }
 
   return (
     <div style={{ padding: '24px' }}>
-      {/* ADMIN HEADER */}
-      <div style={{ marginBottom: '24px' }}>
-        <Title level={2} style={{ color: 'red', margin: 0 }}>
-          🔴 ADMIN: User Management
-        </Title>
-        <Text type="secondary">
-          Super user only - Monitor and manage all platform users
-        </Text>
-      </div>
-
-      {/* DATABASE REQUIREMENTS ALERT */}
-      <Alert
-        message="Database Requirements for Full Functionality"
-        description={
-          <div>
-            <strong>Missing Tables/Fields:</strong>
-            <br />• user_roles table (admin, user, suspended)
-            <br />• users.status field (active, suspended, trial)
-            <br />• users.billing_info table
-            <br />• user_activity_logs table
-            <br />• subscription_history table
-          </div>
-        }
-        type="warning"
-        showIcon
-        style={{ marginBottom: '20px' }}
-      />
-
-      {/* STATS ROW */}
-      <Row gutter={16} style={{ marginBottom: '24px' }}>
-        <Col xs={24} sm={6}>
-          <Card>
-            <Statistic
-              title="Total Users"
-              value={users.length}
-              prefix={<UserOutlined style={{ color: '#1890ff' }} />}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={6}>
-          <Card>
-            <div style={{ border: '2px solid red', padding: '8px', borderRadius: '4px' }}>
-              <Statistic
-                title="Active Subscriptions"
-                value={users.filter(u => u.plan !== 'payasyougo').length}
-                prefix={<CrownOutlined style={{ color: '#52c41a' }} />}
-              />
-              <Text style={{ fontSize: '10px', color: 'red' }}>
-                Needs subscription_status table
-              </Text>
-            </div>
-          </Card>
-        </Col>
-        <Col xs={24} sm={6}>
-          <Card>
-            <Statistic
-              title="Total Posts"
-              value={users.reduce((sum, u) => sum + u.postsCount, 0)}
-              prefix={<CheckCircleOutlined style={{ color: '#1890ff' }} />}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={6}>
-          <Card>
-            <div style={{ border: '2px solid red', padding: '8px', borderRadius: '4px' }}>
-              <Statistic
-                title="Monthly Revenue"
-                value="$1,250"
-                prefix={<DollarOutlined style={{ color: '#faad14' }} />}
-              />
-              <Text style={{ fontSize: '10px', color: 'red' }}>
-                Needs billing_events table
-              </Text>
-            </div>
-          </Card>
+      <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+        <Col span={24}>
+          <Title level={2}>User Management</Title>
         </Col>
       </Row>
 
-      {/* FILTERS */}
+      {/* Filters and Search */}
       <Card style={{ marginBottom: '16px' }}>
-        <Space>
-          <Search 
-            placeholder="Search users..." 
-            style={{ width: 200 }} 
-            onSearch={(value) => console.log('Search:', value)}
+        <Row gutter={[16, 16]}>
+          <Col xs={24} sm={12} md={8}>
+            <Input
+              placeholder="Search by name or email..."
+              prefix={<SearchOutlined />}
+              value={filters.search}
+              onChange={(e) => handleSearch(e.target.value)}
+              allowClear
+            />
+          </Col>
+          <Col xs={24} sm={6} md={4}>
+            <Select
+              placeholder="Role"
+              value={filters.role}
+              onChange={(value) => handleFilterChange('role', value)}
+              style={{ width: '100%' }}
+            >
+              <Option value="all">All Roles</Option>
+              <Option value="super_admin">Super Admin</Option>
+              <Option value="admin">Admin</Option>
+              <Option value="user">User</Option>
+            </Select>
+          </Col>
+          <Col xs={24} sm={6} md={4}>
+            <Select
+              placeholder="Status"
+              value={filters.status}
+              onChange={(value) => handleFilterChange('status', value)}
+              style={{ width: '100%' }}
+            >
+              <Option value="all">All Status</Option>
+              <Option value="active">Active</Option>
+              <Option value="inactive">Inactive</Option>
+              <Option value="suspended">Suspended</Option>
+            </Select>
+          </Col>
+          <Col xs={24} sm={12} md={4}>
+            <Select
+              placeholder="Sort By"
+              value={filters.sortBy}
+              onChange={(value) => handleFilterChange('sortBy', value)}
+              style={{ width: '100%' }}
+            >
+              <Option value="created_at">Created Date</Option>
+              <Option value="last_login_at">Last Login</Option>
+              <Option value="email">Email</Option>
+              <Option value="first_name">First Name</Option>
+              <Option value="role">Role</Option>
+            </Select>
+          </Col>
+          <Col xs={24} sm={12} md={4}>
+            <Select
+              placeholder="Order"
+              value={filters.order}
+              onChange={(value) => handleFilterChange('order', value)}
+              style={{ width: '100%' }}
+            >
+              <Option value="DESC">Newest First</Option>
+              <Option value="ASC">Oldest First</Option>
+            </Select>
+          </Col>
+        </Row>
+      </Card>
+
+      {/* Users Table */}
+      <Card>
+        <Spin spinning={loading}>
+          <Table
+            columns={columns}
+            dataSource={users}
+            rowKey="id"
+            pagination={false}
+            scroll={{ x: 800 }}
           />
-          <Select defaultValue="all" style={{ width: 120 }}>
-            <Option value="all">All Plans</Option>
-            <Option value="professional">Professional</Option>
-            <Option value="creator">Creator</Option>
-            <Option value="payasyougo">Pay-as-you-go</Option>
-          </Select>
-          <Select defaultValue="all" style={{ width: 120 }}>
-            <Option value="all">All Status</Option>
-            <Option value="active">Active</Option>
-            <Option value="suspended">Suspended</Option>
-          </Select>
-        </Space>
+          
+          <div style={{ marginTop: '16px', textAlign: 'right' }}>
+            <Pagination
+              current={pagination.current}
+              pageSize={pagination.pageSize}
+              total={pagination.total}
+              showSizeChanger
+              showQuickJumper
+              showTotal={(total, range) => `${range[0]}-${range[1]} of ${total} users`}
+              onChange={handlePaginationChange}
+              onShowSizeChange={handlePaginationChange}
+            />
+          </div>
+        </Spin>
       </Card>
 
-      {/* USERS TABLE */}
-      <Card title="All Users" extra={<Badge count={users.length} style={{ backgroundColor: '#52c41a' }} />}>
-        <Table
-          columns={columns}
-          dataSource={users}
-          rowKey="id"
-          loading={loading}
-          pagination={{ pageSize: 10 }}
-          scroll={{ x: 800 }}
-        />
-      </Card>
-
-      {/* USER DETAILS MODAL */}
+      {/* User Details Modal */}
       <Modal
         title="User Details"
-        open={showUserModal}
-        onCancel={() => setShowUserModal(false)}
-        footer={null}
+        visible={userModalVisible}
+        onCancel={() => setUserModalVisible(false)}
+        footer={[
+          <Button key="close" onClick={() => setUserModalVisible(false)}>
+            Close
+          </Button>,
+          selectedUser && hasPermission('impersonate_users') && selectedUser.canImpersonate && (
+            <Button 
+              key="impersonate" 
+              type="primary" 
+              icon={<UserSwitchOutlined />}
+              onClick={() => handleImpersonate(selectedUser)}
+              loading={impersonating}
+            >
+              Impersonate
+            </Button>
+          )
+        ]}
         width={600}
       >
         {selectedUser && (
           <div>
-            <Descriptions column={1}>
-              <Descriptions.Item label="Email">{selectedUser.email}</Descriptions.Item>
-              <Descriptions.Item label="Plan">
-                <Tag color={getPlanColor(selectedUser.plan)}>
-                  {selectedUser.plan.charAt(0).toUpperCase() + selectedUser.plan.slice(1)}
-                </Tag>
-              </Descriptions.Item>
-              <Descriptions.Item label="Status">
-                <Tag color={getStatusColor(selectedUser.status)}>
-                  {selectedUser.status.charAt(0).toUpperCase() + selectedUser.status.slice(1)}
-                </Tag>
-              </Descriptions.Item>
-              <Descriptions.Item label="Posts Generated">{selectedUser.postsCount}</Descriptions.Item>
-              <Descriptions.Item label="Total Exports">{selectedUser.exportsCount}</Descriptions.Item>
-              <Descriptions.Item label="Created">
-                {format(new Date(selectedUser.createdAt), 'MMM dd, yyyy HH:mm')}
-              </Descriptions.Item>
-              <Descriptions.Item label="Last Activity">
-                {format(new Date(selectedUser.lastActivity), 'MMM dd, yyyy HH:mm')}
-              </Descriptions.Item>
-            </Descriptions>
-
-            {selectedUser.isDummy && (
-              <Alert
-                message="This is dummy data for demonstration"
-                type="info"
-                style={{ margin: '16px 0' }}
-              />
-            )}
-
-            <div style={{ border: '2px solid red', padding: '12px', borderRadius: '4px', marginTop: '16px' }}>
-              <Title level={5} style={{ color: 'red', margin: '0 0 8px 0' }}>
-                Missing Database Features:
-              </Title>
-              <ul style={{ margin: 0, color: 'red', fontSize: '12px' }}>
-                <li>User activity timeline (needs user_activity_logs)</li>
-                <li>Billing history (needs billing_events table)</li>
-                <li>Subscription details (needs subscriptions table)</li>
-                <li>Support tickets (needs support_tickets table)</li>
-                <li>Usage analytics over time (needs usage_analytics table)</li>
-              </ul>
-            </div>
+            <Row gutter={[16, 16]}>
+              <Col span={24}>
+                <Card size="small">
+                  <Row gutter={[16, 16]}>
+                    <Col span={4}>
+                      <Avatar 
+                        size={64} 
+                        icon={<UserOutlined />}
+                        style={{ backgroundColor: '#1890ff' }}
+                      >
+                        {selectedUser.firstName?.[0]}{selectedUser.lastName?.[0]}
+                      </Avatar>
+                    </Col>
+                    <Col span={20}>
+                      <Title level={4} style={{ margin: 0 }}>
+                        {selectedUser.firstName} {selectedUser.lastName}
+                      </Title>
+                      <Text type="secondary">{selectedUser.email}</Text>
+                      <br />
+                      <Tag color={getRoleColor(selectedUser.role)} icon={getRoleIcon(selectedUser.role)}>
+                        {selectedUser.role?.replace('_', ' ').toUpperCase()}
+                      </Tag>
+                      <Tag color={selectedUser.status === 'active' ? 'green' : 'red'}>
+                        {selectedUser.status?.toUpperCase()}
+                      </Tag>
+                    </Col>
+                  </Row>
+                </Card>
+              </Col>
+              
+              <Col span={12}>
+                <Card title="Account Info" size="small">
+                  <div style={{ lineHeight: '24px' }}>
+                    <div><strong>Plan:</strong> {selectedUser.planTier}</div>
+                    <div><strong>Usage:</strong> {selectedUser.currentUsage}/{selectedUser.usageLimit}</div>
+                    <div><strong>Billing:</strong> {selectedUser.billingStatus}</div>
+                    <div><strong>Referral:</strong> {selectedUser.referralCode}</div>
+                  </div>
+                </Card>
+              </Col>
+              
+              <Col span={12}>
+                <Card title="Organization" size="small">
+                  <div style={{ lineHeight: '24px' }}>
+                    <div><strong>Name:</strong> {selectedUser.organizationName || 'None'}</div>
+                    <div><strong>Role:</strong> {selectedUser.organizationRole || 'None'}</div>
+                  </div>
+                </Card>
+              </Col>
+              
+              <Col span={24}>
+                <Card title="Activity" size="small">
+                  <div style={{ lineHeight: '24px' }}>
+                    <div><strong>Created:</strong> {formatDate(selectedUser.createdAt)}</div>
+                    <div><strong>Last Login:</strong> {formatDate(selectedUser.lastLoginAt)}</div>
+                    <div><strong>Hierarchy Level:</strong> {selectedUser.hierarchyLevel}</div>
+                  </div>
+                </Card>
+              </Col>
+            </Row>
           </div>
         )}
       </Modal>
