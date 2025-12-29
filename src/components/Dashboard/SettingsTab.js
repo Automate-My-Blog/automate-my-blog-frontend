@@ -662,7 +662,7 @@ const BillingSettings = () => {
       key: 'status',
       render: (status) => (
         <Tag color={status === 'paid' ? 'green' : status === 'pending' ? 'orange' : 'red'}>
-          {status.toUpperCase()}
+          {status?.toUpperCase() || 'N/A'}
         </Tag>
       ),
     },
