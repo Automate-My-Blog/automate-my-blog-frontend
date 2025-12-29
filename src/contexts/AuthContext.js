@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import autoBlogAPI from '../services/api';
-import { getStoredInviteCode, clearStoredReferralInfo } from '../utils/referralUtils';
+import { getStoredInviteCode, getStoredReferralCode, clearStoredReferralInfo } from '../utils/referralUtils';
 
 const AuthContext = createContext();
 
@@ -90,10 +90,13 @@ export const AuthProvider = ({ children }) => {
       
       // Process referral/invite after successful registration
       const inviteCode = getStoredInviteCode();
-      if (inviteCode) {
+      const referralCode = getStoredReferralCode();
+      const codeToProcess = inviteCode || referralCode;
+      
+      if (codeToProcess) {
         try {
-          console.log('Processing referral signup for invite code:', inviteCode);
-          const referralResult = await autoBlogAPI.processReferralSignup(response.user.id, inviteCode);
+          console.log('Processing referral signup for code:', codeToProcess, 'type:', inviteCode ? 'invite' : 'referral');
+          const referralResult = await autoBlogAPI.processReferralSignup(response.user.id, codeToProcess);
           console.log('Referral processing result:', referralResult);
           
           // Clear stored codes after successful processing
