@@ -37,7 +37,6 @@ import {
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import autoBlogAPI from '../../services/api';
-import moment from 'moment';
 
 const { Title, Text, Paragraph } = Typography;
 const { Search } = Input;
@@ -75,6 +74,13 @@ const AdminLeadsTab = () => {
   const [editingStatus, setEditingStatus] = useState(null);
   const [statusForm] = Form.useForm();
 
+  useEffect(() => {
+    if (isSuperAdmin) {
+      loadLeads();
+      loadAnalytics();
+    }
+  }, [filters, pagination.current, pagination.pageSize, isSuperAdmin]);
+
   // Only render if user is super admin
   if (!isSuperAdmin) {
     return (
@@ -86,11 +92,6 @@ const AdminLeadsTab = () => {
       </Card>
     );
   }
-
-  useEffect(() => {
-    loadLeads();
-    loadAnalytics();
-  }, [filters, pagination.current, pagination.pageSize]);
 
   const loadLeads = async () => {
     try {
@@ -291,15 +292,22 @@ const AdminLeadsTab = () => {
       title: 'Created',
       dataIndex: 'createdAt',
       key: 'createdAt',
-      render: (date) => (
-        <Text style={{ fontSize: '12px' }}>
-          {moment(date).format('MMM DD')}
-          <br />
-          <Text type="secondary" style={{ fontSize: '10px' }}>
-            {moment(date).fromNow()}
+      render: (date) => {
+        const dateObj = new Date(date);
+        const now = new Date();
+        const diffDays = Math.floor((now - dateObj) / (1000 * 60 * 60 * 24));
+        const timeAgo = diffDays === 0 ? 'Today' : diffDays === 1 ? '1 day ago' : `${diffDays} days ago`;
+        
+        return (
+          <Text style={{ fontSize: '12px' }}>
+            {dateObj.toLocaleDateString('en-US', { month: 'short', day: '2-digit' })}
+            <br />
+            <Text type="secondary" style={{ fontSize: '10px' }}>
+              {timeAgo}
+            </Text>
           </Text>
-        </Text>
-      ),
+        );
+      },
       sorter: true,
       width: 80
     },
@@ -516,7 +524,14 @@ const AdminLeadsTab = () => {
                     </Tag>
                   </Descriptions.Item>
                   <Descriptions.Item label="Created">
-                    {moment(selectedLead.createdAt).format('MMMM DD, YYYY [at] HH:mm')}
+                    {new Date(selectedLead.createdAt).toLocaleDateString('en-US', { 
+                      year: 'numeric', 
+                      month: 'long', 
+                      day: '2-digit' 
+                    })} at {new Date(selectedLead.createdAt).toLocaleTimeString('en-US', { 
+                      hour: '2-digit', 
+                      minute: '2-digit' 
+                    })}
                   </Descriptions.Item>
                 </Descriptions>
               </Col>
@@ -543,7 +558,11 @@ const AdminLeadsTab = () => {
                         </Tag>
                         <div style={{ marginTop: '8px', fontSize: '12px' }}>
                           <Text type="secondary">
-                            {moment(selectedLead.convertedAt).format('MMM DD, YYYY')}
+                            {new Date(selectedLead.convertedAt).toLocaleDateString('en-US', { 
+                              year: 'numeric', 
+                              month: 'short', 
+                              day: '2-digit' 
+                            })}
                           </Text>
                         </div>
                       </div>
@@ -566,7 +585,14 @@ const AdminLeadsTab = () => {
                       <div>
                         <Text strong>{step.step.replace('_', ' ').toUpperCase()}</Text>
                         <div style={{ color: '#666', fontSize: '12px' }}>
-                          {moment(step.completedAt).format('MMM DD, YYYY [at] HH:mm')}
+                          {new Date(step.completedAt).toLocaleDateString('en-US', { 
+                            year: 'numeric', 
+                            month: 'short', 
+                            day: '2-digit' 
+                          })} at {new Date(step.completedAt).toLocaleTimeString('en-US', { 
+                            hour: '2-digit', 
+                            minute: '2-digit' 
+                          })}
                         </div>
                         {step.data && (
                           <div style={{ marginTop: '4px' }}>
