@@ -114,9 +114,9 @@ const AdminLeadsTab = () => {
         resultType: typeof result,
         resultKeys: Object.keys(result || {}),
         result: result,
-        leadsArray: result?.leads,
-        leadsLength: result?.leads?.length,
-        pagination: result?.pagination
+        leadsArray: result?.data?.leads,
+        leadsLength: result?.data?.leads?.length,
+        pagination: result?.data?.pagination
       });
 
       const leadsData = result.data?.leads || [];
