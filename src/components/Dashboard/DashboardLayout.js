@@ -16,6 +16,7 @@ import {
   DatabaseOutlined,
   UserSwitchOutlined,
   CloseOutlined,
+  ContactsOutlined,
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import NewPostTab from './NewPostTab';
@@ -30,6 +31,7 @@ import AdminUsersTab from './AdminUsersTab';
 import AdminAnalyticsTab from './AdminAnalyticsTab';
 import AdminContentTab from './AdminContentTab';
 import AdminSystemTab from './AdminSystemTab';
+import AdminLeadsTab from './AdminLeadsTab';
 
 const { Header, Sider, Content } = Layout;
 
@@ -131,6 +133,12 @@ const DashboardLayout = ({ user: propUser, loginContext, workflowContent, showDa
   // Platform-wide admin tabs - super admin gets all tabs regardless of specific permissions
   if (isSuperAdmin) {
     adminMenuItems.push({
+      key: 'admin-leads',
+      icon: <ContactsOutlined style={{ color: 'red' }} />,
+      label: 'Website Leads',
+    });
+    
+    adminMenuItems.push({
       key: 'admin-analytics',
       icon: <LineChartOutlined style={{ color: 'red' }} />,
       label: 'Admin Analytics',
@@ -187,6 +195,8 @@ const DashboardLayout = ({ user: propUser, loginContext, workflowContent, showDa
       // ADMIN TABS - Super user components
       case 'admin-users':
         return <AdminUsersTab />;
+      case 'admin-leads':
+        return <AdminLeadsTab />;
       case 'admin-analytics':
         return <AdminAnalyticsTab />;
       case 'admin-content':

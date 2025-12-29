@@ -915,6 +915,59 @@ class AutoBlogAPI {
       throw new Error(`Failed to update billing info: ${error.message}`);
     }
   }
+
+  /**
+   * Website Lead Management (Super Admin Only)
+   */
+  async getLeads(options = {}) {
+    try {
+      const queryParams = new URLSearchParams();
+      Object.keys(options).forEach(key => {
+        if (options[key] !== undefined && options[key] !== null) {
+          queryParams.append(key, options[key]);
+        }
+      });
+      
+      const endpoint = queryParams.toString() 
+        ? `/api/v1/admin/leads?${queryParams.toString()}`
+        : '/api/v1/admin/leads';
+      
+      const response = await this.makeRequest(endpoint);
+      return response.data;
+    } catch (error) {
+      throw new Error(`Failed to get leads: ${error.message}`);
+    }
+  }
+
+  async getLeadAnalytics(dateRange = 'month') {
+    try {
+      const response = await this.makeRequest(`/api/v1/admin/leads/analytics?dateRange=${dateRange}`);
+      return response.data;
+    } catch (error) {
+      throw new Error(`Failed to get lead analytics: ${error.message}`);
+    }
+  }
+
+  async getLeadDetails(leadId) {
+    try {
+      const response = await this.makeRequest(`/api/v1/admin/leads/${leadId}`);
+      return response.data;
+    } catch (error) {
+      throw new Error(`Failed to get lead details: ${error.message}`);
+    }
+  }
+
+  async updateLeadStatus(leadId, status, notes = '') {
+    try {
+      const response = await this.makeRequest(`/api/v1/admin/leads/${leadId}/status`, {
+        method: 'PUT',
+        body: JSON.stringify({ status, notes }),
+      });
+      return response.data;
+    } catch (error) {
+      throw new Error(`Failed to update lead status: ${error.message}`);
+    }
+  }
 }
 
 // Create singleton instance
