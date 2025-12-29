@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Form, Input, Button, Alert, Space } from 'antd';
-import { UserOutlined, LockOutlined, MailOutlined, BankOutlined } from '@ant-design/icons';
+import { UserOutlined, LockOutlined, MailOutlined, BankOutlined, LinkOutlined } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 
 const RegisterModal = ({ onClose, onSwitchToLogin, context = null }) => {
@@ -8,7 +8,49 @@ const RegisterModal = ({ onClose, onSwitchToLogin, context = null }) => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [referralInfo, setReferralInfo] = useState(null);
+  const [form] = Form.useForm();
+  const [detectedData, setDetectedData] = useState(null);
   const { register } = useAuth();
+
+  useEffect(() => {
+    // Extract company data from workflow analysis stored in localStorage
+    const extractWorkflowData = () => {
+      try {
+        // Check for workflow progress data
+        const progressKey = 'workflow_progress_anonymous';
+        const workflowProgress = localStorage.getItem(progressKey);
+        
+        if (workflowProgress) {
+          const parsed = JSON.parse(workflowProgress);
+          const stepResults = parsed.stepResults;
+          
+          // Look for website analysis data
+          if (stepResults?.websiteAnalysis) {
+            const analysis = stepResults.websiteAnalysis;
+            const detectedInfo = {
+              organizationName: analysis.businessName || analysis.companyName || '',
+              websiteUrl: analysis.websiteUrl || analysis.url || '',
+              autoDetected: true
+            };
+            
+            if (detectedInfo.organizationName || detectedInfo.websiteUrl) {
+              setDetectedData(detectedInfo);
+              
+              // Prepopulate form fields
+              form.setFieldsValue({
+                organizationName: detectedInfo.organizationName,
+                websiteUrl: detectedInfo.websiteUrl
+              });
+            }
+          }
+        }
+      } catch (error) {
+        console.log('No workflow data to extract:', error.message);
+      }
+    };
+
+    extractWorkflowData();
+  }, [form]);
 
   const onFinish = async (values) => {
     setLoading(true);
@@ -21,6 +63,7 @@ const RegisterModal = ({ onClose, onSwitchToLogin, context = null }) => {
         firstName: values.firstName,
         lastName: values.lastName,
         organizationName: values.organizationName,
+        websiteUrl: values.websiteUrl,
       }, context);
       
       // Check if referral was processed
@@ -111,7 +154,18 @@ const RegisterModal = ({ onClose, onSwitchToLogin, context = null }) => {
         />
       )}
 
+      {detectedData && (
+        <Alert
+          message="Company Information Detected"
+          description={`We detected "${detectedData.organizationName}" from your website analysis. You can modify this information below.`}
+          type="info"
+          style={{ marginBottom: '20px' }}
+          showIcon
+        />
+      )}
+
       <Form
+        form={form}
         name="register"
         onFinish={onFinish}
         autoComplete="off"
@@ -161,6 +215,19 @@ const RegisterModal = ({ onClose, onSwitchToLogin, context = null }) => {
           <Input
             prefix={<BankOutlined />}
             placeholder="Organization name"
+            size="large"
+          />
+        </Form.Item>
+
+        <Form.Item
+          name="websiteUrl"
+          rules={[
+            { type: 'url', message: 'Please enter a valid website URL' }
+          ]}
+        >
+          <Input
+            prefix={<LinkOutlined />}
+            placeholder="Website URL (optional)"
             size="large"
           />
         </Form.Item>
