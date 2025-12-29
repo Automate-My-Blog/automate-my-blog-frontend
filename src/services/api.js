@@ -921,20 +921,43 @@ class AutoBlogAPI {
    */
   async getLeads(options = {}) {
     try {
-      const queryParams = new URLSearchParams();
-      Object.keys(options).forEach(key => {
-        if (options[key] !== undefined && options[key] !== null) {
-          queryParams.append(key, options[key]);
-        }
+      console.log('🔍 API.getLeads called with options:', options);
+      
+      // Build query parameters
+      const params = new URLSearchParams();
+      
+      if (options.limit) params.append('limit', options.limit);
+      if (options.offset) params.append('offset', options.offset);
+      if (options.status && options.status !== 'all') params.append('status', options.status);
+      if (options.source && options.source !== 'all') params.append('source', options.source);
+      if (options.minScore !== undefined) params.append('minScore', options.minScore);
+      if (options.maxScore !== undefined) params.append('maxScore', options.maxScore);
+      if (options.dateRange && options.dateRange !== 'all') params.append('dateRange', options.dateRange);
+      if (options.search) params.append('search', options.search);
+      if (options.sortBy) params.append('sortBy', options.sortBy);
+      if (options.sortOrder) params.append('sortOrder', options.sortOrder);
+      
+      const queryString = params.toString();
+      const url = `/api/v1/admin/leads${queryString ? '?' + queryString : ''}`;
+      
+      console.log('📡 Making request to URL:', url);
+      console.log('🔑 Auth token present:', !!localStorage.getItem('accessToken'));
+      
+      const response = await this.makeRequest(url);
+      
+      console.log('✅ API response received:', {
+        responseType: typeof response,
+        responseKeys: Object.keys(response || {}),
+        response: response
       });
       
-      const endpoint = queryParams.toString() 
-        ? `/api/v1/admin/leads?${queryParams.toString()}`
-        : '/api/v1/admin/leads';
-      
-      const response = await this.makeRequest(endpoint);
-      return response.data;
+      return response;
     } catch (error) {
+      console.error('❌ API.getLeads error:', {
+        error: error,
+        errorMessage: error.message,
+        errorStack: error.stack
+      });
       throw new Error(`Failed to get leads: ${error.message}`);
     }
   }

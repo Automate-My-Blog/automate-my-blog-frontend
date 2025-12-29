@@ -95,6 +95,11 @@ const AdminLeadsTab = () => {
 
   const loadLeads = async () => {
     try {
+      console.log('🔍 loadLeads() called with options:', {
+        filters,
+        pagination: { current: pagination.current, pageSize: pagination.pageSize }
+      });
+      
       setLoading(true);
       const options = {
         ...filters,
@@ -102,13 +107,38 @@ const AdminLeadsTab = () => {
         offset: (pagination.current - 1) * pagination.pageSize
       };
 
+      console.log('📡 Calling autoBlogAPI.getLeads with options:', options);
       const result = await autoBlogAPI.getLeads(options);
-      setLeads(result.leads || []);
+      
+      console.log('✅ API response received:', {
+        resultType: typeof result,
+        resultKeys: Object.keys(result || {}),
+        result: result,
+        leadsArray: result?.leads,
+        leadsLength: result?.leads?.length,
+        pagination: result?.pagination
+      });
+
+      const leadsData = result.data?.leads || [];
+      console.log('📊 Setting leads data:', {
+        leadsCount: leadsData.length,
+        firstLead: leadsData[0],
+        allLeads: leadsData
+      });
+
+      setLeads(leadsData);
       setPagination(prev => ({
         ...prev,
-        total: result.pagination?.total || 0
+        total: result.data?.pagination?.total || 0
       }));
+      
+      console.log('✅ Leads state updated, total leads:', leadsData.length);
     } catch (error) {
+      console.error('❌ loadLeads error:', {
+        error: error,
+        errorMessage: error.message,
+        errorStack: error.stack
+      });
       message.error('Failed to load leads: ' + error.message);
     } finally {
       setLoading(false);
@@ -119,7 +149,7 @@ const AdminLeadsTab = () => {
     try {
       setLoadingAnalytics(true);
       const analyticsData = await autoBlogAPI.getLeadAnalytics(filters.dateRange);
-      setAnalytics(analyticsData);
+      setAnalytics(analyticsData.data || analyticsData);
     } catch (error) {
       message.error('Failed to load analytics: ' + error.message);
     } finally {
@@ -147,7 +177,7 @@ const AdminLeadsTab = () => {
   const showLeadDetailsModal = async (lead) => {
     try {
       const leadDetails = await autoBlogAPI.getLeadDetails(lead.id);
-      setSelectedLead(leadDetails);
+      setSelectedLead(leadDetails.data || leadDetails);
       setShowLeadDetails(true);
     } catch (error) {
       message.error('Failed to load lead details: ' + error.message);
@@ -197,18 +227,33 @@ const AdminLeadsTab = () => {
 
   const columns = [
     {
+      title: 'Website URL',
+      dataIndex: 'websiteUrl',
+      key: 'websiteUrl',
+      render: (url) => (
+        <div style={{ maxWidth: '200px' }}>
+          <a href={url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '13px' }}>
+            {url}
+          </a>
+        </div>
+      ),
+      width: 220,
+      ellipsis: true,
+    },
+    {
       title: 'Business',
       dataIndex: 'businessName',
       key: 'businessName',
       render: (name, record) => (
         <div>
-          <Text strong style={{ display: 'block' }}>{name}</Text>
+          <Text strong style={{ display: 'block' }}>{name || 'Analyzing...'}</Text>
           <Text type="secondary" style={{ fontSize: '12px' }}>
-            <GlobalOutlined /> {new URL(record.websiteUrl).hostname}
+            {record.businessType || 'Pending Analysis'}
           </Text>
         </div>
       ),
       sorter: true,
+      width: 180,
     },
     {
       title: 'Industry',
@@ -223,20 +268,31 @@ const AdminLeadsTab = () => {
       title: 'Lead Score',
       dataIndex: 'leadScore',
       key: 'leadScore',
-      render: (score) => (
-        <div style={{ textAlign: 'center' }}>
-          <Text strong style={{ color: getScoreColor(score) }}>
-            {score}
-          </Text>
-          <Progress 
-            percent={score} 
-            size="small" 
-            strokeColor={getScoreColor(score)}
-            showInfo={false}
-            style={{ width: '60px', marginTop: '4px' }}
-          />
-        </div>
-      ),
+      render: (score) => {
+        if (!score || score === 0) {
+          return (
+            <div style={{ textAlign: 'center' }}>
+              <Text type="secondary" style={{ fontSize: '12px' }}>
+                Calculating...
+              </Text>
+            </div>
+          );
+        }
+        return (
+          <div style={{ textAlign: 'center' }}>
+            <Text strong style={{ color: getScoreColor(score) }}>
+              {score}
+            </Text>
+            <Progress 
+              percent={score} 
+              size="small" 
+              strokeColor={getScoreColor(score)}
+              showInfo={false}
+              style={{ width: '60px', marginTop: '4px' }}
+            />
+          </div>
+        );
+      },
       sorter: true,
       width: 100
     },
@@ -497,7 +553,8 @@ const AdminLeadsTab = () => {
         open={showLeadDetails}
         onCancel={() => setShowLeadDetails(false)}
         footer={null}
-        width={800}
+        width={1000}
+        bodyStyle={{ maxHeight: '70vh', overflowY: 'auto' }}
       >
         {selectedLead && (
           <div>
@@ -571,6 +628,121 @@ const AdminLeadsTab = () => {
                 </Card>
               </Col>
             </Row>
+
+            {/* Website Intelligence Section */}
+            {selectedLead.analysisData && (
+              <div style={{ marginTop: '24px' }}>
+                <Title level={5}>Website Intelligence</Title>
+                <Row gutter={[16, 16]}>
+                  <Col span={12}>
+                    <Card size="small" title="Business Analysis">
+                      <Descriptions column={1} size="small">
+                        <Descriptions.Item label="Business Type">
+                          {selectedLead.analysisData.businessType || 'Unknown'}
+                        </Descriptions.Item>
+                        <Descriptions.Item label="Target Audience">
+                          {selectedLead.analysisData.targetAudience || 'Not identified'}
+                        </Descriptions.Item>
+                        <Descriptions.Item label="Content Focus">
+                          {selectedLead.analysisData.contentFocus || 'Not identified'}
+                        </Descriptions.Item>
+                        <Descriptions.Item label="Brand Voice">
+                          {selectedLead.analysisData.brandVoice || 'Not identified'}
+                        </Descriptions.Item>
+                      </Descriptions>
+                    </Card>
+                  </Col>
+                  <Col span={12}>
+                    <Card size="small" title="Website Technical Data">
+                      {selectedLead.analysisData.scrapedContent && (
+                        <Descriptions column={1} size="small">
+                          <Descriptions.Item label="Page Title">
+                            {selectedLead.analysisData.scrapedContent.title || 'N/A'}
+                          </Descriptions.Item>
+                          <Descriptions.Item label="Content Length">
+                            {selectedLead.analysisData.scrapedContent.contentLength ? 
+                              `${selectedLead.analysisData.scrapedContent.contentLength} characters` : 'N/A'}
+                          </Descriptions.Item>
+                          <Descriptions.Item label="Security">
+                            {selectedLead.analysisData.technicalAnalysis?.hasSSL ? (
+                              <Tag color="green">SSL Enabled</Tag>
+                            ) : (
+                              <Tag color="red">No SSL</Tag>
+                            )}
+                          </Descriptions.Item>
+                          <Descriptions.Item label="Images">
+                            {selectedLead.analysisData.scrapedContent.hasImages ? (
+                              <Tag color="blue">Has Images</Tag>
+                            ) : (
+                              <Tag color="default">No Images</Tag>
+                            )}
+                          </Descriptions.Item>
+                        </Descriptions>
+                      )}
+                    </Card>
+                  </Col>
+                </Row>
+                
+                {/* Keywords and Recommendations */}
+                {selectedLead.analysisData.keywords && selectedLead.analysisData.keywords.length > 0 && (
+                  <Card size="small" title="SEO Keywords" style={{ marginTop: '16px' }}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                      {selectedLead.analysisData.keywords.slice(0, 10).map((keyword, index) => (
+                        <Tag key={index} color="blue">{keyword}</Tag>
+                      ))}
+                      {selectedLead.analysisData.keywords.length > 10 && (
+                        <Tag>+{selectedLead.analysisData.keywords.length - 10} more</Tag>
+                      )}
+                    </div>
+                  </Card>
+                )}
+
+                {/* Content Recommendations */}
+                {selectedLead.analysisData.contentRecommendations && selectedLead.analysisData.contentRecommendations.length > 0 && (
+                  <Card size="small" title="Content Recommendations" style={{ marginTop: '16px' }}>
+                    <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                      {selectedLead.analysisData.contentRecommendations.slice(0, 5).map((rec, index) => (
+                        <li key={index} style={{ marginBottom: '4px' }}>
+                          <Text style={{ fontSize: '13px' }}>{rec}</Text>
+                        </li>
+                      ))}
+                    </ul>
+                  </Card>
+                )}
+              </div>
+            )}
+
+            {/* User Context Information */}
+            <div style={{ marginTop: '24px' }}>
+              <Title level={5}>Lead Context</Title>
+              <Descriptions column={2} size="small" bordered>
+                <Descriptions.Item label="IP Address">
+                  {selectedLead.ipAddress || 'Unknown'}
+                </Descriptions.Item>
+                <Descriptions.Item label="Referrer">
+                  {selectedLead.referrerUrl ? (
+                    <Tooltip title={selectedLead.referrerUrl}>
+                      <Text style={{ fontSize: '12px' }}>
+                        {selectedLead.referrerUrl.length > 30 ? 
+                          selectedLead.referrerUrl.substring(0, 30) + '...' : 
+                          selectedLead.referrerUrl
+                        }
+                      </Text>
+                    </Tooltip>
+                  ) : 'Direct visit'}
+                </Descriptions.Item>
+                <Descriptions.Item label="User Agent" span={2}>
+                  <Tooltip title={selectedLead.userAgent}>
+                    <Text style={{ fontSize: '11px', fontFamily: 'monospace' }}>
+                      {selectedLead.userAgent && selectedLead.userAgent.length > 60 ? 
+                        selectedLead.userAgent.substring(0, 60) + '...' : 
+                        selectedLead.userAgent || 'Unknown'
+                      }
+                    </Text>
+                  </Tooltip>
+                </Descriptions.Item>
+              </Descriptions>
+            </div>
 
             {/* Conversion Timeline */}
             {selectedLead.conversionSteps && selectedLead.conversionSteps.length > 0 && (
