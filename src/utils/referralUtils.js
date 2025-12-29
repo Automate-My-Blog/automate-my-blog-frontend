@@ -11,17 +11,31 @@ export const getInviteCodeFromURL = () => {
 
 // Store referral/invite codes in session storage when user arrives
 export const storeReferralInfo = () => {
+  const urlParams = new URLSearchParams(window.location.search);
   const referralCode = getReferralCodeFromURL();
   const inviteCode = getInviteCodeFromURL();
   
+  console.log('🔍 Checking URL for referral info:', {
+    fullURL: window.location.href,
+    searchParams: window.location.search,
+    parsedRef: urlParams.get('ref'),
+    parsedInvite: urlParams.get('invite'),
+    extractedReferralCode: referralCode,
+    extractedInviteCode: inviteCode
+  });
+  
   if (referralCode) {
     sessionStorage.setItem('referralCode', referralCode);
-    console.log('Stored referral code:', referralCode);
+    console.log('✅ Stored referral code:', referralCode);
+  } else {
+    console.log('❌ No referral code found in URL');
   }
   
   if (inviteCode) {
     sessionStorage.setItem('inviteCode', inviteCode);
-    console.log('Stored invite code:', inviteCode);
+    console.log('✅ Stored invite code:', inviteCode);
+  } else {
+    console.log('❌ No invite code found in URL');
   }
 };
 

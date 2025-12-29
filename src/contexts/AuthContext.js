@@ -93,9 +93,19 @@ export const AuthProvider = ({ children }) => {
       const referralCode = getStoredReferralCode();
       const codeToProcess = inviteCode || referralCode;
       
+      console.log('🔄 Registration complete, checking for referral processing:', {
+        userId: response.user.id,
+        userEmail: response.user.email,
+        inviteCode,
+        referralCode,
+        codeToProcess,
+        sessionStorageInvite: sessionStorage.getItem('inviteCode'),
+        sessionStorageReferral: sessionStorage.getItem('referralCode')
+      });
+      
       if (codeToProcess) {
         try {
-          console.log('Processing referral signup for code:', codeToProcess, 'type:', inviteCode ? 'invite' : 'referral');
+          console.log('🎯 Processing referral signup for code:', codeToProcess, 'type:', inviteCode ? 'invite' : 'referral');
           const referralResult = await autoBlogAPI.processReferralSignup(response.user.id, codeToProcess);
           console.log('Referral processing result:', referralResult);
           
