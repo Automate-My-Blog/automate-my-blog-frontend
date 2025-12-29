@@ -851,6 +851,21 @@ class AutoBlogAPI {
   }
 
   /**
+   * Organization Management
+   */
+  async updateOrganization(organizationData) {
+    try {
+      const response = await this.makeRequest('/api/v1/organization/profile', {
+        method: 'PUT',
+        body: JSON.stringify(organizationData),
+      });
+      return response;
+    } catch (error) {
+      throw new Error(`Failed to update organization: ${error.message}`);
+    }
+  }
+
+  /**
    * Billing Management
    */
   async getBillingHistory(limit = 50) {

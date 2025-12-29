@@ -32,10 +32,32 @@ const ProfileSettings = () => {
   const handleProfileSave = async () => {
     setSaving(true);
     try {
-      await autoBlogAPI.updateProfile(profileData);
-      message.success('Profile updated successfully!');
+      // Split data into user profile and organization data
+      const { firstName, lastName, email } = profileData;
+      const { organizationName, organizationWebsite } = profileData;
+
+      // Update user profile (firstName, lastName, email)
+      const profileUpdatePromise = autoBlogAPI.updateProfile({
+        firstName,
+        lastName,
+        email
+      });
+
+      // Update organization info if user can edit organization
+      const organizationUpdatePromise = canEditOrganization && (organizationName || organizationWebsite) 
+        ? autoBlogAPI.updateOrganization({
+            organizationName,
+            websiteUrl: organizationWebsite
+          })
+        : Promise.resolve();
+
+      // Execute both updates
+      await Promise.all([profileUpdatePromise, organizationUpdatePromise]);
+      
+      message.success('Profile and organization updated successfully!');
     } catch (error) {
-      message.error('Failed to update profile: ' + error.message);
+      console.error('Profile save error:', error);
+      message.error('Failed to update: ' + error.message);
     } finally {
       setSaving(false);
     }
