@@ -991,6 +991,40 @@ class AutoBlogAPI {
       throw new Error(`Failed to update lead status: ${error.message}`);
     }
   }
+
+  /**
+   * Organization Intelligence Management (Super Admin Only)
+   */
+  async getOrganizations(options = {}) {
+    try {
+      // Build query parameters
+      const params = new URLSearchParams();
+      
+      if (options.limit) params.append('limit', options.limit);
+      if (options.offset) params.append('offset', options.offset);
+      if (options.search) params.append('search', options.search);
+      if (options.industry && options.industry !== 'all') params.append('industry', options.industry);
+      if (options.sortBy) params.append('sortBy', options.sortBy);
+      if (options.sortOrder) params.append('sortOrder', options.sortOrder);
+      
+      const queryString = params.toString();
+      const url = `/api/v1/admin/organizations${queryString ? '?' + queryString : ''}`;
+      
+      const response = await this.makeRequest(url);
+      return response;
+    } catch (error) {
+      throw new Error(`Failed to get organizations: ${error.message}`);
+    }
+  }
+
+  async getOrganizationDetails(organizationId) {
+    try {
+      const response = await this.makeRequest(`/api/v1/admin/organizations/${organizationId}`);
+      return response.data;
+    } catch (error) {
+      throw new Error(`Failed to get organization details: ${error.message}`);
+    }
+  }
 }
 
 // Create singleton instance

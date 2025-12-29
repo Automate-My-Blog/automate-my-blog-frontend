@@ -265,36 +265,40 @@ const AdminLeadsTab = () => {
       width: 120
     },
     {
-      title: 'Lead Score',
-      dataIndex: 'leadScore',
-      key: 'leadScore',
-      render: (score) => {
-        if (!score || score === 0) {
-          return (
-            <div style={{ textAlign: 'center' }}>
-              <Text type="secondary" style={{ fontSize: '12px' }}>
-                Calculating...
+      title: 'Business Intelligence',
+      key: 'businessIntelligence',
+      render: (_, record) => {
+        // Display organization intelligence data instead of just lead score
+        const confidence = record.analysisConfidenceScore || 0;
+        const scenariosCount = record.customerScenarios?.length || 0;
+        const decisionMakers = record.decisionMakers?.length || 0;
+        
+        return (
+          <div style={{ textAlign: 'left', fontSize: '12px' }}>
+            <div style={{ marginBottom: '4px' }}>
+              <Text strong style={{ color: confidence > 0.7 ? '#52c41a' : confidence > 0.5 ? '#faad14' : '#ff4d4f' }}>
+                {(confidence * 100).toFixed(0)}% Confidence
               </Text>
             </div>
-          );
-        }
-        return (
-          <div style={{ textAlign: 'center' }}>
-            <Text strong style={{ color: getScoreColor(score) }}>
-              {score}
-            </Text>
-            <Progress 
-              percent={score} 
-              size="small" 
-              strokeColor={getScoreColor(score)}
-              showInfo={false}
-              style={{ width: '60px', marginTop: '4px' }}
-            />
+            {scenariosCount > 0 && (
+              <div style={{ color: '#666' }}>
+                {scenariosCount} Scenario{scenariosCount > 1 ? 's' : ''}
+              </div>
+            )}
+            {decisionMakers > 0 && (
+              <div style={{ color: '#666' }}>
+                {decisionMakers} Contact{decisionMakers > 1 ? 's' : ''}
+              </div>
+            )}
+            {record.primaryCustomerProblem && (
+              <div style={{ color: '#999', fontSize: '11px', marginTop: '2px' }}>
+                {record.primaryCustomerProblem.substring(0, 40)}...
+              </div>
+            )}
           </div>
         );
       },
-      sorter: true,
-      width: 100
+      width: 150
     },
     {
       title: 'Source',
@@ -426,19 +430,23 @@ const AdminLeadsTab = () => {
         <Col xs={24} sm={6}>
           <Card loading={loadingAnalytics}>
             <Statistic
-              title="Avg Lead Score"
-              value={analytics?.overview?.averageLeadScore || 0}
-              precision={1}
+              title="Avg Intelligence Score"
+              value={(analytics?.overview?.averageConfidenceScore || 0) * 100}
+              precision={0}
+              suffix="%"
               prefix={<StarOutlined />}
-              valueStyle={{ color: getScoreColor(analytics?.overview?.averageLeadScore || 0) }}
+              valueStyle={{ 
+                color: (analytics?.overview?.averageConfidenceScore || 0) > 0.7 ? '#52c41a' : 
+                       (analytics?.overview?.averageConfidenceScore || 0) > 0.5 ? '#faad14' : '#ff4d4f' 
+              }}
             />
           </Card>
         </Col>
         <Col xs={24} sm={6}>
           <Card loading={loadingAnalytics}>
             <Statistic
-              title="High Quality Leads"
-              value={analytics?.overview?.highQualityLeads || 0}
+              title="Organizations Analyzed"
+              value={analytics?.overview?.uniqueOrganizations || 0}
               prefix={<LineChartOutlined />}
               valueStyle={{ color: '#52c41a' }}
             />
@@ -629,88 +637,173 @@ const AdminLeadsTab = () => {
               </Col>
             </Row>
 
-            {/* Website Intelligence Section */}
-            {selectedLead.analysisData && (
-              <div style={{ marginTop: '24px' }}>
-                <Title level={5}>Website Intelligence</Title>
-                <Row gutter={[16, 16]}>
-                  <Col span={12}>
-                    <Card size="small" title="Business Analysis">
-                      <Descriptions column={1} size="small">
-                        <Descriptions.Item label="Business Type">
-                          {selectedLead.analysisData.businessType || 'Unknown'}
-                        </Descriptions.Item>
-                        <Descriptions.Item label="Target Audience">
-                          {selectedLead.analysisData.targetAudience || 'Not identified'}
-                        </Descriptions.Item>
-                        <Descriptions.Item label="Content Focus">
-                          {selectedLead.analysisData.contentFocus || 'Not identified'}
-                        </Descriptions.Item>
-                        <Descriptions.Item label="Brand Voice">
-                          {selectedLead.analysisData.brandVoice || 'Not identified'}
-                        </Descriptions.Item>
-                      </Descriptions>
-                    </Card>
-                  </Col>
-                  <Col span={12}>
-                    <Card size="small" title="Website Technical Data">
-                      {selectedLead.analysisData.scrapedContent && (
-                        <Descriptions column={1} size="small">
-                          <Descriptions.Item label="Page Title">
-                            {selectedLead.analysisData.scrapedContent.title || 'N/A'}
-                          </Descriptions.Item>
-                          <Descriptions.Item label="Content Length">
-                            {selectedLead.analysisData.scrapedContent.contentLength ? 
-                              `${selectedLead.analysisData.scrapedContent.contentLength} characters` : 'N/A'}
-                          </Descriptions.Item>
-                          <Descriptions.Item label="Security">
-                            {selectedLead.analysisData.technicalAnalysis?.hasSSL ? (
-                              <Tag color="green">SSL Enabled</Tag>
-                            ) : (
-                              <Tag color="red">No SSL</Tag>
-                            )}
-                          </Descriptions.Item>
-                          <Descriptions.Item label="Images">
-                            {selectedLead.analysisData.scrapedContent.hasImages ? (
-                              <Tag color="blue">Has Images</Tag>
-                            ) : (
-                              <Tag color="default">No Images</Tag>
-                            )}
-                          </Descriptions.Item>
-                        </Descriptions>
-                      )}
-                    </Card>
-                  </Col>
-                </Row>
-                
-                {/* Keywords and Recommendations */}
-                {selectedLead.analysisData.keywords && selectedLead.analysisData.keywords.length > 0 && (
-                  <Card size="small" title="SEO Keywords" style={{ marginTop: '16px' }}>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                      {selectedLead.analysisData.keywords.slice(0, 10).map((keyword, index) => (
-                        <Tag key={index} color="blue">{keyword}</Tag>
-                      ))}
-                      {selectedLead.analysisData.keywords.length > 10 && (
-                        <Tag>+{selectedLead.analysisData.keywords.length - 10} more</Tag>
-                      )}
-                    </div>
+            {/* Organization Business Intelligence Section */}
+            <div style={{ marginTop: '24px' }}>
+              <Title level={5}>
+                <StarOutlined style={{ marginRight: '8px', color: '#1890ff' }} />
+                Business Intelligence
+              </Title>
+              
+              {/* Intelligence Overview */}
+              <Row gutter={[16, 16]} style={{ marginBottom: '16px' }}>
+                <Col span={8}>
+                  <Card size="small" style={{ textAlign: 'center' }}>
+                    <Statistic
+                      title="Analysis Confidence"
+                      value={(selectedLead.analysisConfidenceScore || 0) * 100}
+                      precision={0}
+                      suffix="%"
+                      valueStyle={{ 
+                        color: selectedLead.analysisConfidenceScore > 0.7 ? '#52c41a' : 
+                               selectedLead.analysisConfidenceScore > 0.5 ? '#faad14' : '#ff4d4f' 
+                      }}
+                    />
                   </Card>
-                )}
+                </Col>
+                <Col span={8}>
+                  <Card size="small" style={{ textAlign: 'center' }}>
+                    <Statistic
+                      title="Customer Scenarios"
+                      value={selectedLead.customerScenarios?.length || 0}
+                      prefix={<UserOutlined />}
+                    />
+                  </Card>
+                </Col>
+                <Col span={8}>
+                  <Card size="small" style={{ textAlign: 'center' }}>
+                    <Statistic
+                      title="Decision Makers"
+                      value={selectedLead.decisionMakers?.length || 0}
+                      prefix={<TrophyOutlined />}
+                    />
+                  </Card>
+                </Col>
+              </Row>
 
-                {/* Content Recommendations */}
-                {selectedLead.analysisData.contentRecommendations && selectedLead.analysisData.contentRecommendations.length > 0 && (
-                  <Card size="small" title="Content Recommendations" style={{ marginTop: '16px' }}>
-                    <ul style={{ margin: 0, paddingLeft: '20px' }}>
-                      {selectedLead.analysisData.contentRecommendations.slice(0, 5).map((rec, index) => (
-                        <li key={index} style={{ marginBottom: '4px' }}>
-                          <Text style={{ fontSize: '13px' }}>{rec}</Text>
-                        </li>
-                      ))}
-                    </ul>
+              {/* Organization Data */}
+              <Row gutter={[16, 16]}>
+                <Col span={12}>
+                  <Card size="small" title="Organization Profile">
+                    <Descriptions column={1} size="small">
+                      <Descriptions.Item label="Organization">
+                        {selectedLead.organizationName || selectedLead.businessName}
+                      </Descriptions.Item>
+                      <Descriptions.Item label="Business Model">
+                        {selectedLead.businessModel || 'Not defined'}
+                      </Descriptions.Item>
+                      <Descriptions.Item label="Company Size">
+                        {selectedLead.companySize || selectedLead.estimatedCompanySize || 'Unknown'}
+                      </Descriptions.Item>
+                      <Descriptions.Item label="Target Audience">
+                        {selectedLead.targetAudience || selectedLead.analysisData?.targetAudience || 'Not identified'}
+                      </Descriptions.Item>
+                      <Descriptions.Item label="Brand Voice">
+                        {selectedLead.brandVoice || selectedLead.analysisData?.brandVoice || 'Not defined'}
+                      </Descriptions.Item>
+                    </Descriptions>
                   </Card>
-                )}
-              </div>
-            )}
+                </Col>
+                <Col span={12}>
+                  <Card size="small" title="Business Intelligence Metrics">
+                    <Descriptions column={1} size="small">
+                      <Descriptions.Item label="Lead Score (Legacy)">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <Text strong style={{ color: getScoreColor(selectedLead.leadScore) }}>
+                            {selectedLead.leadScore || 0}
+                          </Text>
+                          <Progress 
+                            percent={selectedLead.leadScore || 0} 
+                            size="small" 
+                            strokeColor={getScoreColor(selectedLead.leadScore)}
+                            showInfo={false}
+                            style={{ width: '80px' }}
+                          />
+                        </div>
+                      </Descriptions.Item>
+                      <Descriptions.Item label="Organization ID">
+                        <Text code style={{ fontSize: '11px' }}>
+                          {selectedLead.organizationId || 'Not linked'}
+                        </Text>
+                      </Descriptions.Item>
+                    </Descriptions>
+                  </Card>
+                </Col>
+              </Row>
+
+              {/* Customer Scenarios */}
+              {selectedLead.customerScenarios && selectedLead.customerScenarios.length > 0 && (
+                <Card size="small" title="Customer Scenarios & Problems" style={{ marginTop: '16px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {selectedLead.customerScenarios.map((scenario, index) => (
+                      <div key={index} style={{ 
+                        padding: '12px', 
+                        border: '1px solid #f0f0f0', 
+                        borderRadius: '6px',
+                        backgroundColor: '#fafafa'
+                      }}>
+                        <Text strong style={{ color: '#1890ff' }}>
+                          Scenario {index + 1}
+                        </Text>
+                        <div style={{ marginTop: '4px' }}>
+                          <Text>{scenario.customerProblem || scenario.problem || scenario}</Text>
+                        </div>
+                        {scenario.businessValue && (
+                          <div style={{ marginTop: '8px', fontSize: '12px', color: '#666' }}>
+                            Priority: {scenario.businessValue.priority} | 
+                            Search Volume: {scenario.businessValue.searchVolume} |
+                            Conversion Potential: {scenario.businessValue.conversionPotential}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </Card>
+              )}
+
+              {/* Decision Makers */}
+              {selectedLead.decisionMakers && selectedLead.decisionMakers.length > 0 && (
+                <Card size="small" title="Decision Makers & Contacts" style={{ marginTop: '16px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '12px' }}>
+                    {selectedLead.decisionMakers.map((contact, index) => (
+                      <div key={index} style={{ 
+                        padding: '12px', 
+                        border: '1px solid #e8e8e8', 
+                        borderRadius: '6px',
+                        backgroundColor: '#f9f9f9'
+                      }}>
+                        <div style={{ marginBottom: '4px' }}>
+                          <Tag color="blue">{contact.role_type || 'Contact'}</Tag>
+                        </div>
+                        <Text strong>{contact.name || contact.title}</Text>
+                        {contact.title && contact.name && (
+                          <div style={{ fontSize: '12px', color: '#666' }}>
+                            {contact.title}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </Card>
+              )}
+
+              {/* Business Value Assessment */}
+              {selectedLead.businessValueAssessment && Object.keys(selectedLead.businessValueAssessment).length > 0 && (
+                <Card size="small" title="Business Value Assessment" style={{ marginTop: '16px' }}>
+                  <div style={{ fontSize: '13px' }}>
+                    <pre style={{ 
+                      whiteSpace: 'pre-wrap', 
+                      fontFamily: 'inherit',
+                      margin: 0,
+                      backgroundColor: '#f6f8fa',
+                      padding: '12px',
+                      borderRadius: '4px'
+                    }}>
+                      {JSON.stringify(selectedLead.businessValueAssessment, null, 2)}
+                    </pre>
+                  </div>
+                </Card>
+              )}
+            </div>
 
             {/* User Context Information */}
             <div style={{ marginTop: '24px' }}>
