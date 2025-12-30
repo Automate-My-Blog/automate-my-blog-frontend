@@ -66,10 +66,24 @@ const WebsiteAnalysisStepV2 = (props) => {
   const responsive = ComponentHelpers.getResponsiveStyles();
   const brandColors = getBrandColors(stepResults);
   
+  // URL prepopulation logic for logged-in users
+  const userOrganizationWebsite = user?.organizationWebsite;
+  const [urlOverrideMode, setUrlOverrideMode] = React.useState(false);
+  
+  // Auto-populate websiteUrl on component mount if user has organization website and no URL is set
+  React.useEffect(() => {
+    if (userOrganizationWebsite && !websiteUrl && !urlOverrideMode) {
+      setWebsiteUrl(userOrganizationWebsite);
+    }
+  }, [userOrganizationWebsite, websiteUrl, urlOverrideMode, setWebsiteUrl]);
+  
   // Extract domain for display
   const domain = websiteUrl ? 
     websiteUrl.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0] : 
     '';
+  
+  // Determine if input should be disabled (user has org website and hasn't overridden)
+  const shouldDisableInput = !!(userOrganizationWebsite && !urlOverrideMode);
 
   // =============================================================================
   // EVENT HANDLERS
@@ -531,18 +545,76 @@ const WebsiteAnalysisStepV2 = (props) => {
             
             <Form layout="vertical" onFinish={handleWebsiteSubmit}>
               <Form.Item
-                help="Example: mystore.com, myblog.org, mycompany.net"
+                help={userOrganizationWebsite && !urlOverrideMode ? 
+                  `Using your organization website from settings` : 
+                  "Example: mystore.com, myblog.org, mycompany.net"
+                }
                 style={{ marginBottom: '24px' }}
               >
-                <Input
-                  size="large"
-                  placeholder="Enter your website URL"
-                  value={websiteUrl}
-                  onChange={(e) => setWebsiteUrl(e.target.value)}
-                  prefix={<GlobalOutlined />}
-                  style={{ textAlign: 'center' }}
-                  onPressEnter={handleWebsiteSubmit}
-                />
+                <div style={{ position: 'relative' }}>
+                  <Input
+                    size="large"
+                    placeholder={userOrganizationWebsite && !urlOverrideMode ? 
+                      userOrganizationWebsite : 
+                      "Enter your website URL"
+                    }
+                    value={websiteUrl}
+                    onChange={(e) => setWebsiteUrl(e.target.value)}
+                    prefix={<GlobalOutlined />}
+                    style={{ 
+                      textAlign: 'center',
+                      backgroundColor: shouldDisableInput ? '#f5f5f5' : 'white'
+                    }}
+                    disabled={shouldDisableInput}
+                    onPressEnter={handleWebsiteSubmit}
+                  />
+                  {userOrganizationWebsite && !urlOverrideMode && (
+                    <div style={{ 
+                      marginTop: '8px', 
+                      textAlign: 'center' 
+                    }}>
+                      <Button 
+                        type="link" 
+                        size="small"
+                        onClick={() => {
+                          setUrlOverrideMode(true);
+                          setWebsiteUrl('');
+                        }}
+                        style={{ 
+                          color: '#666', 
+                          fontSize: '12px',
+                          padding: 0,
+                          height: 'auto'
+                        }}
+                      >
+                        Use a different website URL
+                      </Button>
+                    </div>
+                  )}
+                  {urlOverrideMode && (
+                    <div style={{ 
+                      marginTop: '8px', 
+                      textAlign: 'center' 
+                    }}>
+                      <Button 
+                        type="link" 
+                        size="small"
+                        onClick={() => {
+                          setUrlOverrideMode(false);
+                          setWebsiteUrl(userOrganizationWebsite);
+                        }}
+                        style={{ 
+                          color: '#1677ff', 
+                          fontSize: '12px',
+                          padding: 0,
+                          height: 'auto'
+                        }}
+                      >
+                        Use {userOrganizationWebsite}
+                      </Button>
+                    </div>
+                  )}
+                </div>
               </Form.Item>
               
               <Button 
