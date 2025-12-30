@@ -700,16 +700,25 @@ const AdminLeadsTab = () => {
                       <Descriptions.Item label="Brand Voice">
                         {selectedLead.brandVoice || selectedLead.analysisData?.brandVoice || 'Not defined'}
                       </Descriptions.Item>
+                      <Descriptions.Item label="Content Focus">
+                        {selectedLead.contentFocus || selectedLead.analysisData?.contentFocus || 'Not defined'}
+                      </Descriptions.Item>
+                      <Descriptions.Item label="Website Goals">
+                        {selectedLead.websiteGoals || selectedLead.analysisData?.websiteGoals || 'Not defined'}
+                      </Descriptions.Item>
+                      <Descriptions.Item label="End Users">
+                        {selectedLead.endUsers || selectedLead.analysisData?.endUsers || 'Not identified'}
+                      </Descriptions.Item>
                     </Descriptions>
                   </Card>
                 </Col>
                 <Col span={12}>
-                  <Card size="small" title="Business Intelligence Metrics">
+                  <Card size="small" title="Business Intelligence & Scoring">
                     <Descriptions column={1} size="small">
-                      <Descriptions.Item label="Lead Score (Legacy)">
+                      <Descriptions.Item label="Overall Lead Score">
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <Text strong style={{ color: getScoreColor(selectedLead.leadScore) }}>
-                            {selectedLead.leadScore || 0}
+                            {selectedLead.leadScore || 0}/100
                           </Text>
                           <Progress 
                             percent={selectedLead.leadScore || 0} 
@@ -720,6 +729,79 @@ const AdminLeadsTab = () => {
                           />
                         </div>
                       </Descriptions.Item>
+                      {selectedLead.scoringBreakdown && (
+                        <>
+                          <Descriptions.Item label={
+                            <Tooltip title="Based on company size: Enterprise (20pts), Medium (16pts), Small (12pts), Startup (8pts), Unknown (4pts)">
+                              <span style={{ cursor: 'help', textDecoration: 'underline dotted' }}>
+                                Business Size Score
+                              </span>
+                            </Tooltip>
+                          }>
+                            <Text>{selectedLead.scoringBreakdown.businessSize || 0}/20</Text>
+                          </Descriptions.Item>
+                          <Descriptions.Item label={
+                            <Tooltip title="Industry alignment with content marketing needs: Technology/E-commerce (20pts), Healthcare/Professional Services/Financial (16pts), Education (12pts), Other (8pts)">
+                              <span style={{ cursor: 'help', textDecoration: 'underline dotted' }}>
+                                Industry Fit Score
+                              </span>
+                            </Tooltip>
+                          }>
+                            <Text>{selectedLead.scoringBreakdown.industryFit || 0}/20</Text>
+                          </Descriptions.Item>
+                          <Descriptions.Item label={
+                            <Tooltip title="User engagement with the platform: Base score (12pts) + time spent analyzing + conversion steps completed">
+                              <span style={{ cursor: 'help', textDecoration: 'underline dotted' }}>
+                                Engagement Score
+                              </span>
+                            </Tooltip>
+                          }>
+                            <Text>{selectedLead.scoringBreakdown.engagement || 0}/20</Text>
+                          </Descriptions.Item>
+                          <Descriptions.Item label={
+                            <Tooltip title="Website analysis quality: Rich keyword data (8pts) + detailed target audience (6pts) + comprehensive content focus (6pts)">
+                              <span style={{ cursor: 'help', textDecoration: 'underline dotted' }}>
+                                Content Quality Score
+                              </span>
+                            </Tooltip>
+                          }>
+                            <Text>{selectedLead.scoringBreakdown.contentQuality || 0}/20</Text>
+                          </Descriptions.Item>
+                        </>
+                      )}
+                      {selectedLead.brandColors && (
+                        <Descriptions.Item label="Brand Colors">
+                          <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                            {selectedLead.brandColors.primary && (
+                              <div style={{ 
+                                width: '20px', height: '20px', 
+                                backgroundColor: selectedLead.brandColors.primary,
+                                borderRadius: '4px', border: '1px solid #d9d9d9',
+                                title: `Primary: ${selectedLead.brandColors.primary}`
+                              }} />
+                            )}
+                            {selectedLead.brandColors.secondary && (
+                              <div style={{ 
+                                width: '20px', height: '20px', 
+                                backgroundColor: selectedLead.brandColors.secondary,
+                                borderRadius: '4px', border: '1px solid #d9d9d9',
+                                title: `Secondary: ${selectedLead.brandColors.secondary}`
+                              }} />
+                            )}
+                            {selectedLead.brandColors.accent && (
+                              <div style={{ 
+                                width: '20px', height: '20px', 
+                                backgroundColor: selectedLead.brandColors.accent,
+                                borderRadius: '4px', border: '1px solid #d9d9d9',
+                                title: `Accent: ${selectedLead.brandColors.accent}`
+                              }} />
+                            )}
+                            <Text style={{ fontSize: '11px', marginLeft: '8px' }}>
+                              {selectedLead.brandColors.primary} • {selectedLead.brandColors.secondary} • {selectedLead.brandColors.accent}
+                            </Text>
+                          </div>
+                        </Descriptions.Item>
+                      )}
                       <Descriptions.Item label="Organization ID">
                         <Text code style={{ fontSize: '11px' }}>
                           {selectedLead.organizationId || 'Not linked'}
@@ -761,10 +843,27 @@ const AdminLeadsTab = () => {
               )}
 
               {/* Decision Makers */}
-              {selectedLead.decisionMakers && selectedLead.decisionMakers.length > 0 && (
-                <Card size="small" title="Decision Makers & Contacts" style={{ marginTop: '16px' }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '12px' }}>
-                    {selectedLead.decisionMakers.map((contact, index) => (
+              {selectedLead.decisionMakers && selectedLead.decisionMakers.length > 0 && (() => {
+                // Filter out invalid decision makers (single words or obvious non-person entries)
+                const validDecisionMakers = selectedLead.decisionMakers.filter(contact => {
+                  const title = contact.title || contact.name || '';
+                  const titleLower = title.toLowerCase();
+                  
+                  // Filter out obvious invalid entries
+                  const invalidTerms = ['energy', 'ai sectors', 'technology', 'sector', 'industry', 'market'];
+                  const isInvalid = invalidTerms.some(term => titleLower === term || titleLower.includes(` ${term}`) || titleLower.includes(`${term} `));
+                  
+                  // Must be more than just 1-2 words and look like a job title
+                  const wordCount = title.split(' ').length;
+                  const looksLikeJobTitle = title.includes('founder') || title.includes('ceo') || title.includes('entrepreneur') || wordCount >= 3;
+                  
+                  return !isInvalid && looksLikeJobTitle;
+                });
+                
+                return validDecisionMakers.length > 0 ? (
+                  <Card size="small" title="Decision Makers & Contacts" style={{ marginTop: '16px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '12px' }}>
+                      {validDecisionMakers.map((contact, index) => (
                       <div key={index} style={{ 
                         padding: '12px', 
                         border: '1px solid #e8e8e8', 
@@ -780,27 +879,41 @@ const AdminLeadsTab = () => {
                             {contact.title}
                           </div>
                         )}
-                      </div>
-                    ))}
-                  </div>
-                </Card>
-              )}
+                        </div>
+                      ))}
+                    </div>
+                  </Card>
+                ) : null;
+              })()}
 
-              {/* Business Value Assessment */}
-              {selectedLead.businessValueAssessment && Object.keys(selectedLead.businessValueAssessment).length > 0 && (
-                <Card size="small" title="Business Value Assessment" style={{ marginTop: '16px' }}>
-                  <div style={{ fontSize: '13px' }}>
-                    <pre style={{ 
-                      whiteSpace: 'pre-wrap', 
-                      fontFamily: 'inherit',
-                      margin: 0,
-                      backgroundColor: '#f6f8fa',
-                      padding: '12px',
-                      borderRadius: '4px'
-                    }}>
-                      {JSON.stringify(selectedLead.businessValueAssessment, null, 2)}
-                    </pre>
-                  </div>
+              {/* Business Strategy Insights */}
+              <Row gutter={[16, 16]} style={{ marginTop: '16px' }}>
+                {selectedLead.blogStrategy && (
+                  <Col span={12}>
+                    <Card size="small" title="Blog Strategy">
+                      <Text style={{ fontSize: '13px' }}>
+                        {selectedLead.blogStrategy}
+                      </Text>
+                    </Card>
+                  </Col>
+                )}
+                
+                {selectedLead.searchBehavior && (
+                  <Col span={12}>
+                    <Card size="small" title="Search Behavior Insights">
+                      <Text style={{ fontSize: '13px' }}>
+                        {selectedLead.searchBehavior}
+                      </Text>
+                    </Card>
+                  </Col>
+                )}
+              </Row>
+              
+              {selectedLead.connectionMessage && (
+                <Card size="small" title="Connection Strategy" style={{ marginTop: '16px' }}>
+                  <Text style={{ fontSize: '13px' }}>
+                    {selectedLead.connectionMessage}
+                  </Text>
                 </Card>
               )}
             </div>
@@ -814,14 +927,27 @@ const AdminLeadsTab = () => {
                 </Descriptions.Item>
                 <Descriptions.Item label="Referrer">
                   {selectedLead.referrerUrl ? (
-                    <Tooltip title={selectedLead.referrerUrl}>
-                      <Text style={{ fontSize: '12px' }}>
-                        {selectedLead.referrerUrl.length > 30 ? 
-                          selectedLead.referrerUrl.substring(0, 30) + '...' : 
-                          selectedLead.referrerUrl
-                        }
-                      </Text>
-                    </Tooltip>
+                    selectedLead.referrerUrl.includes('automatemyblog.com') ? (
+                      selectedLead.referrerUrl.includes('?ref=') || selectedLead.referrerUrl.includes('&ref=') ? (
+                        <Tooltip title={selectedLead.referrerUrl}>
+                          <Text style={{ fontSize: '12px' }}>
+                            Referral: {selectedLead.referrerUrl.length > 25 ? 
+                              selectedLead.referrerUrl.substring(0, 25) + '...' : 
+                              selectedLead.referrerUrl
+                            }
+                          </Text>
+                        </Tooltip>
+                      ) : 'Direct (from own site)'
+                    ) : (
+                      <Tooltip title={selectedLead.referrerUrl}>
+                        <Text style={{ fontSize: '12px' }}>
+                          {selectedLead.referrerUrl.length > 30 ? 
+                            selectedLead.referrerUrl.substring(0, 30) + '...' : 
+                            selectedLead.referrerUrl
+                          }
+                        </Text>
+                      </Tooltip>
+                    )
                   ) : 'Direct visit'}
                 </Descriptions.Item>
                 <Descriptions.Item label="User Agent" span={2}>
@@ -861,9 +987,19 @@ const AdminLeadsTab = () => {
                         </div>
                         {step.data && (
                           <div style={{ marginTop: '4px' }}>
-                            <Text style={{ fontSize: '12px' }}>
-                              {typeof step.data === 'string' ? step.data : JSON.stringify(step.data, null, 2)}
-                            </Text>
+                            {step.step === 'website_analysis' && typeof step.data === 'object' && step.data.lead_score ? (
+                              <div style={{ fontSize: '12px' }}>
+                                <Text>Lead Score: {step.data.lead_score} | </Text>
+                                <Text>Website: {step.data.website_url || selectedLead.websiteUrl}</Text>
+                                {step.data.session_info?.referrer && (
+                                  <div>Source: {step.data.session_info.referrer.includes('automatemyblog.com') ? 'Direct' : 'External'}</div>
+                                )}
+                              </div>
+                            ) : (
+                              <Text style={{ fontSize: '12px' }}>
+                                {typeof step.data === 'string' ? step.data : 'Activity completed'}
+                              </Text>
+                            )}
                           </div>
                         )}
                       </div>
