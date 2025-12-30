@@ -729,46 +729,38 @@ const AdminLeadsTab = () => {
                           />
                         </div>
                       </Descriptions.Item>
-                      {selectedLead.scoringBreakdown && (
-                        <>
-                          <Descriptions.Item label={
-                            <Tooltip title="Based on company size: Enterprise (20pts), Medium (16pts), Small (12pts), Startup (8pts), Unknown (4pts)">
-                              <span style={{ cursor: 'help', textDecoration: 'underline dotted' }}>
-                                Business Size Score
-                              </span>
-                            </Tooltip>
-                          }>
-                            <Text>{selectedLead.scoringBreakdown.businessSize || 0}/20</Text>
-                          </Descriptions.Item>
-                          <Descriptions.Item label={
-                            <Tooltip title="Industry alignment with content marketing needs: Technology/E-commerce (20pts), Healthcare/Professional Services/Financial (16pts), Education (12pts), Other (8pts)">
-                              <span style={{ cursor: 'help', textDecoration: 'underline dotted' }}>
-                                Industry Fit Score
-                              </span>
-                            </Tooltip>
-                          }>
-                            <Text>{selectedLead.scoringBreakdown.industryFit || 0}/20</Text>
-                          </Descriptions.Item>
-                          <Descriptions.Item label={
-                            <Tooltip title="User engagement with the platform: Base score (12pts) + time spent analyzing + conversion steps completed">
-                              <span style={{ cursor: 'help', textDecoration: 'underline dotted' }}>
-                                Engagement Score
-                              </span>
-                            </Tooltip>
-                          }>
-                            <Text>{selectedLead.scoringBreakdown.engagement || 0}/20</Text>
-                          </Descriptions.Item>
-                          <Descriptions.Item label={
-                            <Tooltip title="Website analysis quality: Rich keyword data (8pts) + detailed target audience (6pts) + comprehensive content focus (6pts)">
-                              <span style={{ cursor: 'help', textDecoration: 'underline dotted' }}>
-                                Content Quality Score
-                              </span>
-                            </Tooltip>
-                          }>
-                            <Text>{selectedLead.scoringBreakdown.contentQuality || 0}/20</Text>
-                          </Descriptions.Item>
-                        </>
-                      )}
+                      <Descriptions.Item label="Business Size Score">
+                        <div>
+                          <Text strong>{selectedLead.scoringBreakdown?.businessSize || 0}/20</Text>
+                          <div style={{ fontSize: '11px', color: '#666', marginTop: '4px' }}>
+                            Enterprise (20) • Medium (16) • Small (12) • Startup (8) • Unknown (4)
+                          </div>
+                        </div>
+                      </Descriptions.Item>
+                      <Descriptions.Item label="Industry Fit Score">
+                        <div>
+                          <Text strong>{selectedLead.scoringBreakdown?.industryFit || 0}/20</Text>
+                          <div style={{ fontSize: '11px', color: '#666', marginTop: '4px' }}>
+                            Tech/E-commerce (20) • Healthcare/Professional/Financial (16) • Education (12) • Other (8)
+                          </div>
+                        </div>
+                      </Descriptions.Item>
+                      <Descriptions.Item label="Engagement Score">
+                        <div>
+                          <Text strong>{selectedLead.scoringBreakdown?.engagement || 0}/20</Text>
+                          <div style={{ fontSize: '11px', color: '#666', marginTop: '4px' }}>
+                            Base (12) + time analyzing + conversion steps completed
+                          </div>
+                        </div>
+                      </Descriptions.Item>
+                      <Descriptions.Item label="Content Quality Score">
+                        <div>
+                          <Text strong>{selectedLead.scoringBreakdown?.contentQuality || 0}/20</Text>
+                          <div style={{ fontSize: '11px', color: '#666', marginTop: '4px' }}>
+                            Rich keywords (8) + target audience (6) + content focus (6)
+                          </div>
+                        </div>
+                      </Descriptions.Item>
                       {selectedLead.brandColors && (
                         <Descriptions.Item label="Brand Colors">
                           <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
