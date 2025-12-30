@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Layout, Menu, Button, Avatar, Dropdown, Space, Alert, message } from 'antd';
 import {
   DashboardOutlined,
@@ -62,9 +62,50 @@ const DashboardLayout = ({
   
   // Use prop user if provided, otherwise fall back to context user
   const user = propUser || contextUser;
+
+  // Scroll spy to update active menu item
+  useEffect(() => {
+    if (!user) return;
+    
+    const handleScroll = () => {
+      const sections = ['dashboard', 'audience-segments', 'posts', 'analytics', 'settings'];
+      const scrollPosition = window.scrollY + 200; // Offset for headers
+      
+      for (let i = sections.length - 1; i >= 0; i--) {
+        const section = document.getElementById(`section-${sections[i]}`);
+        if (section && section.offsetTop <= scrollPosition) {
+          if (activeTab !== sections[i]) {
+            setActiveTab(sections[i]);
+          }
+          break;
+        }
+      }
+    };
+
+    // Only add scroll listener for main workflow tabs
+    const mainTabs = ['dashboard', 'audience-segments', 'posts', 'analytics', 'settings'];
+    if (mainTabs.includes(activeTab)) {
+      window.addEventListener('scroll', handleScroll);
+      return () => window.removeEventListener('scroll', handleScroll);
+    }
+  }, [user, activeTab]);
   
-  // Handle tab changes and notify parent
+  // Handle tab changes with smooth scrolling
   const handleTabChange = (newTab) => {
+    // For main workflow tabs, use smooth scrolling instead of tab switching
+    const mainTabs = ['dashboard', 'audience-segments', 'posts', 'analytics', 'settings'];
+    
+    if (mainTabs.includes(newTab)) {
+      const targetSection = document.getElementById(`section-${newTab}`);
+      if (targetSection) {
+        targetSection.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
+          inline: 'nearest'
+        });
+      }
+    }
+    
     setActiveTab(newTab);
     if (onActiveTabChange) {
       onActiveTabChange(newTab);
@@ -184,20 +225,10 @@ const DashboardLayout = ({
   ];
 
   const renderContent = () => {
+    // For special tabs that still use traditional tab behavior
     switch (activeTab) {
       case 'newpost':
         return <NewPostTab workflowContent={workflowContent} showWorkflow={!!workflowContent} />;
-      case 'dashboard':
-        return <DashboardTab />;
-      case 'audience-segments':
-        return <AudienceSegmentsTab />;
-      case 'posts':
-        return <PostsTab />;
-      case 'analytics':
-        return <AnalyticsTab />;
-      case 'settings':
-        return <SettingsTab />;
-      // ADMIN TABS - Super user components
       case 'admin-users':
         return <AdminUsersTab />;
       case 'admin-leads':
@@ -209,8 +240,83 @@ const DashboardLayout = ({
       case 'admin-system':
         return <AdminSystemTab />;
       default:
-        return <DashboardTab />;
+        // For main workflow tabs, render vertical scrolling layout
+        return renderVerticalWorkflow();
     }
+  };
+
+  // Render the main workflow as vertical scrolling sections
+  const renderVerticalWorkflow = () => {
+    return (
+      <div style={{ 
+        position: 'relative',
+        minHeight: '100vh'
+      }}>
+        {/* Home Section */}
+        <section 
+          id="section-dashboard" 
+          style={{ 
+            minHeight: '100vh', 
+            padding: '20px 0',
+            scrollMarginTop: '100px' // Offset for progressive headers
+          }}
+        >
+          <DashboardTab />
+        </section>
+
+        {/* Audience Segments Section */}
+        <section 
+          id="section-audience-segments" 
+          style={{ 
+            minHeight: '100vh', 
+            padding: '20px 0',
+            scrollMarginTop: '100px',
+            borderTop: '1px solid #f0f0f0'
+          }}
+        >
+          <AudienceSegmentsTab />
+        </section>
+
+        {/* Posts Section */}
+        <section 
+          id="section-posts" 
+          style={{ 
+            minHeight: '100vh', 
+            padding: '20px 0',
+            scrollMarginTop: '100px',
+            borderTop: '1px solid #f0f0f0'
+          }}
+        >
+          <PostsTab />
+        </section>
+
+        {/* Analytics Section */}
+        <section 
+          id="section-analytics" 
+          style={{ 
+            minHeight: '100vh', 
+            padding: '20px 0',
+            scrollMarginTop: '100px',
+            borderTop: '1px solid #f0f0f0'
+          }}
+        >
+          <AnalyticsTab />
+        </section>
+
+        {/* Settings Section */}
+        <section 
+          id="section-settings" 
+          style={{ 
+            minHeight: '100vh', 
+            padding: '20px 0',
+            scrollMarginTop: '100px',
+            borderTop: '1px solid #f0f0f0'
+          }}
+        >
+          <SettingsTab />
+        </section>
+      </div>
+    );
   };
 
   return (

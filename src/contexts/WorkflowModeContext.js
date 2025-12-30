@@ -118,37 +118,33 @@ export const WorkflowModeProvider = ({ children }) => {
     enterWorkflowMode(stepIndex, workflowData);
   }, [enterWorkflowMode, workflowData]);
   
-  // Auto-scroll functionality with actual DOM scrolling
+  // Auto-scroll functionality with vertical section scrolling
   const autoScrollToTab = useCallback((tabKey, options = {}) => {
     const {
       smooth = true,
-      duration = 800,
-      offset = -80
+      offset = -100
     } = options;
     
     // Navigate to the tab first
     setActiveTab(tabKey);
     
-    // Find the tab content element to scroll to
-    setTimeout(() => {
-      const tabElement = document.querySelector(`[data-tab="${tabKey}"]`) || 
-                        document.querySelector(`[data-testid="${tabKey}-tab"]`) ||
-                        document.querySelector('.ant-tabs-tabpane-active');
+    // Find the section element to scroll to
+    const sectionElement = document.getElementById(`section-${tabKey}`);
+    
+    if (sectionElement) {
+      // Calculate scroll position with offset for progressive headers
+      const elementTop = sectionElement.getBoundingClientRect().top + window.pageYOffset;
+      const scrollToPosition = Math.max(0, elementTop + offset);
       
-      if (tabElement) {
-        const elementTop = tabElement.getBoundingClientRect().top + window.pageYOffset;
-        const scrollToPosition = elementTop + offset;
-        
-        if (smooth) {
-          window.scrollTo({
-            top: scrollToPosition,
-            behavior: 'smooth'
-          });
-        } else {
-          window.scrollTo(0, scrollToPosition);
-        }
+      if (smooth) {
+        window.scrollTo({
+          top: scrollToPosition,
+          behavior: 'smooth'
+        });
+      } else {
+        window.scrollTo(0, scrollToPosition);
       }
-    }, 100); // Small delay to allow tab change to render
+    }
   }, []);
   
   // Navigation functions
