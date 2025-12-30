@@ -19,12 +19,12 @@ import {
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import NewPostTab from './NewPostTab';
-import OverviewTab from './OverviewTab';
+import DashboardTab from './DashboardTab';
 import PostsTab from './PostsTab';
-import DiscoveryTab from './DiscoveryTab';
-import ProjectsTab from './ProjectsTab';
+import AudienceSegmentsTab from './AudienceSegmentsTab';
 import AnalyticsTab from './AnalyticsTab';
 import SettingsTab from './SettingsTab';
+import ProgressiveHeaders from '../Workflow/ProgressiveHeaders';
 // ADMIN COMPONENTS - Super user only
 import AdminUsersTab from './AdminUsersTab';
 import AdminAnalyticsTab from './AdminAnalyticsTab';
@@ -34,7 +34,18 @@ import AdminLeadsTab from './AdminLeadsTab';
 
 const { Header, Sider, Content } = Layout;
 
-const DashboardLayout = ({ user: propUser, loginContext, workflowContent, showDashboard, isMobile, onActiveTabChange }) => {
+const DashboardLayout = ({ 
+  user: propUser, 
+  loginContext, 
+  workflowContent, 
+  showDashboard, 
+  isMobile, 
+  onActiveTabChange,
+  // Progressive headers props
+  completedWorkflowSteps = [],
+  stepResults = {},
+  onEditWorkflowStep
+}) => {
   const [activeTab, setActiveTab] = useState('newpost');
   const [collapsed, setCollapsed] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
@@ -83,27 +94,22 @@ const DashboardLayout = ({ user: propUser, loginContext, workflowContent, showDa
     {
       key: 'newpost',
       icon: <EditOutlined />,
-      label: 'New Post',
+      label: 'Create New Post',
     },
     {
-      key: 'overview',
+      key: 'dashboard',
       icon: <DashboardOutlined />,
-      label: 'Overview',
+      label: 'Dashboard',
+    },
+    {
+      key: 'audience-segments',
+      icon: <TeamOutlined />,
+      label: 'Audience Segments',
     },
     {
       key: 'posts',
       icon: <FileTextOutlined />,
       label: 'Posts',
-    },
-    {
-      key: 'discovery',
-      icon: <SearchOutlined />,
-      label: 'Discovery',
-    },
-    {
-      key: 'projects',
-      icon: <FolderOutlined />,
-      label: 'Projects',
     },
     {
       key: 'analytics',
@@ -181,14 +187,12 @@ const DashboardLayout = ({ user: propUser, loginContext, workflowContent, showDa
     switch (activeTab) {
       case 'newpost':
         return <NewPostTab workflowContent={workflowContent} showWorkflow={!!workflowContent} />;
-      case 'overview':
-        return <OverviewTab />;
+      case 'dashboard':
+        return <DashboardTab />;
+      case 'audience-segments':
+        return <AudienceSegmentsTab />;
       case 'posts':
         return <PostsTab />;
-      case 'discovery':
-        return <DiscoveryTab />;
-      case 'projects':
-        return <ProjectsTab />;
       case 'analytics':
         return <AnalyticsTab />;
       case 'settings':
@@ -205,7 +209,7 @@ const DashboardLayout = ({ user: propUser, loginContext, workflowContent, showDa
       case 'admin-system':
         return <AdminSystemTab />;
       default:
-        return <NewPostTab workflowContent={workflowContent} showWorkflow={!!workflowContent} />;
+        return <DashboardTab />;
     }
   };
 
@@ -389,13 +393,23 @@ const DashboardLayout = ({ user: propUser, loginContext, workflowContent, showDa
         </div>
       )}
 
+      {/* Progressive Headers - Shows completed workflow steps */}
+      {user && activeTab !== 'newpost' && completedWorkflowSteps.length > 0 && (
+        <ProgressiveHeaders 
+          completedWorkflowSteps={completedWorkflowSteps}
+          stepResults={stepResults}
+          onEditStep={onEditWorkflowStep}
+        />
+      )}
+
       {/* Content area for non-newpost tabs */}
       {user && activeTab !== 'newpost' && (
         <div style={{ 
           gridArea: 'main',
           padding: isMobile ? '16px 16px 80px 16px' : '24px',
           background: '#f5f5f5',
-          overflow: 'auto'
+          overflow: 'auto',
+          paddingTop: completedWorkflowSteps.length > 0 ? '8px' : '24px'
         }}>
           <div style={{
             background: '#fff',

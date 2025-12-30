@@ -144,7 +144,7 @@ export const StepComponentRequirements = {
     styling: {
       useInlineStyles: true, // Match existing App.js approach
       responsiveDesign: true, // Mobile-first approach
-      brandColorIntegration: true // Use stepResults.websiteAnalysis.brandColors
+      brandColorIntegration: false // Brand colors functionality removed
     },
 
     // Error handling
@@ -199,18 +199,15 @@ export const ComponentHelpers = {
   },
 
   /**
-   * Get brand colors from step results
-   * @param {Object} stepResults - Workflow step results
-   * @returns {Object} Brand colors with fallbacks
+   * Get default colors (brand colors functionality removed)
+   * @returns {Object} Static default colors
    */
-  getBrandColors(stepResults) {
-    const defaultColors = {
-      primary: '#6B8CAE',
-      secondary: '#F4E5D3',
-      accent: '#8FBC8F'
+  getDefaultColors() {
+    return {
+      primary: '#1890ff',
+      secondary: '#f0f2ff',
+      accent: '#722ed1'
     };
-
-    return stepResults?.websiteAnalysis?.brandColors || defaultColors;
   },
 
   /**
@@ -235,14 +232,13 @@ export const ComponentHelpers = {
   /**
    * Common loading state component
    * @param {string} message - Loading message
-   * @param {Object} brandColors - Brand colors
    * @returns {JSX.Element} Loading component
    */
-  LoadingState: ({ message, brandColors }) => (
+  LoadingState: ({ message }) => (
     <div style={{ textAlign: 'center', padding: '40px 20px' }}>
       <div style={{ 
         fontSize: '48px', 
-        color: brandColors.primary, 
+        color: '#1890ff', 
         marginBottom: '24px',
         animation: 'pulse 2s infinite'
       }}>

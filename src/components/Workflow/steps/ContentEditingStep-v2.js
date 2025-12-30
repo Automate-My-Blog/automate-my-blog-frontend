@@ -73,8 +73,8 @@ const ContentEditingStepV2 = (props) => {
     // Configuration
     embedded = false,
     
-    // Brand colors helper
-    getBrandColors = ComponentHelpers.getBrandColors
+    // Default colors helper
+    getDefaultColors = ComponentHelpers.getDefaultColors
   } = props;
 
   // =============================================================================
@@ -82,7 +82,7 @@ const ContentEditingStepV2 = (props) => {
   // =============================================================================
 
   const responsive = ComponentHelpers.getResponsiveStyles();
-  const brandColors = getBrandColors(stepResults);
+  const defaultColors = getDefaultColors();
   const analysis = stepResults?.websiteAnalysis || {};
 
   // Helper to determine if user can edit post
@@ -197,7 +197,7 @@ const ContentEditingStepV2 = (props) => {
       <div>
         <Title level={2} style={{ 
           margin: 0, 
-          color: analysis.brandColors.primary,
+          color: defaultColors.primary,
           fontSize: responsive.fontSize.title
         }}>
           Edit Your Generated Content
@@ -224,8 +224,8 @@ const ContentEditingStepV2 = (props) => {
           onClick={togglePreviewMode}
           type={previewMode ? 'primary' : 'default'}
           style={previewMode ? {
-            backgroundColor: analysis.brandColors.primary,
-            borderColor: analysis.brandColors.primary
+            backgroundColor: defaultColors.primary,
+            borderColor: defaultColors.primary
           } : {}}
         >
           {previewMode ? 'Edit Mode' : 'Preview Mode'}
@@ -298,10 +298,10 @@ const ContentEditingStepV2 = (props) => {
     <div style={{ 
       marginBottom: '16px', 
       padding: '12px', 
-      backgroundColor: analysis.brandColors.secondary + '40', 
+      backgroundColor: defaultColors.secondary + '40', 
       borderRadius: '6px' 
     }}>
-      <Text strong style={{ color: analysis.brandColors.primary }}>
+      <Text strong style={{ color: defaultColors.primary }}>
         Content styled with your brand colors:
       </Text>
       <Space style={{ marginLeft: '12px' }}>
@@ -309,21 +309,21 @@ const ContentEditingStepV2 = (props) => {
           display: 'inline-block', 
           width: '16px', 
           height: '16px', 
-          backgroundColor: analysis.brandColors.primary,
+          backgroundColor: defaultColors.primary,
           borderRadius: '2px' 
         }} />
         <div style={{ 
           display: 'inline-block', 
           width: '16px', 
           height: '16px', 
-          backgroundColor: analysis.brandColors.secondary,
+          backgroundColor: defaultColors.secondary,
           borderRadius: '2px' 
         }} />
         <div style={{ 
           display: 'inline-block', 
           width: '16px', 
           height: '16px', 
-          backgroundColor: analysis.brandColors.accent,
+          backgroundColor: defaultColors.accent,
           borderRadius: '2px' 
         }} />
       </Space>
@@ -340,19 +340,19 @@ const ContentEditingStepV2 = (props) => {
     return (
       <div style={{ 
         marginBottom: '20px',
-        border: `2px solid ${previewMode ? '#e8e8e8' : analysis.brandColors.primary}`,
+        border: `2px solid ${previewMode ? '#e8e8e8' : defaultColors.primary}`,
         borderRadius: '12px',
         overflow: 'hidden'
       }}>
         <div style={{ 
-          backgroundColor: previewMode ? '#fafafa' : analysis.brandColors.primary + '10',
+          backgroundColor: previewMode ? '#fafafa' : defaultColors.primary + '10',
           padding: '16px',
           borderBottom: '1px solid #e8e8e8'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <Text strong style={{ 
               fontSize: responsive.fontSize.text,
-              color: previewMode ? '#666' : analysis.brandColors.primary 
+              color: previewMode ? '#666' : defaultColors.primary 
             }}>
               📋 Blog Post Guidelines
             </Text>
@@ -523,11 +523,11 @@ const ContentEditingStepV2 = (props) => {
             onClick={regenerateWithFeedback}
             disabled={isPostLocked()}
             style={{
-              backgroundColor: user ? '#52c41a' : analysis.brandColors.primary,
-              borderColor: user ? '#52c41a' : analysis.brandColors.primary,
+              backgroundColor: user ? '#52c41a' : defaultColors.primary,
+              borderColor: user ? '#52c41a' : defaultColors.primary,
               minWidth: '150px',
               fontWeight: '500',
-              boxShadow: user ? `0 2px 8px #52c41a30` : `0 2px 8px ${analysis.brandColors.primary}30`
+              boxShadow: user ? `0 2px 8px #52c41a30` : `0 2px 8px ${defaultColors.primary}30`
             }}
           >
             {isLoading || blogGenerating ? 'Regenerating...' : (user ? '✓ Regenerate' : 'Regenerate')}
@@ -577,7 +577,7 @@ const ContentEditingStepV2 = (props) => {
     <div>
       {previewMode ? (
         <div style={{ minHeight: '600px' }}>
-          <Title level={4} style={{ marginBottom: '16px', color: analysis.brandColors.primary }}>
+          <Title level={4} style={{ marginBottom: '16px', color: defaultColors.primary }}>
             Styled Preview
           </Title>
           {/* Note: renderStyledContent would be implemented separately */}
@@ -625,10 +625,10 @@ const ContentEditingStepV2 = (props) => {
         onClick={handleExport}
         disabled={isPostLocked()}
         style={{ 
-          backgroundColor: analysis.brandColors.primary, 
-          borderColor: analysis.brandColors.primary,
+          backgroundColor: defaultColors.primary, 
+          borderColor: defaultColors.primary,
           fontWeight: '500',
-          boxShadow: `0 2px 8px ${analysis.brandColors.primary}30`
+          boxShadow: `0 2px 8px ${defaultColors.primary}30`
         }}
       >
         {isPostLocked() ? 'Post Exported & Locked' : 'Download Your Content'}

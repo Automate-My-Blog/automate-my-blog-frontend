@@ -55,8 +55,8 @@ const WebsiteAnalysisStepV2 = (props) => {
     // Web search insights
     webSearchInsights = { researchQuality: 'basic' },
     
-    // Brand colors helper
-    getBrandColors = ComponentHelpers.getBrandColors
+    // Default colors helper
+    getDefaultColors = ComponentHelpers.getDefaultColors
   } = props;
 
   // =============================================================================
@@ -64,7 +64,7 @@ const WebsiteAnalysisStepV2 = (props) => {
   // =============================================================================
 
   const responsive = ComponentHelpers.getResponsiveStyles();
-  const brandColors = getBrandColors(stepResults);
+  const defaultColors = getDefaultColors();
   
   // URL prepopulation logic for logged-in users
   const userOrganizationWebsite = user?.organizationWebsite;
@@ -155,9 +155,9 @@ const WebsiteAnalysisStepV2 = (props) => {
     return (
       <Card 
         style={{ 
-          border: `2px solid ${analysis.brandColors.primary}`,
+          border: `2px solid ${defaultColors.primary}`,
           borderRadius: '12px',
-          background: `linear-gradient(135deg, ${analysis.brandColors.secondary}15, #ffffff)`,
+          background: `linear-gradient(135deg, ${defaultColors.secondary}15, #ffffff)`,
           marginBottom: '30px'
         }}
       >
@@ -168,7 +168,7 @@ const WebsiteAnalysisStepV2 = (props) => {
               level={3} 
               style={{ 
                 margin: 0, 
-                color: analysis.brandColors.primary,
+                color: defaultColors.primary,
                 fontSize: responsive.fontSize.title,
                 fontWeight: 600,
                 marginBottom: '4px'
@@ -185,7 +185,7 @@ const WebsiteAnalysisStepV2 = (props) => {
               icon={<SettingOutlined />} 
               onClick={editAnalysisResults}
               type="link"
-              style={{ color: analysis.brandColors.primary }}
+              style={{ color: defaultColors.primary }}
             >
               Edit
             </Button>
@@ -248,13 +248,13 @@ const WebsiteAnalysisStepV2 = (props) => {
           <Col xs={24} md={12}>
             <div style={{ 
               padding: '16px', 
-              backgroundColor: analysis.brandColors.primary + '08', 
+              backgroundColor: defaultColors.primary + '08', 
               borderRadius: '8px',
-              border: `1px solid ${analysis.brandColors.primary}20`,
+              border: `1px solid ${defaultColors.primary}20`,
               height: '100%'
             }}>
               <Text strong style={{ 
-                color: analysis.brandColors.primary, 
+                color: defaultColors.primary, 
                 fontSize: responsive.fontSize.text, 
                 marginBottom: '8px', 
                 display: 'block' 
@@ -270,13 +270,13 @@ const WebsiteAnalysisStepV2 = (props) => {
           <Col xs={24} md={12}>
             <div style={{ 
               padding: '16px', 
-              backgroundColor: analysis.brandColors.accent + '08', 
+              backgroundColor: defaultColors.accent + '08', 
               borderRadius: '8px',
-              border: `1px solid ${analysis.brandColors.accent}20`,
+              border: `1px solid ${defaultColors.accent}20`,
               height: '100%'
             }}>
               <Text strong style={{ 
-                color: analysis.brandColors.accent, 
+                color: defaultColors.accent, 
                 fontSize: responsive.fontSize.text, 
                 marginBottom: '8px', 
                 display: 'block' 
@@ -292,13 +292,13 @@ const WebsiteAnalysisStepV2 = (props) => {
           <Col xs={24} md={12}>
             <div style={{ 
               padding: '16px', 
-              backgroundColor: analysis.brandColors.secondary + '30', 
+              backgroundColor: defaultColors.secondary + '30', 
               borderRadius: '8px',
-              border: `1px solid ${analysis.brandColors.secondary}60`,
+              border: `1px solid ${defaultColors.secondary}60`,
               height: '100%'
             }}>
               <Text strong style={{ 
-                color: analysis.brandColors.primary, 
+                color: defaultColors.primary, 
                 fontSize: responsive.fontSize.text, 
                 marginBottom: '8px', 
                 display: 'block' 
@@ -314,13 +314,13 @@ const WebsiteAnalysisStepV2 = (props) => {
           <Col xs={24} md={12}>
             <div style={{ 
               padding: '16px', 
-              backgroundColor: analysis.brandColors.primary + '06', 
+              backgroundColor: defaultColors.primary + '06', 
               borderRadius: '8px',
-              border: `1px solid ${analysis.brandColors.primary}15`,
+              border: `1px solid ${defaultColors.primary}15`,
               height: '100%'
             }}>
               <Text strong style={{ 
-                color: analysis.brandColors.primary, 
+                color: defaultColors.primary, 
                 fontSize: responsive.fontSize.text, 
                 marginBottom: '8px', 
                 display: 'block' 
@@ -336,13 +336,13 @@ const WebsiteAnalysisStepV2 = (props) => {
           <Col xs={24} md={12}>
             <div style={{ 
               padding: '16px', 
-              backgroundColor: analysis.brandColors.secondary + '20', 
+              backgroundColor: defaultColors.secondary + '20', 
               borderRadius: '8px',
-              border: `1px solid ${analysis.brandColors.secondary}40`,
+              border: `1px solid ${defaultColors.secondary}40`,
               height: '100%'
             }}>
               <Text strong style={{ 
-                color: analysis.brandColors.primary, 
+                color: defaultColors.primary, 
                 fontSize: responsive.fontSize.text, 
                 marginBottom: '12px', 
                 display: 'block' 
@@ -354,39 +354,39 @@ const WebsiteAnalysisStepV2 = (props) => {
                   <div style={{
                     width: '20px',
                     height: '20px',
-                    backgroundColor: analysis.brandColors.primary,
+                    backgroundColor: defaultColors.primary,
                     borderRadius: '4px',
                     border: '1px solid #ddd',
                     flexShrink: 0
                   }} />
                   <Text style={{ fontSize: responsive.fontSize.small, color: '#666' }}>
-                    <Text strong>Primary:</Text> {analysis.brandColors.primary}
+                    <Text strong>Primary:</Text> {defaultColors.primary}
                   </Text>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <div style={{
                     width: '20px',
                     height: '20px',
-                    backgroundColor: analysis.brandColors.secondary,
+                    backgroundColor: defaultColors.secondary,
                     borderRadius: '4px',
                     border: '1px solid #ddd',
                     flexShrink: 0
                   }} />
                   <Text style={{ fontSize: responsive.fontSize.small, color: '#666' }}>
-                    <Text strong>Secondary:</Text> {analysis.brandColors.secondary}
+                    <Text strong>Secondary:</Text> {defaultColors.secondary}
                   </Text>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <div style={{
                     width: '20px',
                     height: '20px',
-                    backgroundColor: analysis.brandColors.accent,
+                    backgroundColor: defaultColors.accent,
                     borderRadius: '4px',
                     border: '1px solid #ddd',
                     flexShrink: 0
                   }} />
                   <Text style={{ fontSize: responsive.fontSize.small, color: '#666' }}>
-                    <Text strong>Accent:</Text> {analysis.brandColors.accent}
+                    <Text strong>Accent:</Text> {defaultColors.accent}
                   </Text>
                 </div>
               </div>
@@ -401,13 +401,13 @@ const WebsiteAnalysisStepV2 = (props) => {
               <Col xs={24} lg={8}>
                 <div style={{ 
                   padding: '16px', 
-                  backgroundColor: analysis.brandColors.accent + '08', 
+                  backgroundColor: defaultColors.accent + '08', 
                   borderRadius: '8px',
-                  border: `1px solid ${analysis.brandColors.accent}20`,
+                  border: `1px solid ${defaultColors.accent}20`,
                   height: '100%'
                 }}>
                   <Text strong style={{ 
-                    color: analysis.brandColors.accent, 
+                    color: defaultColors.accent, 
                     fontSize: responsive.fontSize.text, 
                     marginBottom: '8px', 
                     display: 'block' 
@@ -425,13 +425,13 @@ const WebsiteAnalysisStepV2 = (props) => {
               <Col xs={24} lg={8}>
                 <div style={{ 
                   padding: '16px', 
-                  backgroundColor: analysis.brandColors.primary + '08', 
+                  backgroundColor: defaultColors.primary + '08', 
                   borderRadius: '8px',
-                  border: `1px solid ${analysis.brandColors.primary}20`,
+                  border: `1px solid ${defaultColors.primary}20`,
                   height: '100%'
                 }}>
                   <Text strong style={{ 
-                    color: analysis.brandColors.primary, 
+                    color: defaultColors.primary, 
                     fontSize: responsive.fontSize.text, 
                     marginBottom: '8px', 
                     display: 'block' 
@@ -449,13 +449,13 @@ const WebsiteAnalysisStepV2 = (props) => {
               <Col xs={24} lg={8}>
                 <div style={{ 
                   padding: '16px', 
-                  backgroundColor: analysis.brandColors.secondary + '40', 
+                  backgroundColor: defaultColors.secondary + '40', 
                   borderRadius: '8px',
-                  border: `1px solid ${analysis.brandColors.secondary}60`,
+                  border: `1px solid ${defaultColors.secondary}60`,
                   height: '100%'
                 }}>
                   <Text strong style={{ 
-                    color: analysis.brandColors.primary, 
+                    color: defaultColors.primary, 
                     fontSize: responsive.fontSize.text, 
                     marginBottom: '8px', 
                     display: 'block' 
@@ -480,7 +480,7 @@ const WebsiteAnalysisStepV2 = (props) => {
             borderRadius: '8px'
           }}>
             <Text strong style={{ 
-              color: analysis.brandColors.primary, 
+              color: defaultColors.primary, 
               fontSize: responsive.fontSize.text, 
               marginBottom: '12px', 
               display: 'block' 
@@ -491,7 +491,7 @@ const WebsiteAnalysisStepV2 = (props) => {
               {analysis.keywords.map((keyword, index) => (
                 <Tag 
                   key={index} 
-                  color={analysis.brandColors.primary}
+                  color={defaultColors.primary}
                   style={{ 
                     borderRadius: '12px',
                     fontSize: responsive.fontSize.small,
@@ -526,7 +526,7 @@ const WebsiteAnalysisStepV2 = (props) => {
             <div style={{ marginBottom: '24px' }}>
               <ScanOutlined style={{ 
                 fontSize: responsive.isMobile ? '32px' : '48px', 
-                color: brandColors.primary, 
+                color: defaultColors.primary, 
                 marginBottom: '16px' 
               }} />
               <Title level={2} style={{ 
@@ -625,8 +625,8 @@ const WebsiteAnalysisStepV2 = (props) => {
                 loading={isLoading}
                 style={{ 
                   minWidth: '200px',
-                  backgroundColor: brandColors.primary,
-                  borderColor: brandColors.primary
+                  backgroundColor: defaultColors.primary,
+                  borderColor: defaultColors.primary
                 }}
                 icon={<ScanOutlined />}
               >
@@ -653,7 +653,7 @@ const WebsiteAnalysisStepV2 = (props) => {
             <ScanOutlined 
               style={{ 
                 fontSize: responsive.isMobile ? '48px' : '64px', 
-                color: brandColors.primary, 
+                color: defaultColors.primary, 
                 marginBottom: '24px',
                 animation: 'pulse 2s infinite'
               }} 
@@ -683,7 +683,7 @@ const WebsiteAnalysisStepV2 = (props) => {
             </div>
 
             <div style={{ 
-              background: `linear-gradient(90deg, ${brandColors.primary} 0%, ${brandColors.accent} 50%, ${brandColors.secondary} 100%)`, 
+              background: `linear-gradient(90deg, ${defaultColors.primary} 0%, ${defaultColors.accent} 50%, ${defaultColors.secondary} 100%)`, 
               height: '4px', 
               borderRadius: '2px',
               overflow: 'hidden',
@@ -782,8 +782,8 @@ const WebsiteAnalysisStepV2 = (props) => {
                       onClick={continueToStrategy}
                       style={{ 
                         minWidth: '200px',
-                        backgroundColor: brandColors.primary,
-                        borderColor: brandColors.primary
+                        backgroundColor: defaultColors.primary,
+                        borderColor: defaultColors.primary
                       }}
                       icon={<SearchOutlined />}
                     >
@@ -804,8 +804,8 @@ const WebsiteAnalysisStepV2 = (props) => {
                     onClick={continueToStrategy}
                     style={{ 
                       minWidth: '200px',
-                      backgroundColor: brandColors.primary,
-                      borderColor: brandColors.primary
+                      backgroundColor: defaultColors.primary,
+                      borderColor: defaultColors.primary
                     }}
                     icon={<LoginOutlined />}
                   >
@@ -822,7 +822,7 @@ const WebsiteAnalysisStepV2 = (props) => {
       {isLoading && (
         <ComponentHelpers.LoadingState 
           message={scanningMessage || "Processing..."}
-          brandColors={brandColors}
+          defaultColors={defaultColors}
         />
       )}
 

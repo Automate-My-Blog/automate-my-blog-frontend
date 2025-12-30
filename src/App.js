@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { WorkflowModeProvider } from './contexts/WorkflowModeContext';
 import WorkflowContainerV2 from './components/Workflow/WorkflowContainer-v2';
 import DashboardLayout from './components/Dashboard/DashboardLayout';
 import SEOHead from './components/SEOHead';
@@ -83,11 +84,13 @@ const AppContent = () => {
   );
 };
 
-// Main App wrapper with AuthProvider
+// Main App wrapper with AuthProvider and WorkflowModeProvider
 const App = () => {
   return (
     <AuthProvider>
-      <AppContent />
+      <WorkflowModeProvider>
+        <AppContent />
+      </WorkflowModeProvider>
     </AuthProvider>
   );
 };

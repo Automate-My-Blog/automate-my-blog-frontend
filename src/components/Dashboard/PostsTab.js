@@ -13,6 +13,8 @@ import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay } from 'date-fns';
 import { enUS } from 'date-fns/locale';
 import { useAuth } from '../../contexts/AuthContext';
+import { useTabMode } from '../../hooks/useTabMode';
+import ModeToggle, { WorkflowGuidance } from '../Workflow/ModeToggle';
 import api from '../../services/api';
 import SchedulingModal from '../Modals/SchedulingModal';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
@@ -68,11 +70,13 @@ const localizer = dateFnsLocalizer({
 
 const PostsTab = () => {
   const { user } = useAuth();
+  const tabMode = useTabMode('posts');
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState('list'); // 'list' or 'calendar'
   const [showSchedulingModal, setShowSchedulingModal] = useState(false);
   const [selectedPost, setSelectedPost] = useState(null);
+  const [contentGenerated, setContentGenerated] = useState(false);
 
   // Check if user can schedule (Creator, Professional, Enterprise)
   const canSchedule = user && user.plan && !['payasyougo', 'free'].includes(user.plan);
@@ -140,6 +144,24 @@ const PostsTab = () => {
     setPosts(updatedPosts);
     setShowSchedulingModal(false);
     setSelectedPost(null);
+  };
+
+  // Handle content creation in workflow mode
+  const handleCreateContent = () => {
+    // Simulate content generation for workflow demo
+    setContentGenerated(true);
+    // In real implementation, this would trigger content generation
+    // using the workflow data from previous steps
+  };
+
+  // Prepare step data for workflow progression
+  const prepareStepData = () => {
+    if (!contentGenerated) return null;
+    return {
+      contentCreated: true,
+      postTitle: 'Generated content for selected audience',
+      timestamp: new Date().toISOString()
+    };
   };
 
   const getPostActions = (post) => {
@@ -237,43 +259,140 @@ const PostsTab = () => {
 
   if (posts.length === 0 && !loading) {
     return (
-      <div style={{ padding: '24px' }}>
-        <Card 
-          title="Blog Posts" 
-          extra={
-            <Button type="primary" icon={<PlusOutlined />}>
-              New Post
-            </Button>
-          }
-        >
-          <Empty
-            description="No blog posts yet"
-            image={Empty.PRESENTED_IMAGE_SIMPLE}
+      <div>
+        {/* Mode Toggle */}
+        <ModeToggle
+          mode={tabMode.mode}
+          tabKey="posts"
+          workflowStep={tabMode.workflowStep}
+          showModeToggle={tabMode.showModeToggle}
+          showWorkflowNavigation={tabMode.showWorkflowNavigation}
+          showNextButton={tabMode.showNextButton && contentGenerated}
+          showPreviousButton={tabMode.showPreviousButton}
+          nextButtonText={tabMode.nextButtonText}
+          previousButtonText={tabMode.previousButtonText}
+          canEnterWorkflow={tabMode.canEnterWorkflow}
+          onEnterWorkflowMode={tabMode.enterWorkflowMode}
+          onExitToFocusMode={tabMode.exitToFocusMode}
+          onContinueToNextStep={tabMode.continueToNextStep}
+          onGoToPreviousStep={tabMode.goToPreviousStep}
+          onSaveStepData={tabMode.saveStepData}
+          stepData={prepareStepData()}
+        />
+        
+        {/* Workflow Guidance */}
+        {tabMode.mode === 'workflow' && (
+          <div style={{ padding: '16px 24px 0' }}>
+            <WorkflowGuidance
+              step={3}
+              totalSteps={4}
+              stepTitle="Create Your Content"
+              stepDescription={tabMode.tabWorkflowData?.selectedAudience ? 
+                `Generate content for your selected audience: ${tabMode.tabWorkflowData.selectedAudience}` : 
+                'Generate content based on your strategy and audience selection.'
+              }
+            />
+          </div>
+        )}
+        
+        <div style={{ padding: '24px' }}>
+          <Card 
+            title="Blog Posts" 
+            extra={
+              tabMode.mode === 'workflow' ? (
+                <Button 
+                  type="primary" 
+                  icon={<PlusOutlined />}
+                  onClick={handleCreateContent}
+                  disabled={contentGenerated}
+                >
+                  {contentGenerated ? 'Content Generated' : 'Generate Content'}
+                </Button>
+              ) : (
+                <Button type="primary" icon={<PlusOutlined />}>
+                  Create New Post
+                </Button>
+              )
+            }
           >
-            <Button type="primary" icon={<PlusOutlined />}>
-              Create Your First Post
-            </Button>
-          </Empty>
-        </Card>
+            <Empty
+              description="No blog posts yet"
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+            >
+              <Button type="primary" icon={<PlusOutlined />}>
+                Create Your First Post
+              </Button>
+            </Empty>
+          </Card>
+        </div>
       </div>
     );
   }
 
   return (
-    <div style={{ padding: '24px' }}>
-      <Card 
+    <div>
+      {/* Mode Toggle */}
+      <ModeToggle
+        mode={tabMode.mode}
+        tabKey="posts"
+        workflowStep={tabMode.workflowStep}
+        showModeToggle={tabMode.showModeToggle}
+        showWorkflowNavigation={tabMode.showWorkflowNavigation}
+        showNextButton={tabMode.showNextButton && contentGenerated}
+        showPreviousButton={tabMode.showPreviousButton}
+        nextButtonText={tabMode.nextButtonText}
+        previousButtonText={tabMode.previousButtonText}
+        canEnterWorkflow={tabMode.canEnterWorkflow}
+        onEnterWorkflowMode={tabMode.enterWorkflowMode}
+        onExitToFocusMode={tabMode.exitToFocusMode}
+        onContinueToNextStep={tabMode.continueToNextStep}
+        onGoToPreviousStep={tabMode.goToPreviousStep}
+        onSaveStepData={tabMode.saveStepData}
+        stepData={prepareStepData()}
+      />
+      
+      {/* Workflow Guidance */}
+      {tabMode.mode === 'workflow' && (
+        <div style={{ padding: '16px 24px 0' }}>
+          <WorkflowGuidance
+            step={3}
+            totalSteps={4}
+            stepTitle="Create Your Content"
+            stepDescription={tabMode.tabWorkflowData?.selectedAudience ? 
+              `Generate content for your selected audience: ${tabMode.tabWorkflowData.selectedAudience}` : 
+              'Generate content based on your strategy and audience selection.'
+            }
+          />
+        </div>
+      )}
+      
+      <div style={{ padding: '24px' }}>
+        <Card 
         title="Blog Posts" 
         extra={
           <Space>
-            <Switch
-              checkedChildren={<CalendarOutlined />}
-              unCheckedChildren={<UnorderedListOutlined />}
-              checked={viewMode === 'calendar'}
-              onChange={(checked) => setViewMode(checked ? 'calendar' : 'list')}
-            />
-            <Button type="primary" icon={<PlusOutlined />}>
-              New Post
-            </Button>
+            {tabMode.mode !== 'workflow' && (
+              <Switch
+                checkedChildren={<CalendarOutlined />}
+                unCheckedChildren={<UnorderedListOutlined />}
+                checked={viewMode === 'calendar'}
+                onChange={(checked) => setViewMode(checked ? 'calendar' : 'list')}
+              />
+            )}
+            {tabMode.mode === 'workflow' ? (
+              <Button 
+                type="primary" 
+                icon={<PlusOutlined />}
+                onClick={handleCreateContent}
+                disabled={contentGenerated}
+              >
+                {contentGenerated ? 'Content Generated' : 'Generate Content'}
+              </Button>
+            ) : (
+              <Button type="primary" icon={<PlusOutlined />}>
+                Create New Post
+              </Button>
+            )}
           </Space>
         }
       >
@@ -333,6 +452,7 @@ const PostsTab = () => {
           onSave={handleScheduleSave}
         />
       )}
+      </div>
     </div>
   );
 };

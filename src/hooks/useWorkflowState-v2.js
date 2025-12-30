@@ -28,6 +28,9 @@ export const useWorkflowState = () => {
   const [analysisCompleted, setAnalysisCompleted] = useState(false);
   const [strategyCompleted, setStrategyCompleted] = useState(false);
   
+  // Progressive headers tracking for completed workflow steps
+  const [completedWorkflowSteps, setCompletedWorkflowSteps] = useState([]);
+  
   // =============================================================================
   // UI CONTROL STATE
   // =============================================================================
@@ -148,6 +151,7 @@ export const useWorkflowState = () => {
     setBlogGenerating(false);
     setAnalysisCompleted(false);
     setStrategyCompleted(false);
+    setCompletedWorkflowSteps([]);
     setEditingStep(null);
     setPreviewMode(false);
     setSelectedCustomerStrategy(null);
@@ -211,6 +215,8 @@ export const useWorkflowState = () => {
     setAnalysisCompleted,
     strategyCompleted,
     setStrategyCompleted,
+    completedWorkflowSteps,
+    setCompletedWorkflowSteps,
     
     // UI control state
     editingStep,

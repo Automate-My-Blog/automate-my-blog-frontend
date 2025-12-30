@@ -41,8 +41,8 @@ const ContentGenerationStepV2 = (props) => {
     generateContent,
     requireAuth,
     
-    // Brand colors helper
-    getBrandColors = ComponentHelpers.getBrandColors
+    // Default colors helper
+    getDefaultColors = ComponentHelpers.getDefaultColors
   } = props;
 
   // =============================================================================
@@ -52,7 +52,7 @@ const ContentGenerationStepV2 = (props) => {
   const [showPricingModal, setShowPricingModal] = useState(false);
   const [pendingPricingAfterAuth, setPendingPricingAfterAuth] = useState(false);
   const responsive = ComponentHelpers.getResponsiveStyles();
-  const brandColors = getBrandColors(stepResults);
+  const defaultColors = getDefaultColors();
   const analysis = stepResults?.websiteAnalysis || {};
 
   // Handle post-authentication pricing modal reopening
@@ -192,7 +192,7 @@ const ContentGenerationStepV2 = (props) => {
       
       <Title level={2} style={{ 
         marginBottom: '20px',
-        color: brandColors.primary,
+        color: defaultColors.primary,
         fontSize: responsive.fontSize.title
       }}>
         Generating Your Blog Post
@@ -291,7 +291,7 @@ const ContentGenerationStepV2 = (props) => {
       </div>
       
       <Title level={2} style={{ 
-        color: brandColors.primary, 
+        color: defaultColors.primary, 
         marginBottom: '20px',
         fontSize: responsive.fontSize.title
       }}>
@@ -363,15 +363,15 @@ const ContentGenerationStepV2 = (props) => {
         <div style={{
           marginTop: '20px',
           padding: '16px',
-          backgroundColor: brandColors.secondary + '20',
+          backgroundColor: defaultColors.secondary + '20',
           borderRadius: '8px',
-          border: `1px solid ${brandColors.secondary}60`,
+          border: `1px solid ${defaultColors.secondary}60`,
           maxWidth: '500px',
           margin: '20px auto 0 auto'
         }}>
           <Text style={{ 
             fontSize: responsive.fontSize.small, 
-            color: brandColors.primary, 
+            color: defaultColors.primary, 
             fontWeight: 500,
             display: 'block',
             marginBottom: '8px'
@@ -409,7 +409,7 @@ const ContentGenerationStepV2 = (props) => {
         <div style={{ textAlign: 'center', padding: responsive.padding }}>
           <Title level={2} style={{ 
             marginBottom: '20px',
-            color: brandColors.primary,
+            color: defaultColors.primary,
             fontSize: responsive.fontSize.title
           }}>
             Generating Your Content Ideas
@@ -533,7 +533,7 @@ const ContentGenerationStepV2 = (props) => {
       <div style={{ textAlign: 'center', padding: responsive.padding }}>
         <Title level={2} style={{ 
           marginBottom: '20px',
-          color: brandColors.primary,
+          color: defaultColors.primary,
           fontSize: responsive.fontSize.title
         }}>
           Choose Your Content Topic
@@ -725,8 +725,8 @@ const ContentGenerationStepV2 = (props) => {
                         onClick={() => generateContent(topic.id)}
                         loading={isLoading && selectedTopic === topic.id}
                         style={{
-                          backgroundColor: brandColors.primary,
-                          borderColor: brandColors.primary,
+                          backgroundColor: defaultColors.primary,
+                          borderColor: defaultColors.primary,
                           width: '100%',
                           marginBottom: '12px'
                         }}

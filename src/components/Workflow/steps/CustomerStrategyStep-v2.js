@@ -49,8 +49,8 @@ const CustomerStrategyStepV2 = (props) => {
     // Configuration
     embedded = false,
     
-    // Brand colors helper
-    getBrandColors = ComponentHelpers.getBrandColors
+    // Default colors helper
+    getDefaultColors = ComponentHelpers.getDefaultColors
   } = props;
 
   // =============================================================================
@@ -58,7 +58,7 @@ const CustomerStrategyStepV2 = (props) => {
   // =============================================================================
 
   const responsive = ComponentHelpers.getResponsiveStyles();
-  const brandColors = getBrandColors(stepResults);
+  const defaultColors = getDefaultColors();
   const analysis = stepResults?.websiteAnalysis || {};
   const scenarios = analysis.scenarios || [];
 
@@ -124,7 +124,7 @@ const CustomerStrategyStepV2 = (props) => {
         <Card
           hoverable
           style={{
-            border: isSelected ? `2px solid ${analysis.brandColors.primary}` : '1px solid #f0f0f0',
+            border: isSelected ? `2px solid ${defaultColors.primary}` : '1px solid #f0f0f0',
             borderRadius: '12px',
             minHeight: '300px',
             cursor: 'pointer',
@@ -135,13 +135,13 @@ const CustomerStrategyStepV2 = (props) => {
         >
           {/* Card Header */}
           <div style={{ marginBottom: '16px' }}>
-            <Tag color={analysis.brandColors.primary} style={{ marginBottom: '8px' }}>
+            <Tag color={defaultColors.primary} style={{ marginBottom: '8px' }}>
               Strategy {index + 1}
             </Tag>
             {isSelected && (
               <CheckOutlined style={{ 
                 float: 'right', 
-                color: analysis.brandColors.primary, 
+                color: defaultColors.primary, 
                 fontSize: '16px' 
               }} />
             )}
@@ -152,7 +152,7 @@ const CustomerStrategyStepV2 = (props) => {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
               <Title level={4} style={{ 
                 margin: 0, 
-                color: analysis.brandColors.primary,
+                color: defaultColors.primary,
                 fontSize: responsive.fontSize.text
               }}>
                 👥 Target Segment

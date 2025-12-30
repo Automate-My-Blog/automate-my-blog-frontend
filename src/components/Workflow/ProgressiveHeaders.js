@@ -1,0 +1,163 @@
+import React from 'react';
+import { Card, Typography, Tag, Button, Space } from 'antd';
+import {
+  GlobalOutlined,
+  UserOutlined,
+  BulbOutlined,
+  FileTextOutlined,
+  CheckCircleOutlined,
+  EditOutlined
+} from '@ant-design/icons';
+
+const { Text } = Typography;
+
+/**
+ * Progressive Headers Component
+ * Shows stacked headers for completed workflow steps
+ */
+const ProgressiveHeaders = ({ 
+  completedWorkflowSteps = [], 
+  stepResults = {}, 
+  onEditStep,
+  className = ''
+}) => {
+  
+  // Step configuration for progressive headers
+  const stepConfig = {
+    website: {
+      icon: <GlobalOutlined style={{ color: '#1890ff' }} />,
+      title: 'Website Analyzed',
+      getDescription: () => {
+        const analysis = stepResults?.websiteAnalysis;
+        const domain = analysis?.websiteUrl ? 
+          analysis.websiteUrl.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0] : 
+          '';
+        return domain ? `${domain} • ${analysis?.businessType || 'Business'}` : 'Website analysis complete';
+      }
+    },
+    strategy: {
+      icon: <UserOutlined style={{ color: '#52c41a' }} />,
+      title: 'Audience Selected',
+      getDescription: () => {
+        const strategy = stepResults?.selectedStrategy;
+        return strategy?.targetSegment?.demographics || 'Target audience defined';
+      }
+    },
+    topic: {
+      icon: <BulbOutlined style={{ color: '#fa8c16' }} />,
+      title: 'Topic Chosen',
+      getDescription: () => {
+        const topic = stepResults?.selectedTopic;
+        return topic?.title || 'Content topic selected';
+      }
+    },
+    content: {
+      icon: <FileTextOutlined style={{ color: '#722ed1' }} />,
+      title: 'Content Generated',
+      getDescription: () => {
+        const content = stepResults?.finalContent || stepResults?.generatedContent;
+        const wordCount = content ? content.split(' ').length : 0;
+        return wordCount > 0 ? `${wordCount} words generated` : 'Blog post created';
+      }
+    }
+  };
+
+  // Don't render anything if no completed steps
+  if (!completedWorkflowSteps || completedWorkflowSteps.length === 0) {
+    return null;
+  }
+
+  return (
+    <div 
+      className={className}
+      style={{
+        position: 'sticky',
+        top: 0,
+        zIndex: 100,
+        backgroundColor: '#f5f5f5',
+        borderBottom: '1px solid #e8e8e8',
+        padding: '8px 0'
+      }}
+    >
+      <div style={{ 
+        display: 'flex', 
+        flexDirection: 'column', 
+        gap: '4px',
+        maxWidth: '1200px',
+        margin: '0 auto',
+        padding: '0 24px'
+      }}>
+        {completedWorkflowSteps.map((stepKey, index) => {
+          const config = stepConfig[stepKey];
+          if (!config) return null;
+
+          const isLast = index === completedWorkflowSteps.length - 1;
+
+          return (
+            <Card
+              key={stepKey}
+              size="small"
+              style={{
+                marginBottom: 0,
+                backgroundColor: isLast ? '#fff' : '#fafafa',
+                border: isLast ? '1px solid #d9d9d9' : '1px solid #f0f0f0',
+                borderRadius: '6px',
+                cursor: onEditStep ? 'pointer' : 'default',
+                transition: 'all 0.2s ease',
+                opacity: isLast ? 1 : 0.8
+              }}
+              bodyStyle={{ 
+                padding: '8px 16px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between'
+              }}
+              onClick={() => onEditStep && onEditStep(stepKey)}
+              hoverable={!!onEditStep}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                {config.icon}
+                <div>
+                  <Text strong style={{ fontSize: '14px' }}>
+                    {config.title}
+                  </Text>
+                  <Text 
+                    type="secondary" 
+                    style={{ 
+                      fontSize: '12px',
+                      marginLeft: '8px'
+                    }}
+                  >
+                    {config.getDescription()}
+                  </Text>
+                </div>
+              </div>
+              
+              <Space>
+                <Tag 
+                  icon={<CheckCircleOutlined />} 
+                  color="success"
+                  style={{ fontSize: '11px', margin: 0 }}
+                >
+                  Complete
+                </Tag>
+                {onEditStep && (
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={<EditOutlined />}
+                    style={{ padding: '4px 8px' }}
+                  >
+                    Edit
+                  </Button>
+                )}
+              </Space>
+            </Card>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+export default ProgressiveHeaders;
