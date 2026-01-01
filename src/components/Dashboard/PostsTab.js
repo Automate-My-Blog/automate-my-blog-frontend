@@ -193,11 +193,11 @@ const PostsTab = () => {
         return requireAuth('Generate topics with AI', 'premium-gate');
       }
 
-      const result = await topicAPI.generateTopics({
-        selectedCustomerStrategy: tabMode.tabWorkflowData?.selectedCustomerStrategy,
-        websiteAnalysis: stepResults?.home?.websiteAnalysis,
-        businessType: stepResults?.home?.websiteAnalysis?.businessType || 'Business'
-      });
+      const result = await topicAPI.generateTrendingTopics(
+        stepResults?.home?.websiteAnalysis || {},
+        tabMode.tabWorkflowData?.selectedCustomerStrategy,
+        stepResults?.home?.webSearchInsights || {}
+      );
 
       if (result.success) {
         setAvailableTopics(result.topics);
