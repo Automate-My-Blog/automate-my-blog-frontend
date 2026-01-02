@@ -21,7 +21,7 @@ import { enUS } from 'date-fns/locale';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTabMode } from '../../hooks/useTabMode';
 import { useWorkflowMode } from '../../contexts/WorkflowModeContext';
-import ModeToggle, { WorkflowGuidance } from '../Workflow/ModeToggle';
+import { WorkflowGuidance } from '../Workflow/ModeToggle';
 import api from '../../services/api';
 import { topicAPI, contentAPI } from '../../services/workflowAPI';
 import SchedulingModal from '../Modals/SchedulingModal';
@@ -80,7 +80,7 @@ const localizer = dateFnsLocalizer({
   },
 });
 
-const PostsTab = () => {
+const PostsTab = ({ forceWorkflowMode = false }) => {
   const { user } = useAuth();
   const tabMode = useTabMode('posts');
   const { 
@@ -91,6 +91,7 @@ const PostsTab = () => {
     blogGenerating,
     setBlogGenerating,
     requireAuth,
+    requireSignUp,
     stepResults
   } = useWorkflowMode();
   const [posts, setPosts] = useState([]);
@@ -108,8 +109,14 @@ const PostsTab = () => {
   // Content editing state
   const [editingContent, setEditingContent] = useState('');
   const [previewMode, setPreviewMode] = useState(true);
-  const [contentStrategy, setContentStrategy] = useState('informative');
+  const [contentStrategy, setContentStrategy] = useState({
+    goal: 'awareness', // 'awareness', 'consideration', 'conversion', 'retention'
+    voice: 'expert', // 'expert', 'friendly', 'insider', 'storyteller'
+    template: 'problem-solution', // 'how-to', 'problem-solution', 'listicle', 'case-study', 'comprehensive'
+    length: 'standard' // 'quick', 'standard', 'deep'
+  });
   const [currentDraft, setCurrentDraft] = useState(null);
+  const [postState, setPostState] = useState('draft'); // 'draft', 'exported', 'locked'
   
   // UI helpers
   const responsive = ComponentHelpers.getResponsiveStyles();
@@ -187,10 +194,17 @@ const PostsTab = () => {
   const handleGenerateTopics = async () => {
     setGeneratingContent(true);
     try {
-      // Check for authenticated features
-      if (!user && Math.random() > 0.7) {
+      // For logged-out users in workflow mode, check if analysis is completed
+      if (forceWorkflowMode && !user) {
+        if (!stepResults?.home?.analysisCompleted) {
+          setGeneratingContent(false);
+          message.warning('Please complete website analysis first before generating content topics.');
+          return;
+        }
+      } else if (!user) {
+        // For logged-out users not in workflow mode, trigger sign-up
         setGeneratingContent(false);
-        return requireAuth('Generate topics with AI', 'premium-gate');
+        return requireSignUp('Generate AI content topics', 'Start creating content');
       }
 
       const result = await topicAPI.generateTrendingTopics(
@@ -215,6 +229,11 @@ const PostsTab = () => {
   
   // Handle topic selection and content generation
   const handleTopicSelection = async (topicId) => {
+    // Check authentication first
+    if (!user) {
+      return requireSignUp('Create your blog post', 'Get your first post');
+    }
+    
     const topic = availableTopics.find(t => t.id === topicId);
     if (!topic) return;
     
@@ -222,13 +241,12 @@ const PostsTab = () => {
     setGeneratingContent(true);
     
     try {
-      const result = await contentAPI.generateContent({
-        topicId,
-        topic,
-        contentStrategy,
-        customerStrategy: tabMode.tabWorkflowData?.selectedCustomerStrategy,
-        websiteAnalysis: stepResults?.home?.websiteAnalysis
-      });
+      const result = await contentAPI.generateContent(
+        topic, // selectedTopic
+        stepResults?.home?.websiteAnalysis || {}, // analysisData
+        tabMode.tabWorkflowData?.selectedCustomerStrategy, // selectedStrategy
+        stepResults?.home?.webSearchInsights || {} // webSearchInsights
+      );
       
       if (result.success) {
         setEditingContent(result.content);
@@ -287,13 +305,83 @@ const PostsTab = () => {
     }
   };
 
+  // Content strategy helper functions
+  const handleStrategyChange = (type, value) => {
+    setContentStrategy(prev => ({
+      ...prev,
+      [type]: value
+    }));
+  };
+
+  const getStrategyDisplayText = (type, value) => {
+    const displays = {
+      goal: {
+        'awareness': 'Awareness - Build brand recognition',
+        'consideration': 'Consideration - Build trust, compare solutions',
+        'conversion': 'Conversion - Drive sales, generate leads',
+        'retention': 'Retention - Engage existing customers'
+      },
+      voice: {
+        'expert': 'Professional Expert - Authoritative, data-driven',
+        'friendly': 'Friendly Guide - Conversational, supportive',
+        'insider': 'Industry Insider - Technical, insider knowledge',
+        'storyteller': 'Storyteller - Narrative-driven, emotional'
+      },
+      template: {
+        'how-to': 'How-To Guide - Step-by-step, actionable',
+        'problem-solution': 'Problem-Solution - Identify issue, provide solution',
+        'listicle': 'Listicle - Top X tips/strategies/tools',
+        'case-study': 'Case Study - Real example, results-focused',
+        'comprehensive': 'Comprehensive Guide - In-depth, authoritative'
+      },
+      length: {
+        'quick': 'Quick Read - 800-1000 words',
+        'standard': 'Standard - 1200-1500 words',
+        'deep': 'Deep Dive - 2000+ words'
+      }
+    };
+    return displays[type]?.[value] || value;
+  };
+
+  // Export handler
+  const handleExport = () => {
+    if (!editingContent.trim()) {
+      message.error('No content to export');
+      return;
+    }
+
+    try {
+      // Create a blob with the content
+      const blob = new Blob([editingContent], { type: 'text/markdown' });
+      const url = URL.createObjectURL(blob);
+      
+      // Create download link
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${selectedTopic?.title || 'blog-post'}.md`;
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      // Update post state
+      setPostState('exported');
+      message.success('Content exported successfully!');
+    } catch (error) {
+      console.error('Export error:', error);
+      message.error('Failed to export content');
+    }
+  };
+
   // Initialize topics if arriving from audience workflow
   useEffect(() => {
     console.log('PostsTab useEffect - tabMode:', tabMode.mode);
     console.log('PostsTab useEffect - tabWorkflowData:', tabMode.tabWorkflowData);
     console.log('PostsTab useEffect - availableTopics.length:', availableTopics.length);
     
-    if (tabMode.mode === 'workflow' && !availableTopics.length && !generatingContent) {
+    if ((tabMode.mode === 'workflow' || forceWorkflowMode) && !availableTopics.length && !generatingContent) {
       console.log('PostsTab: Auto-generating topics...');
       // Add a small delay to ensure UI is ready
       setTimeout(() => {
@@ -409,31 +497,12 @@ const PostsTab = () => {
     }));
 
   // Show simplified interface when no posts exist AND not in workflow mode
-  if (posts.length === 0 && !loading && tabMode.mode === 'focus') {
+  if (posts.length === 0 && !loading && tabMode.mode === 'focus' && !forceWorkflowMode) {
     return (
       <div>
-        {/* Mode Toggle */}
-        <ModeToggle
-          mode={tabMode.mode}
-          tabKey="posts"
-          workflowStep={tabMode.workflowStep}
-          showModeToggle={tabMode.showModeToggle}
-          showWorkflowNavigation={tabMode.showWorkflowNavigation}
-          showNextButton={tabMode.showNextButton && contentGenerated}
-          showPreviousButton={tabMode.showPreviousButton}
-          nextButtonText={tabMode.nextButtonText}
-          previousButtonText={tabMode.previousButtonText}
-          canEnterWorkflow={tabMode.canEnterWorkflow}
-          onEnterWorkflowMode={tabMode.enterWorkflowMode}
-          onExitToFocusMode={tabMode.exitToFocusMode}
-          onContinueToNextStep={tabMode.continueToNextStep}
-          onGoToPreviousStep={tabMode.goToPreviousStep}
-          onSaveStepData={tabMode.saveStepData}
-          stepData={prepareStepData()}
-        />
         
         {/* Workflow Guidance */}
-        {tabMode.mode === 'workflow' && (
+        {(tabMode.mode === 'workflow' || forceWorkflowMode) && (
           <div style={{ padding: '16px 24px 0' }}>
             <WorkflowGuidance
               step={3}
@@ -448,7 +517,7 @@ const PostsTab = () => {
         )}
         
         <div style={{ padding: '24px' }}>
-          {tabMode.mode === 'workflow' ? (
+          {(tabMode.mode === 'workflow' || forceWorkflowMode) ? (
             // Workflow Mode: Content Generation & Editing Interface
             <div>
               {!contentGenerated ? (
@@ -582,7 +651,7 @@ const PostsTab = () => {
                                 {/* Topic Tags */}
                                 <div style={{ marginBottom: '12px' }}>
                                   <Tag color="blue">{topic.category || 'Content'}</Tag>
-                                  <Tag color="purple">{contentStrategy || 'awareness'}</Tag>
+                                  <Tag color="purple">{contentStrategy.goal || 'awareness'}</Tag>
                                   <Tag color="orange">expert</Tag>
                                   <Tag color="cyan">problem-solution</Tag>
                                   <Tag color="green">standard</Tag>
@@ -628,7 +697,8 @@ const PostsTab = () => {
                                       marginBottom: '12px'
                                     }}
                                   >
-                                    {isGenerating ? 'Generating Content...' : 'Get One Free Post'}
+                                    {isGenerating ? 'Generating Content...' : 
+                                     user ? 'Create Post' : 'Get One Free Post'}
                                   </Button>
                                   
                                   <Button
@@ -636,7 +706,7 @@ const PostsTab = () => {
                                     icon={user ? <EditOutlined /> : <LockOutlined />}
                                     onClick={() => {
                                       if (!user) {
-                                        message.info('Sign in to edit content strategy');
+                                        requireSignUp('Edit content strategy', 'Customize your approach');
                                       } else {
                                         message.info('Strategy editing will be available after backend integration');
                                       }
@@ -795,7 +865,7 @@ const PostsTab = () => {
                             }}
                             onClick={() => {
                               if (!user) {
-                                message.info('Sign in to unlock additional content ideas');
+                                requireSignUp('Unlock more content ideas', 'Access premium features');
                               } else {
                                 message.info('Additional topic ideas available with premium access');
                               }
@@ -849,21 +919,156 @@ const PostsTab = () => {
                     </div>
                   )}
                   
-                  {/* Content Strategy Selector */}
-                  <div style={{ marginBottom: '16px' }}>
-                    <Text strong style={{ marginRight: '8px' }}>Content Style:</Text>
-                    <Select
-                      value={contentStrategy}
-                      onChange={setContentStrategy}
-                      style={{ width: 200 }}
-                      size="small"
-                    >
-                      <Select.Option value="informative">Educational & Informative</Select.Option>
-                      <Select.Option value="how-to">Step-by-Step How-To</Select.Option>
-                      <Select.Option value="opinion">Opinion & Analysis</Select.Option>
-                      <Select.Option value="case-study">Case Study & Examples</Select.Option>
-                      <Select.Option value="list">List & Compilation</Select.Option>
-                    </Select>
+                  {/* Brand Colors Indicator */}
+                  <div style={{ 
+                    marginBottom: '16px', 
+                    padding: '12px', 
+                    backgroundColor: defaultColors.secondary + '20', 
+                    borderRadius: '6px' 
+                  }}>
+                    <Text strong style={{ color: defaultColors.primary }}>
+                      Content styled with your brand colors:
+                    </Text>
+                    <Space style={{ marginLeft: '12px' }}>
+                      <div style={{ 
+                        display: 'inline-block', 
+                        width: '16px', 
+                        height: '16px', 
+                        backgroundColor: defaultColors.primary,
+                        borderRadius: '2px' 
+                      }} />
+                      <div style={{ 
+                        display: 'inline-block', 
+                        width: '16px', 
+                        height: '16px', 
+                        backgroundColor: defaultColors.secondary,
+                        borderRadius: '2px' 
+                      }} />
+                      <div style={{ 
+                        display: 'inline-block', 
+                        width: '16px', 
+                        height: '16px', 
+                        backgroundColor: defaultColors.accent,
+                        borderRadius: '2px' 
+                      }} />
+                    </Space>
+                  </div>
+
+                  {/* Content Strategy Panel */}
+                  <div style={{ 
+                    marginBottom: '20px',
+                    border: `2px solid ${previewMode ? '#e8e8e8' : defaultColors.primary}`,
+                    borderRadius: '12px',
+                    overflow: 'hidden'
+                  }}>
+                    <div style={{ 
+                      backgroundColor: previewMode ? '#fafafa' : defaultColors.primary + '10',
+                      padding: '16px',
+                      borderBottom: previewMode ? '1px solid #e8e8e8' : `1px solid ${defaultColors.primary}30`
+                    }}>
+                      <Text strong style={{ 
+                        fontSize: '16px', 
+                        color: previewMode ? '#666' : defaultColors.primary 
+                      }}>
+                        Content Strategy
+                      </Text>
+                    </div>
+                    
+                    <div style={{ padding: '20px' }}>
+                      {previewMode ? (
+                        // Strategy Preview
+                        <Row gutter={[16, 16]}>
+                          <Col span={12}>
+                            <Text style={{ fontSize: '13px', color: '#999' }}>Goal:</Text>
+                            <div style={{ fontSize: '15px', fontWeight: 500 }}>
+                              {getStrategyDisplayText('goal', contentStrategy.goal)}
+                            </div>
+                          </Col>
+                          <Col span={12}>
+                            <Text style={{ fontSize: '13px', color: '#999' }}>Voice:</Text>
+                            <div style={{ fontSize: '15px', fontWeight: 500 }}>
+                              {getStrategyDisplayText('voice', contentStrategy.voice)}
+                            </div>
+                          </Col>
+                          <Col span={12}>
+                            <Text style={{ fontSize: '13px', color: '#999' }}>Template:</Text>
+                            <div style={{ fontSize: '15px', fontWeight: 500 }}>
+                              {getStrategyDisplayText('template', contentStrategy.template)}
+                            </div>
+                          </Col>
+                          <Col span={12}>
+                            <Text style={{ fontSize: '13px', color: '#999' }}>Length:</Text>
+                            <div style={{ fontSize: '15px', fontWeight: 500 }}>
+                              {getStrategyDisplayText('length', contentStrategy.length)}
+                            </div>
+                          </Col>
+                        </Row>
+                      ) : (
+                        // Strategy Editor
+                        <Row gutter={[16, 16]}>
+                          <Col span={responsive.isMobile ? 24 : 12}>
+                            <Text strong style={{ fontSize: '14px', display: 'block', marginBottom: '8px' }}>
+                              Content Goal
+                            </Text>
+                            <Select
+                              value={contentStrategy.goal}
+                              style={{ width: '100%' }}
+                              onChange={(value) => handleStrategyChange('goal', value)}
+                            >
+                              <Select.Option value="awareness">Awareness - Build brand recognition</Select.Option>
+                              <Select.Option value="consideration">Consideration - Build trust, compare solutions</Select.Option>
+                              <Select.Option value="conversion">Conversion - Drive sales, generate leads</Select.Option>
+                              <Select.Option value="retention">Retention - Engage existing customers</Select.Option>
+                            </Select>
+                          </Col>
+                          <Col span={responsive.isMobile ? 24 : 12}>
+                            <Text strong style={{ fontSize: '14px', display: 'block', marginBottom: '8px' }}>
+                              Voice & Tone
+                            </Text>
+                            <Select
+                              value={contentStrategy.voice}
+                              style={{ width: '100%' }}
+                              onChange={(value) => handleStrategyChange('voice', value)}
+                            >
+                              <Select.Option value="expert">Professional Expert - Authoritative, data-driven</Select.Option>
+                              <Select.Option value="friendly">Friendly Guide - Conversational, supportive</Select.Option>
+                              <Select.Option value="insider">Industry Insider - Technical, insider knowledge</Select.Option>
+                              <Select.Option value="storyteller">Storyteller - Narrative-driven, emotional</Select.Option>
+                            </Select>
+                          </Col>
+                          <Col span={responsive.isMobile ? 24 : 12}>
+                            <Text strong style={{ fontSize: '14px', display: 'block', marginBottom: '8px' }}>
+                              Content Template
+                            </Text>
+                            <Select
+                              value={contentStrategy.template}
+                              style={{ width: '100%' }}
+                              onChange={(value) => handleStrategyChange('template', value)}
+                            >
+                              <Select.Option value="how-to">How-To Guide - Step-by-step, actionable</Select.Option>
+                              <Select.Option value="problem-solution">Problem-Solution - Identify issue, provide solution</Select.Option>
+                              <Select.Option value="listicle">Listicle - Top X tips/strategies/tools</Select.Option>
+                              <Select.Option value="case-study">Case Study - Real example, results-focused</Select.Option>
+                              <Select.Option value="comprehensive">Comprehensive Guide - In-depth, authoritative</Select.Option>
+                            </Select>
+                          </Col>
+                          <Col span={responsive.isMobile ? 24 : 12}>
+                            <Text strong style={{ fontSize: '14px', display: 'block', marginBottom: '8px' }}>
+                              Content Length
+                            </Text>
+                            <Select
+                              value={contentStrategy.length}
+                              style={{ width: '100%' }}
+                              onChange={(value) => handleStrategyChange('length', value)}
+                            >
+                              <Select.Option value="quick">Quick Read - 800-1000 words</Select.Option>
+                              <Select.Option value="standard">Standard - 1200-1500 words</Select.Option>
+                              <Select.Option value="deep">Deep Dive - 2000+ words</Select.Option>
+                            </Select>
+                          </Col>
+                        </Row>
+                      )}
+                    </div>
                   </div>
                   
                   {previewMode ? (
@@ -891,8 +1096,8 @@ const PostsTab = () => {
                       value={editingContent}
                       onChange={(e) => handleContentChange(e.target.value)}
                       placeholder="Your generated content will appear here for editing..."
-                      rows={20}
-                      style={{ fontSize: '14px', lineHeight: '1.6' }}
+                      rows={25}
+                      style={{ fontFamily: 'monospace', fontSize: '14px', lineHeight: '1.6' }}
                     />
                   )}
                   
@@ -918,8 +1123,22 @@ const PostsTab = () => {
                         icon={<CheckOutlined />}
                         onClick={handleSaveDraft}
                         disabled={!editingContent.trim()}
+                        style={{ marginRight: '8px' }}
                       >
                         Save as Draft
+                      </Button>
+                      <Button 
+                        type="primary"
+                        icon={postState !== 'exported' ? <LockOutlined /> : undefined}
+                        onClick={handleExport}
+                        disabled={!editingContent.trim() || postState === 'exported'}
+                        style={{
+                          backgroundColor: postState === 'exported' ? '#52c41a' : defaultColors.primary,
+                          borderColor: postState === 'exported' ? '#52c41a' : defaultColors.primary,
+                          fontWeight: '500'
+                        }}
+                      >
+                        {postState === 'exported' ? 'Content Exported' : 'Download Your Content'}
                       </Button>
                     </Space>
                   </div>
@@ -953,28 +1172,9 @@ const PostsTab = () => {
 
   return (
     <div>
-      {/* Mode Toggle */}
-      <ModeToggle
-        mode={tabMode.mode}
-        tabKey="posts"
-        workflowStep={tabMode.workflowStep}
-        showModeToggle={tabMode.showModeToggle}
-        showWorkflowNavigation={tabMode.showWorkflowNavigation}
-        showNextButton={tabMode.showNextButton && contentGenerated}
-        showPreviousButton={tabMode.showPreviousButton}
-        nextButtonText={tabMode.nextButtonText}
-        previousButtonText={tabMode.previousButtonText}
-        canEnterWorkflow={tabMode.canEnterWorkflow}
-        onEnterWorkflowMode={tabMode.enterWorkflowMode}
-        onExitToFocusMode={tabMode.exitToFocusMode}
-        onContinueToNextStep={tabMode.continueToNextStep}
-        onGoToPreviousStep={tabMode.goToPreviousStep}
-        onSaveStepData={tabMode.saveStepData}
-        stepData={prepareStepData()}
-      />
       
       {/* Workflow Guidance */}
-      {tabMode.mode === 'workflow' && (
+      {(tabMode.mode === 'workflow' || forceWorkflowMode) && (
         <div style={{ padding: '16px 24px 0' }}>
           <WorkflowGuidance
             step={3}
@@ -990,7 +1190,7 @@ const PostsTab = () => {
       
       <div style={{ padding: '24px' }}>
         {/* ENHANCED TOPIC GENERATION SECTION - Available in both workflow and focus modes */}
-        {(tabMode.mode === 'workflow' || (tabMode.mode === 'focus' && !contentGenerated)) && (
+        {(tabMode.mode === 'workflow' || forceWorkflowMode || (tabMode.mode === 'focus' && !contentGenerated)) && (
           <div style={{ marginBottom: '24px' }}>
             {!contentGenerated ? (
               // Topic Generation Phase
@@ -1123,7 +1323,7 @@ const PostsTab = () => {
                               {/* Topic Tags */}
                               <div style={{ marginBottom: '12px' }}>
                                 <Tag color="blue">{topic.category || 'Content'}</Tag>
-                                <Tag color="purple">{contentStrategy || 'awareness'}</Tag>
+                                <Tag color="purple">{contentStrategy.goal || 'awareness'}</Tag>
                                 <Tag color="orange">expert</Tag>
                                 <Tag color="cyan">problem-solution</Tag>
                                 <Tag color="green">standard</Tag>
@@ -1177,7 +1377,7 @@ const PostsTab = () => {
                                   icon={user ? <EditOutlined /> : <LockOutlined />}
                                   onClick={() => {
                                     if (!user) {
-                                      message.info('Sign in to edit content strategy');
+                                      requireSignUp('Edit content strategy', 'Customize your approach');
                                     } else {
                                       message.info('Strategy editing will be available after backend integration');
                                     }
@@ -1336,7 +1536,7 @@ const PostsTab = () => {
                           }}
                           onClick={() => {
                             if (!user) {
-                              message.info('Sign in to unlock additional content ideas');
+                              requireSignUp('Unlock more content ideas', 'Access premium features');
                             } else {
                               message.info('Additional topic ideas available with premium access');
                             }
@@ -1394,21 +1594,156 @@ const PostsTab = () => {
               </div>
             )}
             
-            {/* Content Strategy Selector */}
-            <div style={{ marginBottom: '16px' }}>
-              <Text strong style={{ marginRight: '8px' }}>Content Style:</Text>
-              <Select
-                value={contentStrategy}
-                onChange={setContentStrategy}
-                style={{ width: 200 }}
-                size="small"
-              >
-                <Select.Option value="informative">Educational & Informative</Select.Option>
-                <Select.Option value="how-to">Step-by-Step How-To</Select.Option>
-                <Select.Option value="opinion">Opinion & Analysis</Select.Option>
-                <Select.Option value="case-study">Case Study & Examples</Select.Option>
-                <Select.Option value="list">List & Compilation</Select.Option>
-              </Select>
+            {/* Brand Colors Indicator */}
+            <div style={{ 
+              marginBottom: '16px', 
+              padding: '12px', 
+              backgroundColor: defaultColors.secondary + '20', 
+              borderRadius: '6px' 
+            }}>
+              <Text strong style={{ color: defaultColors.primary }}>
+                Content styled with your brand colors:
+              </Text>
+              <Space style={{ marginLeft: '12px' }}>
+                <div style={{ 
+                  display: 'inline-block', 
+                  width: '16px', 
+                  height: '16px', 
+                  backgroundColor: defaultColors.primary,
+                  borderRadius: '2px' 
+                }} />
+                <div style={{ 
+                  display: 'inline-block', 
+                  width: '16px', 
+                  height: '16px', 
+                  backgroundColor: defaultColors.secondary,
+                  borderRadius: '2px' 
+                }} />
+                <div style={{ 
+                  display: 'inline-block', 
+                  width: '16px', 
+                  height: '16px', 
+                  backgroundColor: defaultColors.accent,
+                  borderRadius: '2px' 
+                }} />
+              </Space>
+            </div>
+
+            {/* Content Strategy Panel */}
+            <div style={{ 
+              marginBottom: '20px',
+              border: `2px solid ${previewMode ? '#e8e8e8' : defaultColors.primary}`,
+              borderRadius: '12px',
+              overflow: 'hidden'
+            }}>
+              <div style={{ 
+                backgroundColor: previewMode ? '#fafafa' : defaultColors.primary + '10',
+                padding: '16px',
+                borderBottom: previewMode ? '1px solid #e8e8e8' : `1px solid ${defaultColors.primary}30`
+              }}>
+                <Text strong style={{ 
+                  fontSize: '16px', 
+                  color: previewMode ? '#666' : defaultColors.primary 
+                }}>
+                  Content Strategy
+                </Text>
+              </div>
+              
+              <div style={{ padding: '20px' }}>
+                {previewMode ? (
+                  // Strategy Preview
+                  <Row gutter={[16, 16]}>
+                    <Col span={12}>
+                      <Text style={{ fontSize: '13px', color: '#999' }}>Goal:</Text>
+                      <div style={{ fontSize: '15px', fontWeight: 500 }}>
+                        {getStrategyDisplayText('goal', contentStrategy.goal)}
+                      </div>
+                    </Col>
+                    <Col span={12}>
+                      <Text style={{ fontSize: '13px', color: '#999' }}>Voice:</Text>
+                      <div style={{ fontSize: '15px', fontWeight: 500 }}>
+                        {getStrategyDisplayText('voice', contentStrategy.voice)}
+                      </div>
+                    </Col>
+                    <Col span={12}>
+                      <Text style={{ fontSize: '13px', color: '#999' }}>Template:</Text>
+                      <div style={{ fontSize: '15px', fontWeight: 500 }}>
+                        {getStrategyDisplayText('template', contentStrategy.template)}
+                      </div>
+                    </Col>
+                    <Col span={12}>
+                      <Text style={{ fontSize: '13px', color: '#999' }}>Length:</Text>
+                      <div style={{ fontSize: '15px', fontWeight: 500 }}>
+                        {getStrategyDisplayText('length', contentStrategy.length)}
+                      </div>
+                    </Col>
+                  </Row>
+                ) : (
+                  // Strategy Editor
+                  <Row gutter={[16, 16]}>
+                    <Col span={responsive.isMobile ? 24 : 12}>
+                      <Text strong style={{ fontSize: '14px', display: 'block', marginBottom: '8px' }}>
+                        Content Goal
+                      </Text>
+                      <Select
+                        value={contentStrategy.goal}
+                        style={{ width: '100%' }}
+                        onChange={(value) => handleStrategyChange('goal', value)}
+                      >
+                        <Select.Option value="awareness">Awareness - Build brand recognition</Select.Option>
+                        <Select.Option value="consideration">Consideration - Build trust, compare solutions</Select.Option>
+                        <Select.Option value="conversion">Conversion - Drive sales, generate leads</Select.Option>
+                        <Select.Option value="retention">Retention - Engage existing customers</Select.Option>
+                      </Select>
+                    </Col>
+                    <Col span={responsive.isMobile ? 24 : 12}>
+                      <Text strong style={{ fontSize: '14px', display: 'block', marginBottom: '8px' }}>
+                        Voice & Tone
+                      </Text>
+                      <Select
+                        value={contentStrategy.voice}
+                        style={{ width: '100%' }}
+                        onChange={(value) => handleStrategyChange('voice', value)}
+                      >
+                        <Select.Option value="expert">Professional Expert - Authoritative, data-driven</Select.Option>
+                        <Select.Option value="friendly">Friendly Guide - Conversational, supportive</Select.Option>
+                        <Select.Option value="insider">Industry Insider - Technical, insider knowledge</Select.Option>
+                        <Select.Option value="storyteller">Storyteller - Narrative-driven, emotional</Select.Option>
+                      </Select>
+                    </Col>
+                    <Col span={responsive.isMobile ? 24 : 12}>
+                      <Text strong style={{ fontSize: '14px', display: 'block', marginBottom: '8px' }}>
+                        Content Template
+                      </Text>
+                      <Select
+                        value={contentStrategy.template}
+                        style={{ width: '100%' }}
+                        onChange={(value) => handleStrategyChange('template', value)}
+                      >
+                        <Select.Option value="how-to">How-To Guide - Step-by-step, actionable</Select.Option>
+                        <Select.Option value="problem-solution">Problem-Solution - Identify issue, provide solution</Select.Option>
+                        <Select.Option value="listicle">Listicle - Top X tips/strategies/tools</Select.Option>
+                        <Select.Option value="case-study">Case Study - Real example, results-focused</Select.Option>
+                        <Select.Option value="comprehensive">Comprehensive Guide - In-depth, authoritative</Select.Option>
+                      </Select>
+                    </Col>
+                    <Col span={responsive.isMobile ? 24 : 12}>
+                      <Text strong style={{ fontSize: '14px', display: 'block', marginBottom: '8px' }}>
+                        Content Length
+                      </Text>
+                      <Select
+                        value={contentStrategy.length}
+                        style={{ width: '100%' }}
+                        onChange={(value) => handleStrategyChange('length', value)}
+                      >
+                        <Select.Option value="quick">Quick Read - 800-1000 words</Select.Option>
+                        <Select.Option value="standard">Standard - 1200-1500 words</Select.Option>
+                        <Select.Option value="deep">Deep Dive - 2000+ words</Select.Option>
+                      </Select>
+                    </Col>
+                  </Row>
+                )}
+              </div>
             </div>
             
             {previewMode ? (
@@ -1472,7 +1807,7 @@ const PostsTab = () => {
         )}
 
         {/* POSTS MANAGEMENT SECTION - Only visible in focus mode */}
-        {tabMode.mode === 'focus' && (
+        {tabMode.mode === 'focus' && !forceWorkflowMode && (
           <Card 
             title="Blog Posts" 
             extra={

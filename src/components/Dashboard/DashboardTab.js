@@ -20,8 +20,8 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { useTabMode } from '../../hooks/useTabMode';
 import { useWorkflowMode } from '../../contexts/WorkflowModeContext';
-import ModeToggle from '../Workflow/ModeToggle';
 import WebsiteAnalysisStepStandalone from '../Workflow/steps/WebsiteAnalysisStepStandalone';
+import UnifiedWorkflowHeader from './UnifiedWorkflowHeader';
 import { format } from 'date-fns';
 
 const { Title, Text, Paragraph } = Typography;
@@ -64,7 +64,7 @@ const dummyDiscoveries = [
   }
 ];
 
-const DashboardTab = () => {
+const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMode, showSaveProjectButton = false, onSaveProject, isNewRegistration = false }) => {
   const { user } = useAuth();
   const tabMode = useTabMode('dashboard');
   const { 
@@ -108,9 +108,13 @@ const DashboardTab = () => {
   };
 
   const handleCreateNewPost = () => {
-    // This starts the guided workflow from Dashboard → Audience → Posts
-    tabMode.enterWorkflowMode();
-    message.success('Starting guided creation workflow');
+    // This starts the guided project from Dashboard → Audience → Posts
+    if (onEnterProjectMode) {
+      onEnterProjectMode();
+    } else {
+      tabMode.enterWorkflowMode();
+    }
+    message.success('Starting guided creation project');
   };
 
   const handleGenerateContent = (discovery) => {
@@ -166,50 +170,37 @@ const DashboardTab = () => {
 
   return (
     <div>
-      {/* Mode Toggle - Only show for authenticated users */}
-      {user && (
-        <ModeToggle
-          mode={tabMode.mode}
-          tabKey="dashboard"
-          workflowStep={tabMode.workflowStep}
-          showModeToggle={tabMode.showModeToggle}
-          showWorkflowNavigation={tabMode.showWorkflowNavigation}
-          showNextButton={tabMode.showNextButton}
-          showPreviousButton={tabMode.showPreviousButton}
-          nextButtonText={tabMode.nextButtonText}
-          previousButtonText={tabMode.previousButtonText}
-          canEnterWorkflow={tabMode.canEnterWorkflow}
-          onEnterWorkflowMode={tabMode.enterWorkflowMode}
-          onExitToFocusMode={tabMode.exitToFocusMode}
-          onContinueToNextStep={tabMode.continueToNextStep}
-          onGoToPreviousStep={tabMode.goToPreviousStep}
-          onSaveStepData={tabMode.saveStepData}
-          stepData={prepareStepData()}
-        />
-      )}
       
       <div style={{ padding: '24px' }}>
-        {/* WORKFLOW MODE: Guided Website Analysis Step */}
-        {tabMode.mode === 'workflow' && (
-          <>
-            {/* Workflow Step Header */}
-            <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
-              <Col span={24}>
-                <Card style={{ background: 'linear-gradient(135deg, #52c41a 0%, #389e0d 100%)', border: 'none' }}>
-                  <div style={{ color: 'white', textAlign: 'center' }}>
-                    <Title level={2} style={{ color: 'white', marginBottom: '8px' }}>
-                      🚀 Let's Create Your Perfect Blog Post
-                    </Title>
-                    <Paragraph style={{ color: 'rgba(255,255,255,0.9)', fontSize: '16px', marginBottom: '20px' }}>
-                      We'll analyze your website and create targeted content that speaks to your audience.
-                      This guided workflow will take you step-by-step to create high-converting blog content.
-                    </Paragraph>
-                  </div>
-                </Card>
-              </Col>
-            </Row>
+        {/* Unified Header - Shows for both logged-out workflow and logged-in users */}
+        <UnifiedWorkflowHeader
+          user={user}
+          onCreateNewPost={handleCreateNewPost}
+          forceWorkflowMode={forceWorkflowMode}
+          currentStep={currentStep}
+          analysisCompleted={stepResults.home.analysisCompleted}
+          showSaveProjectButton={showSaveProjectButton}
+          onSaveProject={onSaveProject}
+          isNewRegistration={isNewRegistration}
+          completedSteps={[]} // Will be populated based on workflow progress
+        />
 
-            {/* Website Analysis - Use standalone component for full New Post experience */}
+        {/* Main Content Area - Consistent layout for both states */}
+        <div style={{
+          minHeight: '400px',
+          transition: 'all 0.3s ease',
+          position: 'relative'
+        }}>
+          {/* Website Analysis Section - Always show if analysis is not completed or in workflow mode */}
+          {((tabMode.mode === 'workflow' || forceWorkflowMode) || (!stepResults.home.analysisCompleted && user)) && (
+            <div
+              key="website-analysis"
+              style={{
+                opacity: 1,
+                transform: 'translateY(0)',
+                transition: 'opacity 0.6s ease, transform 0.6s ease'
+              }}
+            >
             <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
               <Col span={24}>
                 <WebsiteAnalysisStepStandalone
@@ -249,10 +240,10 @@ const DashboardTab = () => {
                       <Button 
                         type="primary" 
                         size="large"
-                        onClick={handleContinueToAudience}
+                        onClick={onNextStep || handleContinueToAudience}
                         style={{ minWidth: '200px' }}
                       >
-                        Continue to Audience Selection
+                        {onNextStep ? 'Next Step: Audience Selection' : 'Continue to Audience Selection'}
                       </Button>
                       <div style={{ marginTop: '8px' }}>
                         <Text type="secondary">
@@ -264,36 +255,20 @@ const DashboardTab = () => {
                 )}
               </Col>
             </Row>
-          </>
-        )}
-
-        {/* FOCUS MODE: Full Dashboard Features (Premium) */}
-        {tabMode.mode === 'focus' && (
-          <>
-      {/* Welcome Header */}
-      <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
-        <Col span={24}>
-          <Card style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', border: 'none' }}>
-            <div style={{ color: 'white', textAlign: 'center' }}>
-              <Title level={2} style={{ color: 'white', marginBottom: '8px' }}>
-                Welcome back{user?.firstName ? `, ${user.firstName}` : ''}! 👋
-              </Title>
-              <Paragraph style={{ color: 'rgba(255,255,255,0.9)', fontSize: '16px', marginBottom: '20px' }}>
-                Your content automation dashboard is ready. Create, discover, and optimize your blog content strategy.
-              </Paragraph>
-              <Button 
-                type="primary" 
-                size="large" 
-                icon={<PlusOutlined />} 
-                onClick={handleCreateNewPost}
-                style={{ backgroundColor: 'rgba(255,255,255,0.2)', borderColor: 'white' }}
-              >
-                Create New Post
-              </Button>
             </div>
-          </Card>
-        </Col>
-      </Row>
+          )}
+
+        {/* FOCUS MODE: Full Dashboard Features (Premium) - Only show when explicitly in dashboard mode */}
+        {tabMode.mode === 'focus' && !forceWorkflowMode && (
+          <>
+            {/* Dashboard Features - Enhanced layout */}
+            <div
+              key="dashboard-features"
+              style={{
+                animation: user ? 'fadeInUp 0.6s ease-out' : 'none',
+                animationFillMode: 'both'
+              }}
+            >
 
       {/* Quick Stats */}
       <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
@@ -478,7 +453,7 @@ const DashboardTab = () => {
                 size="large"
                 onClick={handleCreateNewPost}
               >
-                {stepResults.home.analysisCompleted ? 'Continue Workflow' : 'Create New Post'}
+                {stepResults.home.analysisCompleted ? 'Continue Project' : 'Create New Post'}
               </Button>
               {stepResults.home.analysisCompleted && (
                 <Button 
@@ -542,8 +517,24 @@ const DashboardTab = () => {
           </Card>
         </Col>
       </Row>
+            </div>
+            
+            {/* CSS animations for dashboard features */}
+            <style jsx>{`
+              @keyframes fadeInUp {
+                from {
+                  opacity: 0;
+                  transform: translateY(30px);
+                }
+                to {
+                  opacity: 1;
+                  transform: translateY(0);
+                }
+              }
+            `}</style>
           </>
         )}
+        </div>
       </div>
     </div>
   );

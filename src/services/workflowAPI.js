@@ -234,7 +234,7 @@ export const contentAPI = {
 
       const blogPost = await autoBlogAPI.generateContent(
         selectedTopic, 
-        analysisData,
+        analysisData,  // This maps to 'businessInfo' parameter in the API
         contextPrompt
       );
       

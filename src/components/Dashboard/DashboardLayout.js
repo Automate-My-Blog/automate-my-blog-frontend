@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Layout, Menu, Button, Avatar, Dropdown, message } from 'antd';
+import React, { useState, useEffect } from 'react';
+import { Layout, Menu, Button, Avatar, Dropdown, message, Typography } from 'antd';
 import {
   DashboardOutlined,
   FileTextOutlined,
@@ -15,12 +15,14 @@ import {
   CloseOutlined,
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
-import NewPostTab from './NewPostTab';
+import { useWorkflowMode } from '../../contexts/WorkflowModeContext';
 import DashboardTab from './DashboardTab';
 import PostsTab from './PostsTab';
 import AudienceSegmentsTab from './AudienceSegmentsTab';
 import SettingsTab from './SettingsTab';
 import ProgressiveHeaders from '../Workflow/ProgressiveHeaders';
+import LoggedOutProgressHeader from './LoggedOutProgressHeader';
+import AuthModal from '../Auth/AuthModal';
 // ADMIN COMPONENTS - Super user only
 import AdminUsersTab from './AdminUsersTab';
 import AdminAnalyticsTab from './AdminAnalyticsTab';
@@ -40,9 +42,11 @@ const DashboardLayout = ({
   // Progressive headers props
   completedWorkflowSteps = [],
   stepResults = {},
-  onEditWorkflowStep
+  onEditWorkflowStep,
+  // Force workflow mode for logged-out users
+  forceWorkflowMode = false
 }) => {
-  const [activeTab, setActiveTab] = useState('newpost');
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [collapsed, setCollapsed] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const { 
@@ -53,11 +57,59 @@ const DashboardLayout = ({
     hasPermission,
     isImpersonating,
     impersonationData,
-    endImpersonation
+    endImpersonation,
+    isNewRegistration,
+    clearNewRegistration
   } = useAuth();
   
   // Use prop user if provided, otherwise fall back to context user
   const user = propUser || contextUser;
+  
+  // Get modal state from WorkflowModeContext
+  const { showAuthModal, setShowAuthModal, authContext, setAuthContext } = useWorkflowMode();
+  
+  // Step management for logged-out users
+  const [currentStep, setCurrentStep] = useState(0);
+  const [completedSteps, setCompletedSteps] = useState([]);
+  const [visibleSections, setVisibleSections] = useState(['home']); // Start with only home visible
+  
+  // Dashboard visibility for workflow mode - start hidden in workflow mode  
+  const [showDashboardLocal, setShowDashboardLocal] = useState(false);
+  const [projectMode, setProjectMode] = useState(!user || forceWorkflowMode); // Start in project mode for logged-out users or when forced
+  const [showSaveProjectButton, setShowSaveProjectButton] = useState(false);
+  const [hasSeenSaveProject, setHasSeenSaveProject] = useState(null); // null = loading, true/false = loaded
+  const effectiveShowDashboard = (showDashboard || showDashboardLocal) && !(isNewRegistration && projectMode);
+  
+  // Check if user has seen Save Project button before and handle login/registration
+  useEffect(() => {
+    if (user) {
+      const savedState = localStorage.getItem(`hasSeenSaveProject_${user.id}`);
+      const hasSeenBefore = savedState === 'true';
+      setHasSeenSaveProject(hasSeenBefore);
+      
+      console.log('🔄 DashboardLayout: User flow detection', {
+        userEmail: user.email,
+        isNewRegistration,
+        hasSeenBefore,
+        forceWorkflowMode
+      });
+      
+      if (isNewRegistration && !hasSeenBefore) {
+        // New user just completed registration - keep in workflow mode
+        console.log('🆕 New registration detected - entering project mode (sidebar hidden until Save Project)');
+        setProjectMode(true);
+        setShowSaveProjectButton(true);
+        // Don't show sidebar until "Save Project" is clicked
+        setShowDashboardLocal(false);
+      } else {
+        // Returning user logging in - go directly to focus mode
+        console.log('🔄 Returning user detected - entering focus mode');
+        setProjectMode(false);
+        setShowDashboardLocal(true); // Show sidebar immediately for returning users
+      }
+    }
+  }, [user, isNewRegistration]);
+  
   
   // Handle tab changes with smooth scroll navigation
   const handleTabChange = (newTab) => {
@@ -115,17 +167,61 @@ const DashboardLayout = ({
     }
   };
   
+  // Step management functions for logged-out workflow progression
+  const completeStep = (stepIndex) => {
+    if (!completedSteps.includes(stepIndex)) {
+      setCompletedSteps(prev => [...prev, stepIndex]);
+    }
+  };
+
+  const advanceToNextStep = () => {
+    const nextStep = currentStep + 1;
+    if (nextStep <= 4) { // Max 5 steps (0-4)
+      setCurrentStep(nextStep);
+      
+      // Make next section visible
+      const sectionMap = ['home', 'audience-segments', 'posts', 'posts', 'posts']; // Step 2-4 all use posts section for different phases
+      const nextSection = sectionMap[nextStep];
+      
+      if (!visibleSections.includes(nextSection)) {
+        setVisibleSections(prev => [...prev, nextSection]);
+      }
+      
+      // Complete current step
+      completeStep(currentStep);
+      
+      // Scroll to next section
+      setTimeout(() => {
+        const section = document.getElementById(nextSection);
+        if (section) {
+          section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 100);
+    }
+  };
+
+  const handleStepClick = (stepIndex) => {
+    // Only allow navigation to completed steps or current step
+    if (completedSteps.includes(stepIndex) || stepIndex === currentStep) {
+      setCurrentStep(stepIndex);
+      
+      const sectionMap = ['home', 'audience-segments', 'posts', 'posts', 'posts'];
+      const targetSection = sectionMap[stepIndex];
+      
+      const section = document.getElementById(targetSection);
+      if (section) {
+        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+  };
+
+
   // Animation styles - elements slide in when dashboard is shown
   const animationDuration = '1s';
   const easing = 'cubic-bezier(0.4, 0, 0.2, 1)';
 
   // Base menu items available to all users
   const baseMenuItems = [
-    {
-      key: 'newpost',
-      icon: <EditOutlined />,
-      label: 'Create New Post',
-    },
     {
       key: 'dashboard',
       icon: <DashboardOutlined />,
@@ -233,49 +329,60 @@ const DashboardLayout = ({
     // Main scrollable layout with all sections
     return (
       <div style={{ padding: 0 }}>
-        {/* New Post Section */}
-        <section id="newpost" style={{ 
-          minHeight: '100vh', 
-          background: '#fff',
-          borderRadius: '8px',
-          padding: '24px',
-          marginBottom: '24px'
-        }}>
-          <NewPostTab workflowContent={workflowContent} showWorkflow={!!workflowContent} />
-        </section>
 
-        {/* Home Section (formerly Dashboard) */}
-        <section id="home" style={{ 
-          minHeight: '100vh', 
-          background: '#fff',
-          borderRadius: '8px',
-          padding: '24px',
-          marginBottom: '24px'
-        }}>
-          <DashboardTab />
-        </section>
+        {/* Home Section (formerly Dashboard) - Always visible */}
+        {(user || visibleSections.includes('home')) && (
+          <section id="home" style={{ 
+            minHeight: '100vh', 
+            background: '#fff',
+            borderRadius: '8px',
+            padding: '24px',
+            marginBottom: '24px'
+          }}>
+            <DashboardTab 
+              forceWorkflowMode={forceWorkflowMode || (user && projectMode)} 
+              onNextStep={!user && forceWorkflowMode ? advanceToNextStep : undefined}
+              onEnterProjectMode={user && !projectMode ? () => setProjectMode(true) : undefined}
+              showSaveProjectButton={showSaveProjectButton}
+              isNewRegistration={isNewRegistration}
+              onSaveProject={null} // Save Project button is now in the header
+            />
+          </section>
+        )}
 
-        {/* Audience Section */}
-        <section id="audience-segments" style={{ 
-          minHeight: '100vh', 
-          background: '#fff',
-          borderRadius: '8px',
-          padding: '24px',
-          marginBottom: '24px'
-        }}>
-          <AudienceSegmentsTab />
-        </section>
+        {/* Audience Section - Unlocked after step 1 - Hide for new registrations in project mode */}
+        {((!user && visibleSections.includes('audience-segments')) || (user && !projectMode)) && (
+          <section id="audience-segments" style={{ 
+            minHeight: '100vh', 
+            background: '#fff',
+            borderRadius: '8px',
+            padding: '24px',
+            marginBottom: '24px'
+          }}>
+            <AudienceSegmentsTab 
+              forceWorkflowMode={forceWorkflowMode || (user && projectMode)}
+              onNextStep={!user && forceWorkflowMode ? advanceToNextStep : undefined}
+              onEnterProjectMode={user && !projectMode ? () => setProjectMode(true) : undefined}
+            />
+          </section>
+        )}
 
-        {/* Posts Section */}
-        <section id="posts" style={{ 
-          minHeight: '100vh', 
-          background: '#fff',
-          borderRadius: '8px',
-          padding: '24px',
-          marginBottom: '24px'
-        }}>
-          <PostsTab />
-        </section>
+        {/* Posts Section - Unlocked after step 2 - Hide for new registrations in project mode */}
+        {((!user && visibleSections.includes('posts')) || (user && !projectMode)) && (
+          <section id="posts" style={{ 
+            minHeight: '100vh', 
+            background: '#fff',
+            borderRadius: '8px',
+            padding: '24px',
+            marginBottom: '24px'
+          }}>
+            <PostsTab 
+              forceWorkflowMode={forceWorkflowMode || (user && projectMode)}
+              currentStep={!user && forceWorkflowMode ? currentStep : undefined}
+              onNextStep={!user && forceWorkflowMode ? advanceToNextStep : undefined}
+            />
+          </section>
+        )}
       </div>
     );
   };
@@ -294,22 +401,148 @@ const DashboardLayout = ({
         }
       `}</style>
       
-      {/* Desktop Sidebar - only shows on desktop */}
+      {/* Progress Header for Logged-Out Users and New Registrations */}
+      {(!user && forceWorkflowMode) || (user && isNewRegistration && projectMode) ? (
+        <LoggedOutProgressHeader
+          currentStep={currentStep}
+          completedSteps={completedSteps}
+          onStepClick={handleStepClick}
+          showAuthModal={showAuthModal}
+          setShowAuthModal={setShowAuthModal}
+          authContext={authContext}
+          setAuthContext={setAuthContext}
+          user={user}
+          isNewRegistration={isNewRegistration}
+          showSaveProjectButton={showSaveProjectButton}
+          onSaveProject={() => {
+            setShowDashboardLocal(true);
+            setShowSaveProjectButton(false);
+            setHasSeenSaveProject(true);
+            setProjectMode(false); // Exit project mode when saving
+            
+            // Clear registration flag since user has now saved their project
+            console.log('💾 Save Project clicked in header - clearing registration flag and switching to focus mode');
+            clearNewRegistration();
+            
+            // Save to localStorage so user never sees this button again
+            if (user) {
+              localStorage.setItem(`hasSeenSaveProject_${user.id}`, 'true');
+            }
+            message.success('Project saved! Dashboard is now available via sidebar.');
+          }}
+        />
+      ) : null}
+      
+      {/* Workflow Header for Logged-In Users in Project Mode (but not new registrations) */}
+      {user && projectMode && !isNewRegistration && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 1000,
+          backgroundColor: '#fff',
+          borderBottom: '1px solid #e8e8e8',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+          padding: '16px 24px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          minHeight: '80px'
+        }}>
+          {/* Left: Brand */}
+          <div style={{ minWidth: '200px' }}>
+            <Typography.Text strong style={{ fontSize: '18px', color: '#1890ff' }}>
+              Automate My Blog
+            </Typography.Text>
+            <div style={{ fontSize: '12px', color: '#666', marginTop: '2px' }}>
+              Welcome back, {user.firstName || user.email}!
+            </div>
+          </div>
+
+          {/* Center: Current Step Indicator */}
+          <div style={{ 
+            flex: 1,
+            textAlign: 'center',
+            margin: '0 32px'
+          }}>
+            <Typography.Text style={{ fontSize: '16px', color: '#1890ff', fontWeight: 500 }}>
+              Step {currentStep + 1} of 5: Continue Your Project
+            </Typography.Text>
+          </div>
+
+          {/* Right: Navigation Buttons */}
+          <div style={{ minWidth: '200px', textAlign: 'right' }}>
+            {user && projectMode && (
+              <>
+                {showSaveProjectButton ? (
+                  <Button 
+                    type="primary"
+                    onClick={() => {
+                      setShowDashboardLocal(true);
+                      setShowSaveProjectButton(false);
+                      setHasSeenSaveProject(true);
+                      setProjectMode(false); // Exit project mode when saving
+                      
+                      // Clear registration flag since user has now saved their project
+                      console.log('💾 Save Project clicked - clearing registration flag and switching to focus mode');
+                      clearNewRegistration();
+                      
+                      // Save to localStorage so user never sees this button again
+                      if (user) {
+                        localStorage.setItem(`hasSeenSaveProject_${user.id}`, 'true');
+                      }
+                      message.success('Project saved! Dashboard is now available via sidebar.');
+                    }}
+                    style={{ 
+                      backgroundColor: '#52c41a', 
+                      borderColor: '#52c41a',
+                      fontWeight: 600
+                    }}
+                  >
+                    💾 Save Project
+                  </Button>
+                ) : (
+                  <Button 
+                    type="text"
+                    onClick={() => {
+                      setProjectMode(false);
+                      message.success('Exited project mode. Full dashboard now available.');
+                    }}
+                    style={{ color: '#666' }}
+                  >
+                    Exit Project Mode
+                  </Button>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      )}
+      
+      {/* Main Layout Container - adjusts for fixed sidebar */}
+      <div style={{ 
+        minHeight: '100vh',
+        marginLeft: !isMobile && user && effectiveShowDashboard ? '240px' : '0',
+        transition: 'margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+      }}>
+      
+      {/* Desktop Sidebar - fixed positioned with slide animation */}
       {user && !isMobile && (
         <div style={{
           position: 'fixed',
-          left: 0,
           top: 0,
+          left: 0,
+          bottom: 0,
           width: '240px',
           background: '#fff',
           borderRight: '1px solid #f0f0f0',
-          transform: 'translateX(-100%)',
-          animation: showDashboard ? 'slideInLeft 1s cubic-bezier(0.4, 0, 0.2, 1) 0.2s forwards' : 'none',
-          boxShadow: showDashboard ? '2px 0 8px rgba(0,0,0,0.15)' : 'none',
-          zIndex: 15,
+          boxShadow: '2px 0 8px rgba(0,0,0,0.15)',
           display: 'flex',
           flexDirection: 'column',
-          height: '100vh'
+          zIndex: 100,
+          transform: effectiveShowDashboard ? 'translateX(0)' : 'translateX(-240px)',
+          transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
         }}>
           {/* Logo/Title */}
           <div style={{ 
@@ -464,7 +697,7 @@ const DashboardLayout = ({
       )}
 
       {/* Progressive Headers - Shows completed workflow steps */}
-      {user && activeTab !== 'newpost' && completedWorkflowSteps.length > 0 && (
+      {user && completedWorkflowSteps.length > 0 && (
         <ProgressiveHeaders 
           completedWorkflowSteps={completedWorkflowSteps}
           stepResults={stepResults}
@@ -472,14 +705,12 @@ const DashboardLayout = ({
         />
       )}
 
-      {/* Content area - always show for authenticated users */}
-      {user && (
+      {/* Content area - always show */}
         <div style={{ 
-          gridArea: 'main',
           padding: isMobile ? '16px 16px 80px 16px' : '24px',
           background: '#f5f5f5',
           overflow: 'auto',
-          paddingTop: completedWorkflowSteps.length > 0 ? '8px' : '24px'
+          paddingTop: (!user && forceWorkflowMode) || (user && isNewRegistration && projectMode) ? '100px' : completedWorkflowSteps.length > 0 ? '8px' : '24px' // Extra padding for progress header
         }}>
           <div style={{
             background: activeTab === 'settings' || activeTab.startsWith('admin-') ? '#fff' : 'transparent',
@@ -490,7 +721,6 @@ const DashboardLayout = ({
             {renderContent()}
           </div>
         </div>
-      )}
 
       {/* Impersonation Banner */}
       {isImpersonating && impersonationData && (
@@ -534,6 +764,7 @@ const DashboardLayout = ({
           </Button>
         </div>
       )}
+      </div> {/* End of Main Layout Container */}
 
       {/* Push content down when impersonation banner is visible */}
       {isImpersonating && (
@@ -544,6 +775,19 @@ const DashboardLayout = ({
             }
           `}
         </style>
+      )}
+      
+      {/* Authentication Modal for Logged-Out Users */}
+      {!user && (
+        <AuthModal 
+          open={showAuthModal}
+          onClose={() => {
+            setShowAuthModal(false);
+            setAuthContext(null);
+          }}
+          context={authContext}
+          defaultTab={authContext === 'register' ? 'register' : 'login'}
+        />
       )}
     </>
   );

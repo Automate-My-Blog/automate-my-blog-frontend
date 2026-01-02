@@ -18,6 +18,7 @@ export const AuthProvider = ({ children }) => {
   const [currentOrganization, setCurrentOrganization] = useState(null);
   const [loginContext, setLoginContext] = useState(null); // 'gate' or 'nav'
   const [impersonationData, setImpersonationData] = useState(null); // stores original admin info
+  const [isNewRegistration, setIsNewRegistration] = useState(false); // tracks if user just registered
 
   // ROLE-BASED PERMISSIONS: Check user permissions from database
   const isAdmin = user && (user.role === 'admin' || user.role === 'super_admin');
@@ -83,6 +84,8 @@ export const AuthProvider = ({ children }) => {
     
     // Store login context for routing decisions
     setLoginContext(context);
+    setIsNewRegistration(false); // Mark as login, not registration
+    console.log('🔐 AuthContext: Login completed, setting isNewRegistration = false', { userEmail: response.user.email });
     
     return { ...response, context };
   };
@@ -98,6 +101,8 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('refreshToken', response.refreshToken);
       }
       setLoginContext(context);
+      setIsNewRegistration(true); // Mark as new registration
+      console.log('🔥 AuthContext: Registration completed, setting isNewRegistration = true', { userEmail: response.user.email });
       
       // Process referral/invite after successful registration
       const inviteCode = getStoredInviteCode();
@@ -157,6 +162,7 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
     setCurrentOrganization(null);
     setLoginContext(null);
+    setIsNewRegistration(false); // Clear registration flag on logout
   };
 
   const clearLoginContext = () => {
@@ -274,6 +280,12 @@ export const AuthProvider = ({ children }) => {
     loginContext,
     clearLoginContext,
     setNavContext,
+    // Registration tracking
+    isNewRegistration,
+    clearNewRegistration: () => {
+      console.log('🧹 AuthContext: Clearing isNewRegistration flag');
+      setIsNewRegistration(false);
+    },
     // Impersonation functionality
     isImpersonating: !!impersonationData,
     impersonationData,

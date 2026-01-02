@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Button, Empty, Row, Col, Typography, Tag, Statistic, Space, message } from 'antd';
-import { PlusOutlined, UserOutlined, TeamOutlined, BulbOutlined, CheckOutlined, DatabaseOutlined } from '@ant-design/icons';
+import { Card, Button, Row, Col, Typography, Tag, Statistic, Space, message } from 'antd';
+import { UserOutlined, TeamOutlined, BulbOutlined, CheckOutlined, DatabaseOutlined } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTabMode } from '../../hooks/useTabMode';
 import { useWorkflowMode } from '../../contexts/WorkflowModeContext';
-import ModeToggle, { WorkflowGuidance } from '../Workflow/ModeToggle';
+import UnifiedWorkflowHeader from './UnifiedWorkflowHeader';
 import { ComponentHelpers } from '../Workflow/interfaces/WorkflowComponentInterface';
 
 const { Title, Text, Paragraph } = Typography;
@@ -79,15 +79,13 @@ const enhancedAudienceStrategies = [
   }
 ];
 
-const AudienceSegmentsTab = () => {
+const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMode }) => {
   const { user } = useAuth();
   const tabMode = useTabMode('audience-segments');
   const { 
-    selectedCustomerStrategy,
     setSelectedCustomerStrategy,
     updateCustomerStrategy,
-    stepResults,
-    requireAuth 
+    stepResults 
   } = useWorkflowMode();
   const [selectedStrategy, setSelectedStrategy] = useState(null);
   const [strategies, setStrategies] = useState(enhancedAudienceStrategies);
@@ -99,7 +97,7 @@ const AudienceSegmentsTab = () => {
 
   // Generate dynamic audience strategies based on website analysis when entering workflow mode
   useEffect(() => {
-    if (tabMode.mode === 'workflow' && stepResults.home.analysisCompleted && stepResults.home.websiteAnalysis) {
+    if ((tabMode.mode === 'workflow' || forceWorkflowMode) && stepResults.home.analysisCompleted && stepResults.home.websiteAnalysis) {
       const analysis = stepResults.home.websiteAnalysis;
       
       // Generate strategies based on website analysis
@@ -405,48 +403,20 @@ const AudienceSegmentsTab = () => {
 
   return (
     <div>
-      {/* Mode Toggle - Only show for authenticated users */}
-      {user && (
-        <ModeToggle
-          mode={tabMode.mode}
-          tabKey="audience-segments"
-          workflowStep={tabMode.workflowStep}
-          showModeToggle={tabMode.showModeToggle}
-          showWorkflowNavigation={tabMode.showWorkflowNavigation}
-          showNextButton={tabMode.showNextButton && selectedStrategy}
-          showPreviousButton={tabMode.showPreviousButton}
-          nextButtonText={tabMode.nextButtonText}
-          previousButtonText={tabMode.previousButtonText}
-          canEnterWorkflow={tabMode.canEnterWorkflow}
-          onEnterWorkflowMode={tabMode.enterWorkflowMode}
-          onExitToFocusMode={tabMode.exitToFocusMode}
-          onContinueToNextStep={tabMode.continueToNextStep}
-          onGoToPreviousStep={tabMode.goToPreviousStep}
-          onSaveStepData={tabMode.saveStepData}
-          stepData={prepareStepData()}
-        />
-      )}
       
       <div style={{ padding: '24px' }}>
+        {/* Unified Header - Consistent styling with other tabs */}
+        <UnifiedWorkflowHeader
+          user={user}
+          onCreateNewPost={() => message.info('Continue through the project to create content')}
+          forceWorkflowMode={forceWorkflowMode}
+          currentStep={2}
+          analysisCompleted={stepResults.home.analysisCompleted}
+        />
+
         {/* WORKFLOW MODE: Customer Strategy Selection Step */}
-        {tabMode.mode === 'workflow' && (
+        {(tabMode.mode === 'workflow' || forceWorkflowMode) && (
           <>
-            {/* Workflow Step Header */}
-            <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
-              <Col span={24}>
-                <Card style={{ background: 'linear-gradient(135deg, #1890ff 0%, #096dd9 100%)', border: 'none' }}>
-                  <div style={{ color: 'white', textAlign: 'center' }}>
-                    <Title level={2} style={{ color: 'white', marginBottom: '8px' }}>
-                      🎯 Step 2: Choose Your Target Audience
-                    </Title>
-                    <Paragraph style={{ color: 'rgba(255,255,255,0.9)', fontSize: '16px', marginBottom: '20px' }}>
-                      Select the audience segment that best matches your business goals. 
-                      This will help us create highly targeted content that converts.
-                    </Paragraph>
-                  </div>
-                </Card>
-              </Col>
-            </Row>
 
             {/* Strategy Selection Cards - Core workflow step */}
             <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
@@ -468,7 +438,18 @@ const AudienceSegmentsTab = () => {
                   </div>
                   
                   {/* Strategy Cards Grid */}
-                  {generatingStrategies ? (
+                  {!stepResults.home.analysisCompleted && forceWorkflowMode ? (
+                    <div style={{ textAlign: 'center', padding: '40px' }}>
+                      <div style={{ fontSize: '48px', marginBottom: '16px' }}>📋</div>
+                      <Title level={4} style={{ color: '#fa8c16' }}>
+                        Complete Website Analysis First
+                      </Title>
+                      <Text style={{ color: '#666', fontSize: '16px' }}>
+                        Please complete the website analysis in Step 1 before selecting your target audience.
+                        This helps us create personalized audience strategies based on your business.
+                      </Text>
+                    </div>
+                  ) : generatingStrategies ? (
                     <div style={{ textAlign: 'center', padding: '40px' }}>
                       <div style={{ fontSize: '24px', marginBottom: '16px' }}>🎯</div>
                       <Title level={4} style={{ color: '#1890ff' }}>
@@ -489,6 +470,44 @@ const AudienceSegmentsTab = () => {
                       <Text strong style={{ color: '#52c41a' }}>
                         ✅ Selected: {selectedStrategy.targetSegment?.demographics.split(' ').slice(0, 4).join(' ')}...
                       </Text>
+                      <div style={{ marginTop: '16px' }}>
+                        {onNextStep ? (
+                          <Button
+                            type="primary"
+                            size="large"
+                            onClick={onNextStep}
+                            style={{ 
+                              minWidth: '200px',
+                              backgroundColor: '#52c41a',
+                              borderColor: '#52c41a'
+                            }}
+                            icon={<BulbOutlined />}
+                          >
+                            Next Step: Generate Content
+                          </Button>
+                        ) : user && (
+                          <Button
+                            type="primary"
+                            size="large"
+                            onClick={() => {
+                              if (onEnterProjectMode) {
+                                onEnterProjectMode();
+                              } else {
+                                tabMode.enterWorkflowMode();
+                              }
+                              message.success('Entering project mode to create content');
+                            }}
+                            style={{ 
+                              minWidth: '200px',
+                              backgroundColor: '#52c41a',
+                              borderColor: '#52c41a'
+                            }}
+                            icon={<BulbOutlined />}
+                          >
+                            Start Project Mode
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   )}
                 </Card>
@@ -498,7 +517,7 @@ const AudienceSegmentsTab = () => {
         )}
 
         {/* FOCUS MODE: Full Audience Management Features (Premium) */}
-        {tabMode.mode === 'focus' && (
+        {tabMode.mode === 'focus' && !forceWorkflowMode && (
           <>
       {/* Header */}
       <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
@@ -627,7 +646,7 @@ const AudienceSegmentsTab = () => {
         )}
       </Card>
 
-      {tabMode.mode !== 'workflow' && (
+      {tabMode.mode !== 'workflow' && !forceWorkflowMode && (
         <Card title="Understanding Customer Strategies" style={{ marginTop: '24px' }}>
           <Row gutter={[24, 24]}>
             <Col xs={24} md={8}>

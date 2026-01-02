@@ -42,6 +42,7 @@ const TopicSelectionStepV2 = (props) => {
     // Authentication context
     user,
     requireAuth,
+    requireSignUp,
     
     // Business logic functions
     generateContent,
@@ -102,7 +103,9 @@ const TopicSelectionStepV2 = (props) => {
    * EXTRACTED FROM: App.js edit strategy button logic
    */
   const handleStrategyEdit = () => {
-    if (requireAuth('Edit content strategy', 'premium-gate')) {
+    if (!user) {
+      requireSignUp('Edit content strategy', 'Customize your approach');
+    } else {
       message.info('Strategy editing will be available after backend integration');
     }
   };
@@ -112,7 +115,9 @@ const TopicSelectionStepV2 = (props) => {
    * EXTRACTED FROM: App.js lead generation CTA logic
    */
   const handleSeeMoreTopics = () => {
-    if (requireAuth('View additional content ideas', 'premium-gate')) {
+    if (!user) {
+      requireSignUp('Unlock more content ideas', 'Access premium features');
+    } else {
       // Premium feature: show more topic ideas
       message.info('Additional topic ideas available with premium access');
     }

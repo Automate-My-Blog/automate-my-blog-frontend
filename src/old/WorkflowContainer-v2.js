@@ -92,6 +92,23 @@ const WorkflowContainerV2 = ({ embedded = false }) => {
   }, [user, embedded, workflowState]);
 
   /**
+   * Sign-up focused authentication gate
+   * Always defaults to register tab for conversion
+   */
+  const requireSignUp = useCallback((action = '', context = 'Create your account') => {
+    if (!user) {
+      if (embedded) {
+        message.warning('Please sign up to access this feature');
+        return false;
+      }
+      workflowState.setAuthContext('register');  // Always set to register for sign-up flow
+      workflowState.setShowAuthModal(true);
+      return false;
+    }
+    return true;
+  }, [user, embedded, workflowState]);
+
+  /**
    * Enhanced navigation to dashboard
    * Preserves workflow context when transitioning to dashboard mode
    */
@@ -524,6 +541,7 @@ const WorkflowContainerV2 = ({ embedded = false }) => {
       
       // Business logic functions
       requireAuth,
+      requireSignUp,
       performWebsiteAnalysis,
       generateTopics,
       generateContent,

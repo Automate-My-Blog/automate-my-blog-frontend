@@ -46,6 +46,7 @@ const ExportStepV2 = (props) => {
     // Authentication context
     user,
     requireAuth,
+    requireSignUp,
     
     // Export functions from WorkflowContainer
     exportAsMarkdown,
@@ -108,7 +109,8 @@ const ExportStepV2 = (props) => {
       return;
     }
 
-    if (!user && !requireAuth('Export content', 'export-gate')) {
+    if (!user) {
+      requireSignUp('Download your content', 'Export your post');
       return;
     }
 

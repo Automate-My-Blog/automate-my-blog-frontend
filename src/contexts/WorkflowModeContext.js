@@ -305,6 +305,17 @@ export const WorkflowModeProvider = ({ children }) => {
     return true;
   }, [user]);
   
+  // Sign-up focused gate helper - defaults to register tab for conversion
+  const requireSignUp = useCallback((action = '', context = 'Create your account') => {
+    if (!user) {
+      console.log(`🎯 Sign-up required for action: ${action}`);
+      setAuthContext('register');  // Always set to register for sign-up flow
+      setShowAuthModal(true);
+      return false;
+    }
+    return true;
+  }, [user]);
+  
   // Permission checker helper
   const hasPermission = useCallback((permission) => {
     return user?.permissions?.includes(permission) || false;
@@ -676,8 +687,7 @@ export const WorkflowModeProvider = ({ children }) => {
     const sectionIdMap = {
       'dashboard': 'home',
       'audience-segments': 'audience-segments',
-      'posts': 'posts',
-      'newpost': 'newpost'
+      'posts': 'posts'
     };
     
     // Find the section element to scroll to
@@ -834,6 +844,7 @@ export const WorkflowModeProvider = ({ children }) => {
     // AUTHENTICATION GATES & PERMISSIONS
     // =============================================================================
     requireAuth,
+    requireSignUp,
     hasPermission,
     isAdmin,
     isSuperAdmin,

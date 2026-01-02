@@ -39,6 +39,7 @@ const CustomerStrategyStepV2 = (props) => {
     // Authentication context
     user,
     requireAuth,
+    requireSignUp,
     
     // Business logic functions
     generateTopics,
@@ -101,7 +102,9 @@ const CustomerStrategyStepV2 = (props) => {
       // In demo mode, show all strategies
       // This would expand the view to show all available scenarios
     } else {
-      if (requireAuth('View additional customer strategies', 'premium-gate')) {
+      if (!user) {
+        requireSignUp('View more customer strategies', 'Access premium features');
+      } else {
         message.info('More strategies will be available after backend integration');
       }
     }
