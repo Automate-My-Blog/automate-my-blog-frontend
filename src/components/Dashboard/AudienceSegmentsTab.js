@@ -78,13 +78,26 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
     loadCachedAnalysis();
   }, [user, tabMode.mode, forceWorkflowMode]);
 
-  // Load audience strategies based on OpenAI analysis when entering workflow mode
+  // Load audience strategies based on OpenAI analysis when entering workflow mode or when analysis data exists
   useEffect(() => {
-    if ((tabMode.mode === 'workflow' || forceWorkflowMode) && stepResults.home.analysisCompleted && stepResults.home.websiteAnalysis) {
+    const hasAnalysisData = stepResults.home.websiteAnalysis && 
+                           (stepResults.home.websiteAnalysis.targetAudience || 
+                            stepResults.home.websiteAnalysis.businessName !== 'None');
+    
+    if (((tabMode.mode === 'workflow' || forceWorkflowMode) && stepResults.home.analysisCompleted && stepResults.home.websiteAnalysis) ||
+        (hasAnalysisData && tabMode.mode === 'focus' && !forceWorkflowMode)) {
       const analysis = stepResults.home.websiteAnalysis;
       
-      console.log('🎯 Loading audience strategies from analysis:', analysis);
-      console.log('Available scenarios:', analysis.scenarios?.length || 0);
+      console.log('🎯 Loading audience strategies from analysis:', {
+        businessName: analysis.businessName,
+        targetAudience: analysis.targetAudience,
+        contentFocus: analysis.contentFocus,
+        hasScenarios: !!analysis.scenarios,
+        scenariosLength: analysis.scenarios?.length || 0,
+        analysisCompleted: stepResults.home.analysisCompleted,
+        tabMode: tabMode.mode,
+        triggerReason: ((tabMode.mode === 'workflow' || forceWorkflowMode) && stepResults.home.analysisCompleted) ? 'workflow-completed' : 'focus-with-data'
+      });
       
       setGeneratingStrategies(true);
       
