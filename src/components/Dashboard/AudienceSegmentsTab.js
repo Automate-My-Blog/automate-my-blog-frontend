@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Button, Row, Col, Typography, Tag, Statistic, Space, message } from 'antd';
-import { UserOutlined, TeamOutlined, BulbOutlined, CheckOutlined, DatabaseOutlined } from '@ant-design/icons';
+import { UserOutlined, TeamOutlined, BulbOutlined, CheckOutlined, DatabaseOutlined, RocketOutlined } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTabMode } from '../../hooks/useTabMode';
 import { useWorkflowMode } from '../../contexts/WorkflowModeContext';
@@ -233,6 +233,81 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
       businessValue: selectedStrategy.businessValue,
       timestamp: new Date().toISOString()
     };
+  };
+
+  // Navigate to dashboard and scroll to website analysis
+  const handleRunAnalysis = () => {
+    console.log('🚀 Navigate to website analysis triggered from audience tab');
+    
+    // Switch to dashboard tab
+    if (tabMode.mode !== 'focus') {
+      tabMode.enterFocusMode();
+    }
+    
+    // Use setTimeout to ensure tab switch completes before scrolling
+    setTimeout(() => {
+      // Try to find the dashboard tab button and click it
+      const dashboardButton = document.querySelector('[data-testid="dashboard-tab"], .ant-tabs-tab:first-child, .ant-menu-item:first-child');
+      if (dashboardButton) {
+        console.log('✅ Found dashboard tab, clicking...');
+        dashboardButton.click();
+        
+        // Wait for tab content to load, then scroll to analysis
+        setTimeout(() => {
+          scrollToAnalysis();
+        }, 300);
+      } else {
+        // Fallback: just scroll to analysis in current context
+        scrollToAnalysis();
+      }
+    }, 100);
+  };
+
+  const scrollToAnalysis = () => {
+    // Try multiple selectors to find the website analysis section
+    const analysisSelectors = [
+      '[data-testid="website-analysis"]',
+      '.website-analysis-section',
+      'input[placeholder*="website"], input[placeholder*="URL"]',
+      'input[type="url"]',
+      '.ant-input[placeholder*="lumibears"], .ant-input[placeholder*="website"]'
+    ];
+    
+    let analysisElement = null;
+    for (const selector of analysisSelectors) {
+      analysisElement = document.querySelector(selector);
+      if (analysisElement) break;
+    }
+    
+    if (analysisElement) {
+      console.log('✅ Found analysis element, scrolling and focusing...');
+      
+      // Scroll to the element
+      analysisElement.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'center' 
+      });
+      
+      // Focus the input if it's an input element
+      setTimeout(() => {
+        if (analysisElement.tagName === 'INPUT') {
+          analysisElement.focus();
+          message.success('Ready to analyze your website! Enter your URL above.');
+        } else {
+          // If it's a container, try to find input inside
+          const input = analysisElement.querySelector('input');
+          if (input) {
+            input.focus();
+            message.success('Ready to analyze your website! Enter your URL above.');
+          } else {
+            message.info('Scrolled to website analysis section');
+          }
+        }
+      }, 600);
+    } else {
+      console.warn('❌ Could not find website analysis element');
+      message.info('Please go to the Home tab to run website analysis');
+    }
   };
 
   // Render enhanced strategy card with business intelligence
@@ -572,7 +647,23 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
           <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
             <DatabaseOutlined style={{ fontSize: '48px', color: '#d9d9d9', marginBottom: '16px' }} />
             <Title level={4} style={{ color: '#999' }}>No Customer Strategies Found</Title>
-            <Text>Please run website analysis to generate customer strategies.</Text>
+            <Text style={{ marginBottom: '20px', color: '#666' }}>
+              Run website analysis to generate personalized customer strategies based on your business.
+            </Text>
+            <Button 
+              type="primary" 
+              size="large"
+              icon={<RocketOutlined />}
+              onClick={handleRunAnalysis}
+              style={{ 
+                marginTop: '8px',
+                minWidth: '200px',
+                height: '40px',
+                fontSize: '16px'
+              }}
+            >
+              Run Website Analysis
+            </Button>
           </div>
         ) : (
           <div>
