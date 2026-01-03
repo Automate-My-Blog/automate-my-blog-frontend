@@ -119,6 +119,68 @@ const DashboardLayout = ({
     }
   }, [user, isNewRegistration]);
   
+  // Add intersection observer for scroll-based menu highlighting
+  useEffect(() => {
+    // Only set up observer if we're in the scrollable sections view (not settings/admin tabs)
+    if (!user || activeTab === 'settings' || activeTab.startsWith('admin-')) {
+      return;
+    }
+
+    const sections = [
+      { id: 'home', tabKey: 'dashboard' },
+      { id: 'audience-segments', tabKey: 'audience-segments' },
+      { id: 'posts', tabKey: 'posts' }
+    ];
+
+    const observerOptions = {
+      root: null, // Use viewport as root
+      rootMargin: '-20% 0px -20% 0px', // Trigger when section is 20% into viewport
+      threshold: 0.5 // Trigger when 50% of section is visible
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      // Find the section with the highest intersection ratio
+      let mostVisible = null;
+      let highestRatio = 0;
+
+      entries.forEach((entry) => {
+        if (entry.intersectionRatio > highestRatio) {
+          highestRatio = entry.intersectionRatio;
+          mostVisible = entry.target;
+        }
+      });
+
+      // Update activeTab if we found a visible section
+      if (mostVisible && highestRatio > 0.3) { // 30% threshold to avoid flickering
+        const sectionInfo = sections.find(s => s.id === mostVisible.id);
+        if (sectionInfo && sectionInfo.tabKey !== activeTab) {
+          console.log('📍 Scroll detected - highlighting menu item:', sectionInfo.tabKey);
+          setActiveTab(sectionInfo.tabKey);
+          if (onActiveTabChange) {
+            onActiveTabChange(sectionInfo.tabKey);
+          }
+        }
+      }
+    }, observerOptions);
+
+    // Observe all existing sections
+    const elementsToObserve = [];
+    sections.forEach(({ id }) => {
+      const element = document.getElementById(id);
+      if (element) {
+        observer.observe(element);
+        elementsToObserve.push(element);
+      }
+    });
+
+    // Cleanup
+    return () => {
+      elementsToObserve.forEach((element) => {
+        observer.unobserve(element);
+      });
+      observer.disconnect();
+    };
+  }, [activeTab, user, onActiveTabChange]);
   
   // Handle tab changes with smooth scroll navigation
   const handleTabChange = (newTab) => {
