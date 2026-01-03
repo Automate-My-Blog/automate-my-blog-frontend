@@ -589,61 +589,6 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
         {/* FOCUS MODE: Full Audience Management Features (Premium) */}
         {tabMode.mode === 'focus' && !forceWorkflowMode && (
           <>
-      {/* Header */}
-      <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
-        <Col span={24}>
-          <Card>
-            <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-              <Title level={2} style={{ marginBottom: '8px' }}>
-                <TeamOutlined style={{ marginRight: '12px', color: '#1890ff' }} />
-                Audience Segments
-              </Title>
-              <Paragraph style={{ fontSize: '16px', color: '#666', maxWidth: '600px', margin: '0 auto' }}>
-                Define and manage your target audience segments based on customer strategies. 
-                Create content that resonates with specific customer groups and their unique needs.
-              </Paragraph>
-            </div>
-          </Card>
-        </Col>
-      </Row>
-
-      {/* Quick Stats */}
-      <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
-        <Col xs={24} sm={8}>
-          <Card>
-            <Statistic
-              title="Available Strategies"
-              value={strategies.length}
-              prefix={<UserOutlined />}
-              valueStyle={{ color: '#3f8600' }}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={8}>
-          <Card>
-            <Statistic
-              title="Monthly Search Volume"
-              value={strategies.reduce((sum, s) => {
-                const volume = s.businessValue?.searchVolume || '0';
-                return sum + parseFloat(volume.replace(/[^0-9.]/g, ''));
-              }, 0).toFixed(1)}
-              suffix="K searches"
-              prefix={<TeamOutlined />}
-              valueStyle={{ color: '#722ed1' }}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={8}>
-          <Card>
-            <Statistic
-              title="Selected Strategy"
-              value={selectedStrategy ? 1 : 0}
-              prefix={<BulbOutlined />}
-              valueStyle={{ color: selectedStrategy ? '#1890ff' : '#666' }}
-            />
-          </Card>
-        </Col>
-      </Row>
 
       {/* Main Content */}
       <Card style={{ marginBottom: '20px' }}>
