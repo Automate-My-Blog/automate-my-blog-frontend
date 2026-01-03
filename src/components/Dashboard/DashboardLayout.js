@@ -126,61 +126,107 @@ const DashboardLayout = ({
       return;
     }
 
-    const sections = [
-      { id: 'home', tabKey: 'dashboard' },
-      { id: 'audience-segments', tabKey: 'audience-segments' },
-      { id: 'posts', tabKey: 'posts' }
-    ];
+    // Use timeout to ensure DOM elements are rendered before setting up observer
+    const setupObserver = () => {
+      // Define all possible sections and their corresponding tab keys
+      const allSections = [
+        { id: 'home', tabKey: 'dashboard' },
+        { id: 'audience-segments', tabKey: 'audience-segments' },
+        { id: 'posts', tabKey: 'posts' }
+      ];
 
-    const observerOptions = {
-      root: null, // Use viewport as root
-      rootMargin: '-20% 0px -20% 0px', // Trigger when section is 20% into viewport
-      threshold: 0.5 // Trigger when 50% of section is visible
-    };
-
-    const observer = new IntersectionObserver((entries) => {
-      // Find the section with the highest intersection ratio
-      let mostVisible = null;
-      let highestRatio = 0;
-
-      entries.forEach((entry) => {
-        if (entry.intersectionRatio > highestRatio) {
-          highestRatio = entry.intersectionRatio;
-          mostVisible = entry.target;
-        }
+      // Only observe sections that actually exist in the DOM
+      const existingSections = allSections.filter(({ id }) => {
+        const element = document.getElementById(id);
+        return !!element;
       });
 
-      // Update activeTab if we found a visible section
-      if (mostVisible && highestRatio > 0.3) { // 30% threshold to avoid flickering
-        const sectionInfo = sections.find(s => s.id === mostVisible.id);
-        if (sectionInfo && sectionInfo.tabKey !== activeTab) {
-          console.log('📍 Scroll detected - highlighting menu item:', sectionInfo.tabKey);
-          setActiveTab(sectionInfo.tabKey);
-          if (onActiveTabChange) {
-            onActiveTabChange(sectionInfo.tabKey);
+      console.log('🔍 Intersection Observer setup:', {
+        totalSections: allSections.length,
+        existingSections: existingSections.map(s => s.id),
+        missingSection: allSections.filter(s => !existingSections.find(e => e.id === s.id)).map(s => s.id)
+      });
+
+      // Don't set up observer if no sections exist
+      if (existingSections.length === 0) {
+        console.log('⚠️ No sections found for intersection observer');
+        return null;
+      }
+
+      const observerOptions = {
+        root: null, // Use viewport as root
+        rootMargin: '-10% 0px -10% 0px', // Trigger when section is 10% into viewport (more sensitive)
+        threshold: [0.1, 0.3, 0.5, 0.7] // Multiple thresholds for better detection
+      };
+
+      const observer = new IntersectionObserver((entries) => {
+        // Find the section with the highest intersection ratio
+        let mostVisible = null;
+        let highestRatio = 0;
+
+        entries.forEach((entry) => {
+          if (entry.intersectionRatio > highestRatio) {
+            highestRatio = entry.intersectionRatio;
+            mostVisible = entry.target;
+          }
+        });
+
+        // Update activeTab if we found a visible section
+        if (mostVisible && highestRatio > 0.1) { // Lower threshold for better responsiveness
+          const sectionInfo = existingSections.find(s => s.id === mostVisible.id);
+          if (sectionInfo && sectionInfo.tabKey !== activeTab) {
+            console.log('📍 Scroll detected - highlighting menu item:', {
+              section: sectionInfo.tabKey,
+              visibilityRatio: highestRatio.toFixed(2),
+              previousTab: activeTab
+            });
+            setActiveTab(sectionInfo.tabKey);
+            if (onActiveTabChange) {
+              onActiveTabChange(sectionInfo.tabKey);
+            }
           }
         }
-      }
-    }, observerOptions);
+      }, observerOptions);
 
-    // Observe all existing sections
-    const elementsToObserve = [];
-    sections.forEach(({ id }) => {
-      const element = document.getElementById(id);
-      if (element) {
-        observer.observe(element);
-        elementsToObserve.push(element);
-      }
-    });
-
-    // Cleanup
-    return () => {
-      elementsToObserve.forEach((element) => {
-        observer.unobserve(element);
+      // Observe all existing sections
+      const elementsToObserve = [];
+      existingSections.forEach(({ id }) => {
+        const element = document.getElementById(id);
+        if (element) {
+          observer.observe(element);
+          elementsToObserve.push(element);
+          console.log('👀 Observing section:', id);
+        }
       });
-      observer.disconnect();
+
+      // Return cleanup function
+      return () => {
+        console.log('🧹 Cleaning up intersection observer');
+        elementsToObserve.forEach((element) => {
+          observer.unobserve(element);
+        });
+        observer.disconnect();
+      };
     };
-  }, [activeTab, user, onActiveTabChange]);
+
+    // Set up observer with a delay to ensure DOM is ready
+    const timeoutId = setTimeout(() => {
+      const cleanup = setupObserver();
+      
+      // Store cleanup function for useEffect cleanup
+      if (cleanup) {
+        timeoutId.cleanup = cleanup;
+      }
+    }, 100);
+
+    // Cleanup function for useEffect
+    return () => {
+      clearTimeout(timeoutId);
+      if (timeoutId.cleanup) {
+        timeoutId.cleanup();
+      }
+    };
+  }, [activeTab, user, onActiveTabChange, projectMode, showDashboardLocal]); // Added dependencies that affect section visibility
   
   // Handle tab changes with smooth scroll navigation
   const handleTabChange = (newTab) => {
