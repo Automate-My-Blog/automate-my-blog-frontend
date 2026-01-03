@@ -25,7 +25,8 @@ const UnifiedWorkflowHeader = ({
   showSaveProjectButton = false,
   onSaveProject,
   isNewRegistration = false,
-  completedSteps = []
+  completedSteps = [],
+  projectJustSaved = false
 }) => {
   const [textKey, setTextKey] = useState(0);
   const [previousUser, setPreviousUser] = useState(user);
@@ -133,6 +134,39 @@ const UnifiedWorkflowHeader = ({
         description: stepInfo.description,
         buttonText: analysisCompleted ? "Continue Project" : "Create New Post",
         showButton: !isNewRegistration // Hide button for new registrations until they complete workflow
+      };
+    }
+
+    // Special case: Project just saved
+    if (projectJustSaved) {
+      return {
+        title: "Project saved! 🎉",
+        description: (
+          <span>
+            Your content automation dashboard is ready. Go to{' '}
+            <Button 
+              type="link" 
+              style={{ 
+                padding: 0, 
+                fontSize: 'inherit',
+                height: 'auto',
+                color: '#1890ff',
+                fontWeight: 500
+              }}
+              onClick={() => {
+                document.getElementById('posts')?.scrollIntoView({ 
+                  behavior: 'smooth', 
+                  block: 'start' 
+                });
+              }}
+            >
+              Posts
+            </Button>
+            {' '}to reopen your content.
+          </span>
+        ),
+        buttonText: null,
+        showButton: false
       };
     }
 

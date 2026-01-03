@@ -64,7 +64,7 @@ const dummyDiscoveries = [
   }
 ];
 
-const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMode, showSaveProjectButton = false, onSaveProject, isNewRegistration = false }) => {
+const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMode, showSaveProjectButton = false, onSaveProject, isNewRegistration = false, projectJustSaved = false }) => {
   const { user } = useAuth();
   const tabMode = useTabMode('dashboard');
   const { 
@@ -184,6 +184,7 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
           onSaveProject={onSaveProject}
           isNewRegistration={isNewRegistration}
           completedSteps={[]} // Will be populated based on workflow progress
+          projectJustSaved={projectJustSaved}
         />
 
         {/* Main Content Area - Consistent layout for both states */}

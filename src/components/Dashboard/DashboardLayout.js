@@ -86,6 +86,7 @@ const DashboardLayout = ({
   const [projectMode, setProjectMode] = useState(!user || forceWorkflowMode); // Start in project mode for logged-out users or when forced
   const [showSaveProjectButton, setShowSaveProjectButton] = useState(false);
   const [hasSeenSaveProject, setHasSeenSaveProject] = useState(null); // null = loading, true/false = loaded
+  const [projectJustSaved, setProjectJustSaved] = useState(false);
   const effectiveShowDashboard = (showDashboard || showDashboardLocal) && !(isNewRegistration && projectMode);
   
   // Check if user has seen Save Project button before and handle login/registration
@@ -354,6 +355,7 @@ const DashboardLayout = ({
               showSaveProjectButton={showSaveProjectButton}
               isNewRegistration={isNewRegistration}
               onSaveProject={null} // Save Project button is now in the header
+              projectJustSaved={projectJustSaved}
             />
           </section>
         )}
@@ -423,6 +425,13 @@ const DashboardLayout = ({
           isNewRegistration={isNewRegistration}
           showSaveProjectButton={showSaveProjectButton}
           onSaveProject={() => {
+            // Scroll to top with smooth animation
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            
+            // Set project just saved state
+            setProjectJustSaved(true);
+            
+            // Apply state changes
             setShowDashboardLocal(true);
             setShowSaveProjectButton(false);
             setHasSeenSaveProject(true);
@@ -436,6 +445,10 @@ const DashboardLayout = ({
             if (user) {
               localStorage.setItem(`hasSeenSaveProject_${user.id}`, 'true');
             }
+            
+            // Clear "just saved" state after 5 seconds
+            setTimeout(() => setProjectJustSaved(false), 5000);
+            
             message.success('Project saved! Dashboard is now available via sidebar.');
           }}
         />
