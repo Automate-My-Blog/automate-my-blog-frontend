@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 
 /**
@@ -25,6 +25,9 @@ export const WorkflowModeProvider = ({ children }) => {
   // =============================================================================
   
   const { user, isAuthenticated, logout } = useAuth();
+  
+  // Track previous authentication state for logout detection
+  const prevAuthStateRef = useRef(null);
   
   // =============================================================================
   // CORE WORKFLOW STATE (Enhanced from useWorkflowState-v2.js)
@@ -1017,14 +1020,36 @@ export const WorkflowModeProvider = ({ children }) => {
     };
   }, [user, isAuthenticated, stepResults.home.websiteAnalysis?.businessName, restoreWorkflowState]);
   
-  // SECURITY: Clear user data when user logs out
+  // SECURITY: Clear user data when user logs out (FIXED - track previous auth state)
   useEffect(() => {
-    // If user becomes null (logout), clear user-specific data
-    if (user === null) {
-      console.log('🔒 User logged out, clearing user-specific workflow data');
+    // Get previous authentication state
+    const prevAuthState = prevAuthStateRef.current;
+    const currentAuthState = { user: user, isAuthenticated: isAuthenticated };
+    
+    // Only clear data on actual logout (was authenticated, now not)
+    if (prevAuthState && prevAuthState.user && prevAuthState.isAuthenticated && 
+        (!user || !isAuthenticated)) {
+      console.log('🔒 Actual user logout detected, clearing user-specific workflow data');
+      console.log('🔍 Logout transition:', {
+        previousUser: prevAuthState.user?.email || 'Unknown',
+        previousAuth: prevAuthState.isAuthenticated,
+        currentUser: user?.email || 'None',
+        currentAuth: isAuthenticated
+      });
       clearUserSpecificData();
+    } else if (prevAuthState) {
+      console.log('🔍 Auth state change (not logout):', {
+        previousUser: prevAuthState.user?.email || (prevAuthState.user === null ? 'null' : 'undefined'),
+        previousAuth: prevAuthState.isAuthenticated,
+        currentUser: user?.email || (user === null ? 'null' : 'undefined'),
+        currentAuth: isAuthenticated,
+        isRealLogout: false
+      });
     }
-  }, [user, clearUserSpecificData]);
+    
+    // Store current state for next render
+    prevAuthStateRef.current = currentAuthState;
+  }, [user, isAuthenticated, clearUserSpecificData]);
   
   // Context value with all unified state
   const contextValue = {
