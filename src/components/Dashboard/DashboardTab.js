@@ -343,8 +343,8 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
           transition: 'all 0.3s ease',
           position: 'relative'
         }}>
-          {/* Website Analysis Section - Always show if analysis is not completed or in workflow mode */}
-          {((tabMode.mode === 'workflow' || forceWorkflowMode) || (!stepResults.home.analysisCompleted && user)) && (
+          {/* Website Analysis Section - Always show for authenticated users */}
+          {((tabMode.mode === 'workflow' || forceWorkflowMode) || user) && (
             <div
               key="website-analysis"
               style={{
@@ -424,86 +424,6 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
               }}
             >
 
-      {/* Quick Stats */}
-      <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
-        <Col xs={24} sm={12} lg={6}>
-          <Card>
-            <Statistic
-              title="Total Posts"
-              value={23}
-              prefix={<FileTextOutlined />}
-              valueStyle={{ color: '#3f8600' }}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <Card>
-            <Statistic
-              title="Audience Segments"
-              value={4}
-              prefix={<UserOutlined />}
-              valueStyle={{ color: '#1890ff' }}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <Card>
-            <Statistic
-              title="Total Views"
-              value={1284}
-              prefix={<EyeOutlined />}
-              valueStyle={{ color: '#722ed1' }}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <Card>
-            <Statistic
-              title="Opportunities Found"
-              value={discoveries.length}
-              prefix={<SearchOutlined />}
-              valueStyle={{ color: '#f5222d' }}
-            />
-          </Card>
-        </Col>
-      </Row>
-
-      {/* Website Analysis Results - Show in Focus Mode when completed */}
-      {stepResults.home.analysisCompleted && stepResults.home.websiteAnalysis && (
-        <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
-          <Col span={24}>
-            <WebsiteAnalysisStepStandalone
-              // Core state (from unified context)
-              websiteUrl={websiteUrl}
-              setWebsiteUrl={setWebsiteUrl}
-              analysisResults={stepResults.home.websiteAnalysis}
-              setAnalysisResults={(data) => updateWebsiteAnalysis(data)}
-              webSearchInsights={stepResults.home.webSearchInsights}
-              setWebSearchInsights={(data) => updateWebSearchInsights(data)}
-              
-              // Loading states
-              isLoading={false} // Not loading in focus mode display
-              setIsLoading={setIsLoading}
-              scanningMessage=""
-              setScanningMessage={setScanningMessage}
-              analysisCompleted={stepResults.home.analysisCompleted}
-              setAnalysisCompleted={(completed) => updateAnalysisCompleted(completed)}
-              
-              // User context
-              user={user}
-              requireAuth={requireAuth}
-              
-              // Configuration for focus mode display
-              embedded={true}
-              showTitle={false}
-              autoAnalyze={false}
-              
-              // Event handlers
-              onAnalysisComplete={handleAnalysisComplete}
-            />
-          </Col>
-        </Row>
-      )}
 
       <Row gutter={[16, 16]}>
         {/* Content Discovery Section */}
@@ -597,79 +517,6 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
           </Card>
         </Col>
 
-        {/* Quick Actions & Recent Activity */}
-        <Col xs={24} lg={12}>
-          <Card title="Quick Actions" style={{ marginBottom: '16px' }}>
-            <Space wrap>
-              <Button 
-                type="primary" 
-                icon={stepResults.home.analysisCompleted ? <PlayCircleOutlined /> : <PlusOutlined />}
-                size="large"
-                onClick={handleCreateNewPost}
-              >
-                {stepResults.home.analysisCompleted ? 'Continue Project' : 'Create New Post'}
-              </Button>
-              {stepResults.home.analysisCompleted && (
-                <Button 
-                  icon={<EditOutlined />} 
-                  size="large"
-                  onClick={() => {
-                    // Reset analysis to restart workflow
-                    updateAnalysisCompleted(false);
-                    tabMode.enterWorkflowMode();
-                    message.info('Edit your website analysis');
-                  }}
-                >
-                  Edit Analysis
-                </Button>
-              )}
-              <Button icon={<UserOutlined />} size="large">
-                New Audience Segment
-              </Button>
-              <Button icon={<EyeOutlined />} size="large">
-                View Analytics
-              </Button>
-            </Space>
-          </Card>
-
-          <Card title="Recent Activity" style={{ height: '280px', overflow: 'auto' }}>
-            <Timeline
-              size="small"
-              items={[
-                {
-                  dot: <PlayCircleOutlined style={{ color: '#52c41a' }} />,
-                  children: (
-                    <div>
-                      <Text strong style={{ fontSize: '13px' }}>Discovery Run Completed</Text>
-                      <br />
-                      <Text type="secondary" style={{ fontSize: '12px' }}>Found 4 new opportunities • 2 hours ago</Text>
-                    </div>
-                  )
-                },
-                {
-                  dot: <PlusOutlined style={{ color: '#1890ff' }} />,
-                  children: (
-                    <div>
-                      <Text strong style={{ fontSize: '13px' }}>Content Generated</Text>
-                      <br />
-                      <Text type="secondary" style={{ fontSize: '12px' }}>Created post for "Remote team managers" • 1 day ago</Text>
-                    </div>
-                  )
-                },
-                {
-                  dot: <SearchOutlined style={{ color: '#fa8c16' }} />,
-                  children: (
-                    <div>
-                      <Text strong style={{ fontSize: '13px' }}>Keyword Trend Detected</Text>
-                      <br />
-                      <Text type="secondary" style={{ fontSize: '12px' }}>AI productivity tools trending up 40% • 3 days ago</Text>
-                    </div>
-                  )
-                }
-              ]}
-            />
-          </Card>
-        </Col>
       </Row>
             </div>
             
