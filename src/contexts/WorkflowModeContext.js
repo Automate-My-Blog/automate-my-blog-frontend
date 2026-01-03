@@ -334,6 +334,14 @@ export const WorkflowModeProvider = ({ children }) => {
   
   // Save current workflow state to localStorage (auth-aware)
   const saveWorkflowState = useCallback(() => {
+    console.log('💾 saveWorkflowState() called');
+    console.log('💾 Current state being saved:', {
+      analysisCompleted,
+      businessName: stepResults?.home?.websiteAnalysis?.businessName || 'None',
+      mode,
+      currentStep
+    });
+    
     try {
       const workflowStateSnapshot = {
         // Authentication context
@@ -378,7 +386,14 @@ export const WorkflowModeProvider = ({ children }) => {
       };
       
       localStorage.setItem('automate-my-blog-workflow-state', JSON.stringify(workflowStateSnapshot));
-      console.log('💾 Workflow state saved to localStorage:', workflowStateSnapshot);
+      console.log('💾 Workflow state saved to localStorage:', {
+        analysisCompleted: workflowStateSnapshot.analysisCompleted,
+        businessName: workflowStateSnapshot.stepResults?.home?.websiteAnalysis?.businessName || 'None',
+        hasStepResults: !!workflowStateSnapshot.stepResults,
+        mode: workflowStateSnapshot.mode,
+        savedAt: workflowStateSnapshot.savedAt,
+        fullSnapshot: workflowStateSnapshot
+      });
       
       return true;
     } catch (error) {
@@ -394,6 +409,8 @@ export const WorkflowModeProvider = ({ children }) => {
   
   // Restore workflow state from localStorage (auth-aware)
   const restoreWorkflowState = useCallback(() => {
+    console.log('🔄 restoreWorkflowState() called');
+    
     try {
       const savedState = localStorage.getItem('automate-my-blog-workflow-state');
       if (!savedState) {
@@ -402,7 +419,15 @@ export const WorkflowModeProvider = ({ children }) => {
       }
       
       const workflowStateSnapshot = JSON.parse(savedState);
-      console.log('🔄 Restoring workflow state from localStorage:', workflowStateSnapshot);
+      console.log('🔄 Restoring workflow state from localStorage:', {
+        hasStepResults: !!workflowStateSnapshot.stepResults,
+        analysisCompleted: workflowStateSnapshot.analysisCompleted,
+        mode: workflowStateSnapshot.mode,
+        userId: workflowStateSnapshot.userId,
+        isAuthenticated: workflowStateSnapshot.isAuthenticated,
+        businessName: workflowStateSnapshot.stepResults?.home?.websiteAnalysis?.businessName || 'None',
+        fullSnapshot: workflowStateSnapshot
+      });
       
       // AUTH SECURITY CHECK: Prevent data leakage across user sessions
       if (workflowStateSnapshot.userId && workflowStateSnapshot.userId !== user?.id) {
@@ -510,6 +535,14 @@ export const WorkflowModeProvider = ({ children }) => {
       }
       
       console.log('✅ Workflow state successfully restored');
+      console.log('📊 Final restored state:', {
+        mode,
+        analysisCompleted,
+        businessName: stepResults?.home?.websiteAnalysis?.businessName || 'None',
+        hasAnalysisData: !!(stepResults?.home?.websiteAnalysis?.businessName && 
+                          stepResults?.home?.websiteAnalysis?.targetAudience && 
+                          stepResults?.home?.websiteAnalysis?.contentFocus)
+      });
       return true;
       
     } catch (error) {
@@ -856,20 +889,42 @@ export const WorkflowModeProvider = ({ children }) => {
   
   // Auto-restore workflow state on mount (after all functions are defined)
   useEffect(() => {
+    console.log('🚀 WorkflowModeContext: Component mounted, checking for saved state...');
+    
     try {
       const savedState = localStorage.getItem('automate-my-blog-workflow-state');
+      console.log('📱 localStorage check:', {
+        hasSavedState: !!savedState,
+        savedStateLength: savedState?.length || 0
+      });
+      
       if (savedState) {
         const workflowStateSnapshot = JSON.parse(savedState);
         const savedAt = new Date(workflowStateSnapshot.savedAt);
         const ageHours = (new Date() - savedAt) / (1000 * 60 * 60);
         
+        console.log('📊 Saved state analysis:', {
+          savedAt: savedAt.toISOString(),
+          ageHours: ageHours.toFixed(2),
+          isValid: ageHours <= 24,
+          userId: workflowStateSnapshot.userId,
+          hasStepResults: !!workflowStateSnapshot.stepResults,
+          analysisCompleted: workflowStateSnapshot.analysisCompleted,
+          businessName: workflowStateSnapshot.stepResults?.home?.websiteAnalysis?.businessName || 'None'
+        });
+        
         if (ageHours <= 24) {
-          console.log('🔄 Auto-restoring workflow state on mount');
-          restoreWorkflowState();
+          console.log('🔄 Auto-restoring workflow state on mount...');
+          const restored = restoreWorkflowState();
+          console.log('📊 Auto-restore result:', restored);
+        } else {
+          console.log('⏰ Saved state too old, skipping restoration');
         }
+      } else {
+        console.log('📝 No saved state found in localStorage');
       }
     } catch (error) {
-      console.error('Failed to check for saved workflow state on mount:', error);
+      console.error('❌ Failed to check for saved workflow state on mount:', error);
     }
   }, [restoreWorkflowState]);
   

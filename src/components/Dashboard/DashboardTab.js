@@ -92,6 +92,9 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
 
   // Load cached analysis for logged-in users
   useEffect(() => {
+    console.log('🚀 DashboardTab: Analysis loading useEffect triggered');
+    console.log('📊 Current stepResults.home:', stepResults.home);
+    
     const loadCachedAnalysis = async () => {
       // Check if we need to load analysis data
       const hasValidAnalysisData = stepResults.home.websiteAnalysis?.businessName && 
@@ -100,11 +103,15 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
       
       console.log('🔍 Analysis state check:', {
         user: !!user,
+        userId: user?.id,
         forceWorkflowMode,
         tabMode: tabMode.mode,
         analysisCompleted: stepResults.home.analysisCompleted,
         hasValidData: hasValidAnalysisData,
-        businessName: stepResults.home.websiteAnalysis?.businessName || 'None'
+        businessName: stepResults.home.websiteAnalysis?.businessName || 'None',
+        targetAudience: stepResults.home.websiteAnalysis?.targetAudience || 'None',
+        contentFocus: stepResults.home.websiteAnalysis?.contentFocus || 'None',
+        fullWebsiteAnalysis: stepResults.home.websiteAnalysis
       });
       
       // Load for authenticated users who don't have complete analysis data
@@ -193,12 +200,19 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
 
   // Handle analysis completion from standalone component
   const handleAnalysisComplete = (data) => {
-    console.log('Analysis completed:', data);
+    console.log('🎉 Analysis completed in DashboardTab:', {
+      hasData: !!data,
+      hasAnalysis: !!data?.analysis,
+      businessName: data?.analysis?.businessName,
+      fullData: data
+    });
     
     // Update unified workflow state only (no local state)
+    console.log('📊 Updating workflow state with analysis data...');
     updateWebsiteAnalysis(data.analysis);
     updateWebSearchInsights(data.webSearchInsights || { researchQuality: 'basic' });
     updateAnalysisCompleted(true);
+    console.log('✅ Workflow state updated');
     
     // Update progressive sticky header with analysis results
     updateStickyWorkflowStep('websiteAnalysis', {
@@ -209,9 +223,23 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
     });
     
     // Auto-save workflow state to localStorage to preserve data across page refreshes
+    console.log('💾 Triggering auto-save in 100ms...');
     setTimeout(() => {
+      console.log('💾 Executing auto-save now...');
       const saved = saveWorkflowState();
-      console.log('💾 Auto-saved workflow state after analysis completion:', saved);
+      console.log('💾 Auto-save result after analysis completion:', saved);
+      
+      // Verify what was actually saved
+      const verification = localStorage.getItem('automate-my-blog-workflow-state');
+      if (verification) {
+        const parsedVerification = JSON.parse(verification);
+        console.log('🔍 Verification - what was actually saved:', {
+          analysisCompleted: parsedVerification.analysisCompleted,
+          businessName: parsedVerification.stepResults?.home?.websiteAnalysis?.businessName,
+          hasStepResults: !!parsedVerification.stepResults,
+          savedAt: parsedVerification.savedAt
+        });
+      }
     }, 100); // Small delay to ensure all state updates are applied
   };
   
