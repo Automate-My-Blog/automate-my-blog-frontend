@@ -656,39 +656,6 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
         )}
       </Card>
 
-      {tabMode.mode !== 'workflow' && !forceWorkflowMode && (
-        <Card title="Understanding Customer Strategies" style={{ marginTop: '24px' }}>
-          <Row gutter={[24, 24]}>
-            <Col xs={24} md={8}>
-              <div style={{ textAlign: 'center', padding: '16px' }}>
-                <BulbOutlined style={{ fontSize: '32px', color: '#1890ff', marginBottom: '12px' }} />
-                <Title level={4}>🎯 Enhanced Targeting</Title>
-                <Text style={{ color: '#666' }}>
-                  Each strategy includes search volumes, conversion potential, and competitive analysis for better decision-making
-                </Text>
-              </div>
-            </Col>
-            <Col xs={24} md={8}>
-              <div style={{ textAlign: 'center', padding: '16px' }}>
-                <UserOutlined style={{ fontSize: '32px', color: '#52c41a', marginBottom: '12px' }} />
-                <Title level={4}>👥 Detailed Personas</Title>
-                <Text style={{ color: '#666' }}>
-                  Demographics, psychographics, and search behavior patterns help create more targeted content
-                </Text>
-              </div>
-            </Col>
-            <Col xs={24} md={8}>
-              <div style={{ textAlign: 'center', padding: '16px' }}>
-                <TeamOutlined style={{ fontSize: '32px', color: '#722ed1', marginBottom: '12px' }} />
-                <Title level={4}>📊 Business Intelligence</Title>
-                <Text style={{ color: '#666' }}>
-                  Priority rankings and conversion potential help you focus on the most valuable audience segments
-                </Text>
-              </div>
-            </Col>
-          </Row>
-        </Card>
-      )}
           </>
         )}
       </div>
