@@ -164,6 +164,18 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
                                 stepResults.home.websiteAnalysis?.targetAudience &&
                                 stepResults.home.websiteAnalysis?.contentFocus;
     
+    // Enhanced debugging - always log conditions being checked
+    console.log('🔍 Auto-save conditions check:', {
+      analysisCompleted: stepResults.home.analysisCompleted,
+      hasValidAnalysisData,
+      hasUser: !!user,
+      userId: user?.id || 'None',
+      businessName: stepResults.home.websiteAnalysis?.businessName || 'Missing',
+      targetAudience: stepResults.home.websiteAnalysis?.targetAudience || 'Missing',
+      contentFocus: stepResults.home.websiteAnalysis?.contentFocus || 'Missing',
+      allConditionsMet: stepResults.home.analysisCompleted && hasValidAnalysisData && user
+    });
+    
     // Only auto-save if analysis is completed AND we have valid data AND user is logged in
     if (stepResults.home.analysisCompleted && hasValidAnalysisData && user) {
       console.log('💾 Auto-saving workflow state due to analysis completion...');
@@ -189,8 +201,12 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
             hasStepResults: !!parsedVerification.stepResults,
             savedAt: parsedVerification.savedAt
           });
+        } else {
+          console.error('❌ No data found in localStorage after attempted save!');
         }
       }, 200); // Slightly longer delay for state propagation
+    } else {
+      console.log('⏸️ Auto-save skipped - conditions not met');
     }
   }, [stepResults.home.analysisCompleted, stepResults.home.websiteAnalysis?.businessName, user, saveWorkflowState]);
 
@@ -240,15 +256,34 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
       hasData: !!data,
       hasAnalysis: !!data?.analysis,
       businessName: data?.analysis?.businessName,
+      targetAudience: data?.analysis?.targetAudience,
+      contentFocus: data?.analysis?.contentFocus,
       fullData: data
     });
     
     // Update unified workflow state only (no local state)
     console.log('📊 Updating workflow state with analysis data...');
+    console.log('📊 Analysis data being passed to updateWebsiteAnalysis:', {
+      businessName: data?.analysis?.businessName,
+      targetAudience: data?.analysis?.targetAudience,
+      contentFocus: data?.analysis?.contentFocus,
+      hasAllRequiredFields: !!(data?.analysis?.businessName && data?.analysis?.targetAudience && data?.analysis?.contentFocus)
+    });
+    
     updateWebsiteAnalysis(data.analysis);
     updateWebSearchInsights(data.webSearchInsights || { researchQuality: 'basic' });
     updateAnalysisCompleted(true);
     console.log('✅ Workflow state updated');
+    
+    // Log current state after updates to see if they took effect
+    setTimeout(() => {
+      console.log('🔍 Post-update state check:', {
+        analysisCompleted: stepResults.home.analysisCompleted,
+        businessName: stepResults.home.websiteAnalysis?.businessName,
+        targetAudience: stepResults.home.websiteAnalysis?.targetAudience,
+        contentFocus: stepResults.home.websiteAnalysis?.contentFocus
+      });
+    }, 50);
     
     // Update progressive sticky header with analysis results
     updateStickyWorkflowStep('websiteAnalysis', {
