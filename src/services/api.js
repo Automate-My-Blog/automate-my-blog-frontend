@@ -87,7 +87,16 @@ class AutoBlogAPI {
       // Check if response is JSON
       const contentType = response.headers.get('content-type');
       if (contentType && contentType.includes('application/json')) {
-        return await response.json();
+        const jsonResponse = await response.json();
+        
+        // Add debugging for adoption endpoint specifically
+        if (normalizedEndpoint.includes('adopt-session')) {
+          console.log('🔍 DEBUG: makeRequest JSON response for adopt-session:', jsonResponse);
+          console.log('🔍 DEBUG: JSON response type:', typeof jsonResponse);
+          console.log('🔍 DEBUG: JSON response keys:', jsonResponse ? Object.keys(jsonResponse) : 'No keys');
+        }
+        
+        return jsonResponse;
       } else {
         // For file downloads, return the response directly
         return response;
@@ -1167,15 +1176,18 @@ class AutoBlogAPI {
       const sessionId = this.getOrCreateSessionId();
       const headers = { 'Content-Type': 'application/json' };
       
-      // ALWAYS send session ID as fallback (in case Authorization header gets stripped)
-      headers['x-session-id'] = sessionId;
+      // Only send session ID if NOT authenticated
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        headers['x-session-id'] = sessionId;
+      }
 
       const response = await this.makeRequest('/api/v1/audiences', {
         method: 'POST',
         headers,
         body: JSON.stringify({
           ...audienceData,
-          session_id: sessionId
+          ...((!token) && { session_id: sessionId })
         }),
       });
       
@@ -1193,15 +1205,19 @@ class AutoBlogAPI {
     try {
       const sessionId = this.getOrCreateSessionId();
       const headers = {};
+      const token = localStorage.getItem('accessToken');
       
-      // ALWAYS send session ID as fallback (in case Authorization header gets stripped)
-      headers['x-session-id'] = sessionId;
+      // Only send session ID if NOT authenticated
+      if (!token) {
+        headers['x-session-id'] = sessionId;
+      }
       
       // Debug: Log what headers we're sending
       console.log('🔍 getUserAudiences headers debug:', {
-        hasToken: !!localStorage.getItem('accessToken'),
+        hasToken: !!token,
         headers: headers,
-        sessionId: sessionId
+        sessionId: token ? 'not_sent' : sessionId,
+        authMode: token ? 'jwt_token' : 'session_id'
       });
 
       const params = new URLSearchParams();
@@ -1282,9 +1298,12 @@ class AutoBlogAPI {
     try {
       const sessionId = this.getOrCreateSessionId();
       const headers = {};
+      const token = localStorage.getItem('accessToken');
       
-      // ALWAYS send session ID as fallback (in case Authorization header gets stripped)
-      headers['x-session-id'] = sessionId;
+      // Only send session ID if NOT authenticated
+      if (!token) {
+        headers['x-session-id'] = sessionId;
+      }
 
       const response = await this.makeRequest(`/api/v1/audiences/${audienceId}`, {
         method: 'DELETE',
@@ -1311,9 +1330,12 @@ class AutoBlogAPI {
     try {
       const sessionId = this.getOrCreateSessionId();
       const headers = { 'Content-Type': 'application/json' };
+      const token = localStorage.getItem('accessToken');
       
-      // ALWAYS send session ID as fallback (in case Authorization header gets stripped)
-      headers['x-session-id'] = sessionId;
+      // Only send session ID if NOT authenticated
+      if (!token) {
+        headers['x-session-id'] = sessionId;
+      }
 
       const response = await this.makeRequest('/api/v1/keywords', {
         method: 'POST',
@@ -1451,14 +1473,33 @@ class AutoBlogAPI {
    */
   async adoptSession(sessionId) {
     try {
+      console.log('🔍 DEBUG: Starting session adoption for sessionId:', sessionId);
+      
       const response = await this.makeRequest('/api/v1/users/adopt-session', {
         method: 'POST',
         body: JSON.stringify({ session_id: sessionId }),
       });
       
-      console.log('🔄 Session adopted:', response.transferred);
+      console.log('🔍 DEBUG: Raw adoption response from backend:', response);
+      console.log('🔍 DEBUG: Response type:', typeof response);
+      console.log('🔍 DEBUG: Response keys:', response ? Object.keys(response) : 'No keys - response is null/undefined');
+      console.log('🔍 DEBUG: Response.adopted:', response?.adopted);
+      console.log('🔍 DEBUG: Response.transferred:', response?.transferred);
+      console.log('🔍 DEBUG: Response.success:', response?.success);
+      console.log('🔍 DEBUG: Response.data:', response?.data);
+      
+      // The backend returns 'adopted' not 'transferred' - fix the property access
+      const adoptedCount = response?.adopted || response?.transferred;
+      console.log('🔄 Session adopted:', adoptedCount);
+      
       return response;
     } catch (error) {
+      console.error('🔍 DEBUG: Session adoption error:', error);
+      console.error('🔍 DEBUG: Error details:', {
+        message: error.message,
+        stack: error.stack,
+        response: error.response
+      });
       throw new Error(`Failed to adopt session: ${error.message}`);
     }
   }

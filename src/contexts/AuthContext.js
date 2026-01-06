@@ -139,6 +139,22 @@ export const AuthProvider = ({ children }) => {
     setLoginContext(context);
     setIsNewRegistration(false); // Mark as login, not registration
     
+    // Trigger session adoption to transfer anonymous data to user account
+    try {
+      const sessionId = sessionStorage.getItem('audience_session_id');
+      if (sessionId) {
+        console.log('🔄 Triggering session adoption after login...');
+        const adoptionResult = await autoBlogAPI.adoptSession(sessionId);
+        console.log('✅ Session adoption complete:', adoptionResult);
+        
+        // Clear session ID after successful adoption
+        sessionStorage.removeItem('audience_session_id');
+      }
+    } catch (error) {
+      console.error('⚠️ Session adoption failed (non-critical):', error.message);
+      // Don't fail login if adoption fails
+    }
+    
     return { ...response, context };
   };
 
@@ -154,6 +170,22 @@ export const AuthProvider = ({ children }) => {
       }
       setLoginContext(context);
       setIsNewRegistration(true); // Mark as new registration
+      
+      // Trigger session adoption to transfer anonymous data to user account
+      try {
+        const sessionId = sessionStorage.getItem('audience_session_id');
+        if (sessionId) {
+          console.log('🔄 Triggering session adoption after registration...');
+          const adoptionResult = await autoBlogAPI.adoptSession(sessionId);
+          console.log('✅ Session adoption complete:', adoptionResult);
+          
+          // Clear session ID after successful adoption
+          sessionStorage.removeItem('audience_session_id');
+        }
+      } catch (error) {
+        console.error('⚠️ Session adoption failed (non-critical):', error.message);
+        // Don't fail registration if adoption fails
+      }
       
       // Process referral/invite after successful registration
       const inviteCode = getStoredInviteCode();
@@ -198,6 +230,8 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
+    // Clear session ID to start fresh anonymous session
+    sessionStorage.removeItem('audience_session_id');
     setUser(null);
     setCurrentOrganization(null);
     setLoginContext(null);
