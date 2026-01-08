@@ -108,7 +108,6 @@ export const postUtils = {
       readingTime: Math.ceil(generatedContent.length / 1000),
       author: 'AutoBlog AI',
       businessName: stepResults.websiteAnalysis.businessName,
-      brandColors: stepResults.websiteAnalysis.brandColors,
       brandVoice: stepResults.websiteAnalysis.brandVoice,
       website: websiteUrl || 'Unknown'
     };
@@ -206,14 +205,14 @@ ${post.content}
       padding: 40px 20px;
     }
     .header { text-align: center; margin-bottom: 40px; }
-    .subheader { font-size: 1.2em; color: ${post.brandColors.primary}; margin-bottom: 30px; }
+    .subheader { font-size: 1.2em; color: #333; margin-bottom: 30px; }
     .content { margin-bottom: 40px; }
     .footer { border-top: 1px solid #eee; padding-top: 20px; font-size: 0.9em; color: #666; }
     .tags { margin-top: 10px; }
-    .tag { background: ${post.brandColors.secondary}; color: ${post.brandColors.primary}; padding: 4px 8px; border-radius: 4px; margin-right: 8px; font-size: 0.8em; }
-    h1 { color: ${post.brandColors.primary}; }
-    h2 { color: ${post.brandColors.primary}; margin-top: 30px; }
-    h3 { color: ${post.brandColors.accent || post.brandColors.primary}; }
+    .tag { background: #f0f0f0; color: #333; padding: 4px 8px; border-radius: 4px; margin-right: 8px; font-size: 0.8em; }
+    h1 { color: #333; }
+    h2 { color: #333; margin-top: 30px; }
+    h3 { color: #666; }
   </style>
 </head>
 <body>
@@ -257,7 +256,6 @@ ${post.content}
       readingTime: post.readingTime,
       author: post.author,
       publishedDate: new Date().toISOString(),
-      brandColors: post.brandColors,
       brandVoice: post.brandVoice,
       businessName: post.businessName,
       sourceWebsite: post.website,

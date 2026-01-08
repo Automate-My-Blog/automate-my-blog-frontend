@@ -144,8 +144,18 @@ export const AuthProvider = ({ children }) => {
       const sessionId = sessionStorage.getItem('audience_session_id');
       if (sessionId) {
         console.log('🔄 Triggering session adoption after login...');
+        
+        // Adopt audiences session
         const adoptionResult = await autoBlogAPI.adoptSession(sessionId);
-        console.log('✅ Session adoption complete:', adoptionResult);
+        console.log('✅ Audience session adoption complete:', adoptionResult);
+        
+        // Adopt posts session
+        const postsAdoptionResult = await autoBlogAPI.adoptPostsSession(sessionId);
+        console.log('✅ Posts session adoption complete:', postsAdoptionResult);
+        
+        // Adopt website analysis session
+        const analysisAdoptionResult = await autoBlogAPI.adoptAnalysisSession(sessionId);
+        console.log('✅ Analysis session adoption complete:', analysisAdoptionResult);
         
         // Clear session ID after successful adoption
         sessionStorage.removeItem('audience_session_id');
@@ -176,8 +186,18 @@ export const AuthProvider = ({ children }) => {
         const sessionId = sessionStorage.getItem('audience_session_id');
         if (sessionId) {
           console.log('🔄 Triggering session adoption after registration...');
+          
+          // Adopt audiences session
           const adoptionResult = await autoBlogAPI.adoptSession(sessionId);
-          console.log('✅ Session adoption complete:', adoptionResult);
+          console.log('✅ Audience session adoption complete:', adoptionResult);
+          
+          // Adopt posts session
+          const postsAdoptionResult = await autoBlogAPI.adoptPostsSession(sessionId);
+          console.log('✅ Posts session adoption complete:', postsAdoptionResult);
+          
+          // Adopt website analysis session
+          const analysisAdoptionResult = await autoBlogAPI.adoptAnalysisSession(sessionId);
+          console.log('✅ Analysis session adoption complete:', analysisAdoptionResult);
           
           // Clear session ID after successful adoption
           sessionStorage.removeItem('audience_session_id');

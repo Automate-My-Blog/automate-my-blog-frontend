@@ -129,8 +129,18 @@ class AutoBlogAPI {
    */
   async analyzeWebsite(url) {
     try {
+      const sessionId = this.getOrCreateSessionId();
+      const headers = { 'Content-Type': 'application/json' };
+      
+      // Only send session ID if NOT authenticated (following audience pattern)
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        headers['x-session-id'] = sessionId;
+      }
+
       const response = await this.makeRequest('/api/analyze-website', {
         method: 'POST',
+        headers,
         body: JSON.stringify({ url }),
       });
 
@@ -1547,6 +1557,208 @@ class AutoBlogAPI {
       return response.data;
     } catch (error) {
       throw new Error(`Failed to get organization details: ${error.message}`);
+    }
+  }
+
+  /**
+   * ======================================================================
+   * POSTS API METHODS - Session Adoption Support
+   * ======================================================================
+   */
+
+  /**
+   * Create a new blog post (supports both authenticated and session-based creation)
+   */
+  async createPost(postData) {
+    try {
+      console.log('📝 Creating new blog post...');
+      
+      const sessionId = sessionStorage.getItem('audience_session_id');
+      const token = localStorage.getItem('accessToken');
+      
+      const headers = {};
+      
+      // Apply proven header pattern from audiences fix
+      if (!token && sessionId) {
+        headers['x-session-id'] = sessionId;
+        console.log('🔍 createPost: Using session ID for anonymous user');
+      } else if (token) {
+        console.log('🔍 createPost: Using authentication for logged-in user');
+      }
+      
+      const response = await this.makeRequest('/api/v1/posts', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(postData),
+      });
+      
+      console.log('✅ Post created successfully:', response);
+      return response;
+    } catch (error) {
+      console.error('❌ Post creation failed:', error);
+      throw new Error(`Failed to create post: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get user's blog posts (supports both authenticated and session-based retrieval)
+   */
+  async getPosts() {
+    try {
+      console.log('📖 Retrieving blog posts...');
+      
+      const sessionId = sessionStorage.getItem('audience_session_id');
+      const token = localStorage.getItem('accessToken');
+      
+      const headers = {};
+      
+      // Apply proven header pattern from audiences fix
+      if (!token && sessionId) {
+        headers['x-session-id'] = sessionId;
+        console.log('🔍 getPosts: Using session ID for anonymous user');
+      } else if (token) {
+        console.log('🔍 getPosts: Using authentication for logged-in user');
+      }
+      
+      const response = await this.makeRequest('/api/v1/posts', {
+        method: 'GET',
+        headers,
+      });
+      
+      console.log('✅ Posts retrieved successfully:', response);
+      return response;
+    } catch (error) {
+      console.error('❌ Posts retrieval failed:', error);
+      throw new Error(`Failed to retrieve posts: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get a single blog post by ID
+   */
+  async getPost(postId) {
+    try {
+      console.log('📖 Retrieving single post:', postId);
+      
+      const sessionId = sessionStorage.getItem('audience_session_id');
+      const token = localStorage.getItem('accessToken');
+      
+      const headers = {};
+      
+      if (!token && sessionId) {
+        headers['x-session-id'] = sessionId;
+      }
+      
+      const response = await this.makeRequest(`/api/v1/posts/${postId}`, {
+        method: 'GET',
+        headers,
+      });
+      
+      console.log('✅ Post retrieved successfully:', response);
+      return response;
+    } catch (error) {
+      console.error('❌ Post retrieval failed:', error);
+      throw new Error(`Failed to retrieve post: ${error.message}`);
+    }
+  }
+
+  /**
+   * Update an existing blog post
+   */
+  async updatePost(postId, updateData) {
+    try {
+      console.log('✏️ Updating post:', postId);
+      
+      const sessionId = sessionStorage.getItem('audience_session_id');
+      const token = localStorage.getItem('accessToken');
+      
+      const headers = {};
+      
+      if (!token && sessionId) {
+        headers['x-session-id'] = sessionId;
+      }
+      
+      const response = await this.makeRequest(`/api/v1/posts/${postId}`, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify(updateData),
+      });
+      
+      console.log('✅ Post updated successfully:', response);
+      return response;
+    } catch (error) {
+      console.error('❌ Post update failed:', error);
+      throw new Error(`Failed to update post: ${error.message}`);
+    }
+  }
+
+  /**
+   * Delete a blog post
+   */
+  async deletePost(postId) {
+    try {
+      console.log('🗑️ Deleting post:', postId);
+      
+      const sessionId = sessionStorage.getItem('audience_session_id');
+      const token = localStorage.getItem('accessToken');
+      
+      const headers = {};
+      
+      if (!token && sessionId) {
+        headers['x-session-id'] = sessionId;
+      }
+      
+      const response = await this.makeRequest(`/api/v1/posts/${postId}`, {
+        method: 'DELETE',
+        headers,
+      });
+      
+      console.log('✅ Post deleted successfully:', response);
+      return response;
+    } catch (error) {
+      console.error('❌ Post deletion failed:', error);
+      throw new Error(`Failed to delete post: ${error.message}`);
+    }
+  }
+
+  /**
+   * Adopt posts session - transfer posts from session to authenticated user
+   * This method is called after login/registration to move anonymous posts to user account
+   */
+  async adoptPostsSession(sessionId) {
+    try {
+      console.log('🔄 Starting posts session adoption for sessionId:', sessionId);
+      
+      const response = await this.makeRequest('/api/v1/posts/adopt-session', {
+        method: 'POST',
+        body: JSON.stringify({ session_id: sessionId }),
+      });
+      
+      console.log('✅ Posts session adoption successful:', response);
+      return response;
+    } catch (error) {
+      console.error('❌ Posts session adoption failed:', error);
+      throw new Error(`Failed to adopt posts session: ${error.message}`);
+    }
+  }
+
+  /**
+   * Transfer website analysis session data to user account upon registration/login
+   */
+  async adoptAnalysisSession(sessionId) {
+    try {
+      console.log('🔄 Starting website analysis session adoption for sessionId:', sessionId);
+      
+      const response = await this.makeRequest('/api/v1/analysis/adopt-session', {
+        method: 'POST',
+        body: JSON.stringify({ session_id: sessionId }),
+      });
+      
+      console.log('✅ Website analysis session adoption successful:', response);
+      return response;
+    } catch (error) {
+      console.error('❌ Website analysis session adoption failed:', error);
+      throw new Error(`Failed to adopt website analysis session: ${error.message}`);
     }
   }
 }

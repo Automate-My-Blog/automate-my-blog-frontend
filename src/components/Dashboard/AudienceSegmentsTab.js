@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Button, Row, Col, Typography, Tag, Statistic, Space, message, Input, InputNumber } from 'antd';
-import { UserOutlined, TeamOutlined, BulbOutlined, CheckOutlined, DatabaseOutlined, RocketOutlined, EditOutlined, SaveOutlined, CloseOutlined, PlusOutlined, DeleteOutlined } from '@ant-design/icons';
+import { Card, Button, Row, Col, Typography, Tag, Statistic, Space, message, Input, InputNumber, Carousel } from 'antd';
+import { UserOutlined, TeamOutlined, BulbOutlined, CheckOutlined, DatabaseOutlined, RocketOutlined, EditOutlined, SaveOutlined, CloseOutlined, PlusOutlined, DeleteOutlined, LeftOutlined, RightOutlined } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTabMode } from '../../hooks/useTabMode';
 import { useWorkflowMode } from '../../contexts/WorkflowModeContext';
@@ -42,6 +42,9 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
   const [editingKeywords, setEditingKeywords] = useState(null); // Strategy ID being edited
   const [editedKeywords, setEditedKeywords] = useState([]); // Temporary keyword data during editing
   const [savingKeywords, setSavingKeywords] = useState(false);
+  
+  // Carousel navigation ref
+  const carouselRef = React.useRef(null);
   
   
   // UI helpers from workflow components
@@ -570,7 +573,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
     const isOthersSelected = selectedStrategy && !isSelected;
 
     return (
-      <Col key={strategy.id} xs={24} md={12}>
+      <div key={strategy.id} style={{ padding: '0 8px' }}>
         <Card
           hoverable
           style={{
@@ -579,7 +582,9 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
             minHeight: '400px',
             cursor: 'pointer',
             opacity: isOthersSelected ? 0.5 : 1,
-            transition: 'all 0.3s ease'
+            transition: 'all 0.3s ease',
+            margin: '0 auto',
+            maxWidth: '350px'
           }}
           onClick={() => handleSelectStrategy(strategy, index)}
         >
@@ -890,7 +895,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
             )}
           </div>
         </Card>
-      </Col>
+      </div>
     );
   };
 
@@ -901,7 +906,35 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
         {/* Unified Header - Consistent styling with other tabs */}
         <UnifiedWorkflowHeader
           user={user}
-          onCreateNewPost={() => message.info('Continue through the project to create content')}
+          onCreateNewPost={() => {
+            // Switch to workflow mode
+            tabMode.enterWorkflowMode();
+            
+            // Check if website analysis is completed
+            const isAnalysisCompleted = stepResults.home?.analysisCompleted;
+            
+            setTimeout(() => {
+              if (!isAnalysisCompleted) {
+                // Navigate to Home section for analysis first
+                const homeSection = document.getElementById('home');
+                if (homeSection) {
+                  homeSection.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'start' 
+                  });
+                }
+              } else {
+                // Navigate to audience section (normal flow)
+                const audienceSection = document.getElementById('audience-segments');
+                if (audienceSection) {
+                  audienceSection.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'start' 
+                  });
+                }
+              }
+            }, 100);
+          }}
           forceWorkflowMode={forceWorkflowMode}
           currentStep={2}
           analysisCompleted={stepResults.home.analysisCompleted}
@@ -953,9 +986,62 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                       </Text>
                     </div>
                   ) : (
-                    <Row gutter={[16, 16]}>
-                      {strategies.map((strategy, index) => renderStrategyCard(strategy, index))}
-                    </Row>
+                    <div style={{ position: 'relative' }}>
+                      {/* Navigation Arrows */}
+                      {strategies.length > 2 && (
+                        <>
+                          <Button
+                            type="text"
+                            icon={<LeftOutlined />}
+                            onClick={() => carouselRef.current?.prev()}
+                            style={{
+                              position: 'absolute',
+                              left: '-10px',
+                              top: '50%',
+                              transform: 'translateY(-50%)',
+                              zIndex: 10,
+                              backgroundColor: 'white',
+                              boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                              border: '1px solid #d9d9d9'
+                            }}
+                          />
+                          <Button
+                            type="text"
+                            icon={<RightOutlined />}
+                            onClick={() => carouselRef.current?.next()}
+                            style={{
+                              position: 'absolute',
+                              right: '-10px',
+                              top: '50%',
+                              transform: 'translateY(-50%)',
+                              zIndex: 10,
+                              backgroundColor: 'white',
+                              boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                              border: '1px solid #d9d9d9'
+                            }}
+                          />
+                        </>
+                      )}
+                      
+                      <Carousel 
+                        ref={carouselRef}
+                        dots={strategies.length > 2}
+                        infinite={strategies.length > 2}
+                        slidesToShow={Math.min(strategies.length, 2)}
+                        slidesToScroll={1}
+                        responsive={[
+                          {
+                            breakpoint: 768,
+                            settings: {
+                              slidesToShow: 1,
+                            }
+                          }
+                        ]}
+                        style={{ padding: '0 20px' }}
+                      >
+                        {strategies.map((strategy, index) => renderStrategyCard(strategy, index))}
+                      </Carousel>
+                    </div>
                   )}
                   
                   {selectedStrategy && (
@@ -988,7 +1074,19 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                               } else {
                                 tabMode.enterWorkflowMode();
                               }
-                              message.success('Entering project mode to create content');
+                              
+                              // Navigate to Posts section for content generation
+                              setTimeout(() => {
+                                const postsSection = document.getElementById('posts');
+                                if (postsSection) {
+                                  postsSection.scrollIntoView({ 
+                                    behavior: 'smooth', 
+                                    block: 'start' 
+                                  });
+                                }
+                              }, 100);
+                              
+                              message.success('Moving to content creation...');
                             }}
                             style={{ 
                               minWidth: '200px',
@@ -997,7 +1095,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                             }}
                             icon={<BulbOutlined />}
                           >
-                            Start Project Mode
+                            Continue to Content
                           </Button>
                         )}
                       </div>
@@ -1071,9 +1169,62 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
           </div>
         ) : (
           <div>
-            <Row gutter={responsive.gutter}>
-              {strategies.map((strategy, index) => renderStrategyCard(strategy, index))}
-            </Row>
+            <div style={{ position: 'relative' }}>
+              {/* Navigation Arrows */}
+              {strategies.length > 2 && (
+                <>
+                  <Button
+                    type="text"
+                    icon={<LeftOutlined />}
+                    onClick={() => carouselRef.current?.prev()}
+                    style={{
+                      position: 'absolute',
+                      left: '-10px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      zIndex: 10,
+                      backgroundColor: 'white',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                      border: '1px solid #d9d9d9'
+                    }}
+                  />
+                  <Button
+                    type="text"
+                    icon={<RightOutlined />}
+                    onClick={() => carouselRef.current?.next()}
+                    style={{
+                      position: 'absolute',
+                      right: '-10px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      zIndex: 10,
+                      backgroundColor: 'white',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                      border: '1px solid #d9d9d9'
+                    }}
+                  />
+                </>
+              )}
+              
+              <Carousel 
+                ref={carouselRef}
+                dots={strategies.length > 2}
+                infinite={strategies.length > 2}
+                slidesToShow={Math.min(strategies.length, 2)}
+                slidesToScroll={1}
+                responsive={[
+                  {
+                    breakpoint: 768,
+                    settings: {
+                      slidesToShow: 1,
+                    }
+                  }
+                ]}
+                style={{ padding: '0 20px' }}
+              >
+                {strategies.map((strategy, index) => renderStrategyCard(strategy, index))}
+              </Carousel>
+            </div>
             
             {/* Continue Button */}
             {selectedStrategy && tabMode.mode === 'workflow' && (

@@ -15,7 +15,7 @@ import autoBlogAPI from '../../services/api';
 const { Title, Text, Paragraph } = Typography;
 
 
-const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMode, showSaveProjectButton = false, onSaveProject, isNewRegistration = false, projectJustSaved = false }) => {
+const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMode, showSaveProjectButton = false, onSaveProject, isNewRegistration = false, projectJustSaved = false, onCreateNewPost }) => {
   const { user } = useAuth();
   const tabMode = useTabMode('dashboard');
   const { 
@@ -139,7 +139,33 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
     } else {
       tabMode.enterWorkflowMode();
     }
-    message.success('Starting guided creation project');
+    
+    // Check if website analysis is completed
+    const isAnalysisCompleted = stepResults.home?.analysisCompleted;
+    
+    setTimeout(() => {
+      if (!isAnalysisCompleted) {
+        // Navigate to Home section for analysis first
+        const homeSection = document.getElementById('home');
+        if (homeSection) {
+          homeSection.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'start' 
+          });
+        }
+        message.success('Complete website analysis first, then select your audience');
+      } else {
+        // Navigate to audience section (normal flow)
+        const audienceSection = document.getElementById('audience-segments');
+        if (audienceSection) {
+          audienceSection.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'start' 
+          });
+        }
+        message.success('Starting guided creation project');
+      }
+    }, 100);
   };
 
 
@@ -189,7 +215,7 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
         {/* Unified Header - Shows for both logged-out workflow and logged-in users */}
         <UnifiedWorkflowHeader
           user={user}
-          onCreateNewPost={handleCreateNewPost}
+          onCreateNewPost={onCreateNewPost || handleCreateNewPost}
           forceWorkflowMode={forceWorkflowMode}
           currentStep={currentStep}
           analysisCompleted={stepResults.home.analysisCompleted}
@@ -250,8 +276,8 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
                   autoAnalyze={false}
                 />
                 
-                {/* Continue Button - Show after analysis completes */}
-                {stepResults.home.analysisCompleted && stepResults.home.websiteAnalysis && (
+                {/* Continue Button - Show after analysis completes and only in workflow mode */}
+                {stepResults.home.analysisCompleted && stepResults.home.websiteAnalysis && (tabMode.mode === 'workflow' || forceWorkflowMode) && (
                   <Card style={{ marginTop: '16px' }}>
                     <div style={{ textAlign: 'center', padding: '16px' }}>
                       <Button 

@@ -13,6 +13,7 @@ import {
   DatabaseOutlined,
   UserSwitchOutlined,
   CloseOutlined,
+  PlusOutlined,
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useWorkflowMode } from '../../contexts/WorkflowModeContext';
@@ -20,6 +21,7 @@ import DashboardTab from './DashboardTab';
 import PostsTab from './PostsTab';
 import AudienceSegmentsTab from './AudienceSegmentsTab';
 import SettingsTab from './SettingsTab';
+import SandboxTab from './SandboxTab';
 import ProgressiveHeaders from '../Workflow/ProgressiveHeaders';
 import LoggedOutProgressHeader from './LoggedOutProgressHeader';
 import ProgressiveStickyHeader from './ProgressiveStickyHeader';
@@ -113,7 +115,7 @@ const DashboardLayout = ({
   // Add intersection observer for scroll-based menu highlighting
   useEffect(() => {
     // Only set up observer if we're in the scrollable sections view (not settings/admin tabs)
-    if (!user || activeTab === 'settings' || activeTab.startsWith('admin-')) {
+    if (!user || activeTab === 'settings' || activeTab.startsWith('admin-') || activeTab === 'sandbox') {
       return;
     }
 
@@ -255,6 +257,20 @@ const DashboardLayout = ({
     }
   };
 
+  // Listen for custom navigation events from child components
+  useEffect(() => {
+    const handleCustomNavigation = (event) => {
+      const targetTab = event.detail;
+      handleTabChange(targetTab);
+    };
+    
+    window.addEventListener('navigateToTab', handleCustomNavigation);
+    
+    return () => {
+      window.removeEventListener('navigateToTab', handleCustomNavigation);
+    };
+  }, [handleTabChange]);
+
   // Handle ending impersonation
   const handleEndImpersonation = async () => {
     try {
@@ -378,6 +394,12 @@ const DashboardLayout = ({
       icon: <DatabaseOutlined style={{ color: 'red' }} />,
       label: 'Admin System',
     });
+    
+    adminMenuItems.push({
+      key: 'sandbox',
+      icon: <EditOutlined style={{ color: '#722ed1' }} />,
+      label: 'Sandbox',
+    });
   }
 
   const menuItems = [...baseMenuItems, ...adminMenuItems];
@@ -407,7 +429,7 @@ const DashboardLayout = ({
 
   const renderContent = () => {
     // Special tabs that don't use scrollable layout
-    if (activeTab === 'settings' || activeTab.startsWith('admin-')) {
+    if (activeTab === 'settings' || activeTab.startsWith('admin-') || activeTab === 'sandbox') {
       switch (activeTab) {
         case 'settings':
           return <SettingsTab />;
@@ -421,6 +443,8 @@ const DashboardLayout = ({
           return <AdminContentTab />;
         case 'admin-system':
           return <AdminSystemTab />;
+        case 'sandbox':
+          return <SandboxTab />;
         default:
           return <DashboardTab />;
       }
@@ -447,6 +471,39 @@ const DashboardLayout = ({
               isNewRegistration={isNewRegistration}
               onSaveProject={null} // Save Project button is now in the header
               projectJustSaved={projectJustSaved}
+              onCreateNewPost={() => {
+                // Enter project mode and start workflow
+                if (user && !projectMode) {
+                  setProjectMode(true);
+                }
+                
+                // Check if website analysis is completed
+                const isAnalysisCompleted = stepResults.home?.analysisCompleted;
+                
+                setTimeout(() => {
+                  if (!isAnalysisCompleted) {
+                    // Navigate to Home section for analysis first
+                    const homeSection = document.getElementById('home');
+                    if (homeSection) {
+                      homeSection.scrollIntoView({ 
+                        behavior: 'smooth', 
+                        block: 'start' 
+                      });
+                    }
+                    message.success('Complete website analysis first, then select your audience');
+                  } else {
+                    // Navigate to audience section (normal flow)
+                    const audienceSection = document.getElementById('audience-segments');
+                    if (audienceSection) {
+                      audienceSection.scrollIntoView({ 
+                        behavior: 'smooth', 
+                        block: 'start' 
+                      });
+                    }
+                    message.success('Starting guided creation project');
+                  }
+                }, 100);
+              }}
             />
           </section>
         )}
@@ -481,6 +538,7 @@ const DashboardLayout = ({
               forceWorkflowMode={forceWorkflowMode || (user && projectMode)}
               currentStep={!user && forceWorkflowMode ? currentStep : undefined}
               onNextStep={!user && forceWorkflowMode ? advanceToNextStep : undefined}
+              onEnterProjectMode={user && !projectMode ? () => setProjectMode(true) : undefined}
             />
           </section>
         )}
@@ -544,101 +602,7 @@ const DashboardLayout = ({
         />
       ) : null}
       
-      {/* Progressive Sticky Header - Shows for all users in workflow mode */}
-      {((!user && forceWorkflowMode) || (user && projectMode)) && (
-        <ProgressiveStickyHeader 
-          completedSteps={stickyWorkflowSteps}
-          style={{
-            top: ((!user && forceWorkflowMode) || (user && isNewRegistration && projectMode)) ? '80px' : '140px'
-          }}
-        />
-      )}
       
-      {/* Workflow Header for Logged-In Users in Project Mode (but not new registrations) */}
-      {user && projectMode && !isNewRegistration && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          zIndex: 1000,
-          backgroundColor: '#fff',
-          borderBottom: '1px solid #e8e8e8',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-          padding: '16px 24px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          minHeight: '80px'
-        }}>
-          {/* Left: Brand */}
-          <div style={{ minWidth: '200px' }}>
-            <Typography.Text strong style={{ fontSize: '18px', color: '#1890ff' }}>
-              Automate My Blog
-            </Typography.Text>
-            <div style={{ fontSize: '12px', color: '#666', marginTop: '2px' }}>
-              Welcome back, {user.firstName || user.email}!
-            </div>
-          </div>
-
-          {/* Center: Current Step Indicator */}
-          <div style={{ 
-            flex: 1,
-            textAlign: 'center',
-            margin: '0 32px'
-          }}>
-            <Typography.Text style={{ fontSize: '16px', color: '#1890ff', fontWeight: 500 }}>
-              Step {currentStep + 1} of 5: Continue Your Project
-            </Typography.Text>
-          </div>
-
-          {/* Right: Navigation Buttons */}
-          <div style={{ minWidth: '200px', textAlign: 'right' }}>
-            {user && projectMode && (
-              <>
-                {showSaveProjectButton ? (
-                  <Button 
-                    type="primary"
-                    onClick={() => {
-                      setShowDashboardLocal(true);
-                      setShowSaveProjectButton(false);
-                      setHasSeenSaveProject(true);
-                      setProjectMode(false); // Exit project mode when saving
-                      
-                      // Clear registration flag since user has now saved their project
-                      clearNewRegistration();
-                      
-                      // Save to localStorage so user never sees this button again
-                      if (user) {
-                        localStorage.setItem(`hasSeenSaveProject_${user.id}`, 'true');
-                      }
-                      message.success('Project saved! Dashboard is now available via sidebar.');
-                    }}
-                    style={{ 
-                      backgroundColor: '#52c41a', 
-                      borderColor: '#52c41a',
-                      fontWeight: 600
-                    }}
-                  >
-                    💾 Save Project
-                  </Button>
-                ) : (
-                  <Button 
-                    type="text"
-                    onClick={() => {
-                      setProjectMode(false);
-                      message.success('Exited project mode. Full dashboard now available.');
-                    }}
-                    style={{ color: '#666' }}
-                  >
-                    Exit Project Mode
-                  </Button>
-                )}
-              </>
-            )}
-          </div>
-        </div>
-      )}
       
       {/* Main Layout Container - adjusts for fixed sidebar */}
       <div style={{ 
@@ -816,14 +780,6 @@ const DashboardLayout = ({
         </div>
       )}
 
-      {/* Progressive Headers - Shows completed workflow steps */}
-      {user && completedWorkflowSteps.length > 0 && (
-        <ProgressiveHeaders 
-          completedWorkflowSteps={completedWorkflowSteps}
-          stepResults={propStepResults}
-          onEditStep={onEditWorkflowStep}
-        />
-      )}
 
       {/* Content area - always show */}
         <div style={{ 
@@ -831,16 +787,126 @@ const DashboardLayout = ({
           background: '#f5f5f5',
           overflow: 'auto',
           paddingTop: (() => {
-            const baseHeaderHeight = (!user && forceWorkflowMode) || (user && isNewRegistration && projectMode) ? 100 : completedWorkflowSteps.length > 0 ? 8 : 24;
-            const stickyHeaderHeight = stickyWorkflowSteps.length * 40; // Each sticky step is ~40px
-            return `${baseHeaderHeight + stickyHeaderHeight}px`;
-          })() // Extra padding for progress header + sticky steps
+            const baseHeaderHeight = (!user && forceWorkflowMode) || (user && isNewRegistration && projectMode) ? 100 : 24;
+            return `${baseHeaderHeight}px`;
+          })()
         }}>
+          {/* Floating Action Buttons - Fixed within content area */}
+          {user && (
+            <div style={{
+              position: 'fixed',
+              top: '29px',
+              right: '29px',
+              zIndex: 999
+            }}>
+              {/* Create New Post Button - Show when NOT in project mode */}
+              {!projectMode && (
+                <Button 
+                  type="primary"
+                  size="large"
+                  icon={<PlusOutlined style={{ fontSize: '16px' }} />}
+                  onClick={() => {
+                    // Enter project mode and start workflow
+                    setProjectMode(true);
+                    
+                    // Check if website analysis is completed
+                    const isAnalysisCompleted = stepResults.home?.analysisCompleted;
+                    
+                    setTimeout(() => {
+                      if (!isAnalysisCompleted) {
+                        // Navigate to Home section for analysis first
+                        const homeSection = document.getElementById('home');
+                        if (homeSection) {
+                          homeSection.scrollIntoView({ 
+                            behavior: 'smooth', 
+                            block: 'start' 
+                          });
+                        }
+                        message.success('Complete website analysis first, then select your audience');
+                      } else {
+                        // Navigate to audience section (normal flow)
+                        const audienceSection = document.getElementById('audience-segments');
+                        if (audienceSection) {
+                          audienceSection.scrollIntoView({ 
+                            behavior: 'smooth', 
+                            block: 'start' 
+                          });
+                        }
+                        message.success('Starting guided creation project');
+                      }
+                    }, 100);
+                  }}
+                  style={{ 
+                    backgroundColor: '#1890ff', 
+                    borderColor: '#1890ff',
+                    fontWeight: 600,
+                    boxShadow: '0 4px 12px rgba(24, 144, 255, 0.3)',
+                    border: '2px solid #1890ff',
+                    marginRight: projectMode ? '0' : '0' // No margin when alone
+                  }}
+                >
+                  Create New Post
+                </Button>
+              )}
+              
+              {/* Exit Project Button - Show when in project mode */}
+              {projectMode && (
+                showSaveProjectButton ? (
+                  <Button 
+                    type="primary"
+                    onClick={() => {
+                      setShowDashboardLocal(true);
+                      setShowSaveProjectButton(false);
+                      setHasSeenSaveProject(true);
+                      setProjectMode(false); // Exit project mode when saving
+                      
+                      // Clear registration flag since user has now saved their project
+                      clearNewRegistration();
+                      
+                      // Save to localStorage so user never sees this button again
+                      if (user) {
+                        localStorage.setItem(`hasSeenSaveProject_${user.id}`, 'true');
+                      }
+                      message.success('Project saved! Dashboard is now available via sidebar.');
+                    }}
+                    style={{ 
+                      backgroundColor: '#52c41a', 
+                      borderColor: '#52c41a',
+                      fontWeight: 600
+                    }}
+                  >
+                    💾 Save Project
+                  </Button>
+                ) : (
+                  <Button 
+                    type="primary"
+                    danger
+                    size="large"
+                    onClick={() => {
+                      setProjectMode(false);
+                      message.success('Exited project mode. Full dashboard now available.');
+                    }}
+                    style={{ 
+                      backgroundColor: '#ff4d4f',
+                      borderColor: '#ff4d4f',
+                      color: 'white',
+                      fontWeight: 600,
+                      boxShadow: '0 4px 12px rgba(255, 77, 79, 0.3)',
+                      border: '2px solid #ff4d4f'
+                    }}
+                  >
+                    🚪 Exit Project Mode
+                  </Button>
+                )
+              )}
+            </div>
+          )}
+
           <div style={{
-            background: activeTab === 'settings' || activeTab.startsWith('admin-') ? '#fff' : 'transparent',
-            borderRadius: activeTab === 'settings' || activeTab.startsWith('admin-') ? '8px' : '0',
+            background: activeTab === 'settings' || activeTab.startsWith('admin-') || activeTab === 'sandbox' ? '#fff' : 'transparent',
+            borderRadius: activeTab === 'settings' || activeTab.startsWith('admin-') || activeTab === 'sandbox' ? '8px' : '0',
             minHeight: '100%',
-            padding: activeTab === 'settings' || activeTab.startsWith('admin-') ? '24px' : '0'
+            padding: activeTab === 'settings' || activeTab.startsWith('admin-') || activeTab === 'sandbox' ? '24px' : '0'
           }}>
             {renderContent()}
           </div>

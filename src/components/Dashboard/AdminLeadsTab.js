@@ -761,39 +761,6 @@ const AdminLeadsTab = () => {
                           </div>
                         </div>
                       </Descriptions.Item>
-                      {selectedLead.brandColors && (
-                        <Descriptions.Item label="Brand Colors">
-                          <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-                            {selectedLead.brandColors.primary && (
-                              <div style={{ 
-                                width: '20px', height: '20px', 
-                                backgroundColor: selectedLead.brandColors.primary,
-                                borderRadius: '4px', border: '1px solid #d9d9d9',
-                                title: `Primary: ${selectedLead.brandColors.primary}`
-                              }} />
-                            )}
-                            {selectedLead.brandColors.secondary && (
-                              <div style={{ 
-                                width: '20px', height: '20px', 
-                                backgroundColor: selectedLead.brandColors.secondary,
-                                borderRadius: '4px', border: '1px solid #d9d9d9',
-                                title: `Secondary: ${selectedLead.brandColors.secondary}`
-                              }} />
-                            )}
-                            {selectedLead.brandColors.accent && (
-                              <div style={{ 
-                                width: '20px', height: '20px', 
-                                backgroundColor: selectedLead.brandColors.accent,
-                                borderRadius: '4px', border: '1px solid #d9d9d9',
-                                title: `Accent: ${selectedLead.brandColors.accent}`
-                              }} />
-                            )}
-                            <Text style={{ fontSize: '11px', marginLeft: '8px' }}>
-                              {selectedLead.brandColors.primary} • {selectedLead.brandColors.secondary} • {selectedLead.brandColors.accent}
-                            </Text>
-                          </div>
-                        </Descriptions.Item>
-                      )}
                       <Descriptions.Item label="Organization ID">
                         <Text code style={{ fontSize: '11px' }}>
                           {selectedLead.organizationId || 'Not linked'}

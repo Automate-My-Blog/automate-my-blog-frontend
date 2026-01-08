@@ -130,7 +130,7 @@ const UnifiedWorkflowHeader = ({
         title: `${user.firstName ? `${user.firstName}, ` : ''}${stepInfo.title} ${stepInfo.icon}`,
         description: stepInfo.description,
         buttonText: analysisCompleted ? "Continue Project" : "Create New Post",
-        showButton: !isNewRegistration // Hide button for new registrations until they complete workflow
+        showButton: false // Hide button in project mode (forceWorkflowMode)
       };
     }
 
@@ -167,12 +167,12 @@ const UnifiedWorkflowHeader = ({
       };
     }
 
-    // Logged-in dashboard mode: Full dashboard features
+    // Logged-in dashboard mode: Full dashboard features (button now floating)
     return {
       title: `Welcome back${user.firstName ? `, ${user.firstName}` : ''}! 👋`,
       description: "Your content automation dashboard is ready. Create, discover, and optimize your blog content strategy.",
-      buttonText: "Create New Post",
-      showButton: true
+      buttonText: null,
+      showButton: false // Button is now floating in DashboardLayout
     };
   };
 

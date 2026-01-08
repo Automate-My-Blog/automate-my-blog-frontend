@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Button, Empty, Table, Tag, Dropdown, Space, Switch, Divider, Input, Select, Row, Col, Typography, message, Alert } from 'antd';
+import { Card, Button, Empty, Table, Tag, Dropdown, Space, Switch, Divider, Input, Select, Row, Col, Typography, message } from 'antd';
 import { 
   PlusOutlined, 
   CalendarOutlined, 
@@ -10,16 +10,10 @@ import {
   MoreOutlined,
   BulbOutlined,
   EyeOutlined,
-  DatabaseOutlined,
   CheckOutlined,
   ReloadOutlined,
   LockOutlined,
-  SearchOutlined,
-  RobotOutlined,
-  PlayCircleOutlined,
-  RiseOutlined,
-  UserOutlined,
-  GlobalOutlined
+  TeamOutlined
 } from '@ant-design/icons';
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay } from 'date-fns';
@@ -37,82 +31,57 @@ import 'react-big-calendar/lib/css/react-big-calendar.css';
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
 
-// DUMMY DATA - Remove when backend integration complete
-const dummyPosts = [
-  {
-    id: 'dummy_1',
-    title: 'How to Improve Team Productivity with AI Tools',
-    content: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit...',
-    status: 'draft',
-    createdAt: '2024-01-01T10:00:00Z',
-    updatedAt: '2024-01-01T10:00:00Z',
-    exportCount: 0,
-    isDummy: true
-  },
-  {
-    id: 'dummy_2', 
-    title: 'Complete Guide to Remote Team Management',
-    content: 'Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua...',
-    status: 'scheduled', // DUMMY DATA
-    scheduledDate: '2024-01-15T14:00:00Z', // DUMMY DATA
-    scheduledPlatform: 'wordpress', // DUMMY DATA
-    notifyOnPublish: true, // DUMMY DATA
-    createdAt: '2023-12-28T10:00:00Z',
-    updatedAt: '2023-12-28T10:00:00Z',
-    exportCount: 1,
-    isDummy: true
-  },
-  {
-    id: 'dummy_3',
-    title: 'Marketing Automation Best Practices for 2024',
-    content: 'Ut enim ad minim veniam, quis nostrud exercitation...',
-    status: 'published', // DUMMY DATA
-    publishedDate: '2023-12-20T09:00:00Z', // DUMMY DATA
-    publishedPlatform: 'medium', // DUMMY DATA
-    createdAt: '2023-12-19T15:30:00Z',
-    updatedAt: '2023-12-20T09:00:00Z',
-    exportCount: 3,
-    isDummy: true
-  }
-];
+// Save Status Indicator Component
+const SaveStatusIndicator = ({ isAutosaving, lastSaved, autosaveError }) => {
+  const [currentTime, setCurrentTime] = useState(new Date());
+  
+  // Update time every 5 seconds to refresh "time ago" display
+  React.useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 5000);
+    
+    return () => clearInterval(timer);
+  }, []);
 
-// DUMMY DATA - Discovery automation settings (moved from DashboardTab)
-const dummyAutomationSettings = {
-  enabled: true,
-  frequency: 'weekly',
-  focusAreas: ['keywords', 'customer-segments', 'industry-news'],
-  lastRun: '2024-01-10T14:30:00Z',
-  nextRun: '2024-01-17T14:30:00Z',
-  successfulRuns: 12,
-  failedRuns: 1,
-  isDummy: true
+  const getStatusText = () => {
+    if (isAutosaving) {
+      return { text: 'Saving...', color: '#1890ff' };
+    }
+    if (autosaveError) {
+      return { text: `Error: ${autosaveError}`, color: '#ff4d4f' };
+    }
+    if (lastSaved) {
+      const timeAgo = Math.round((currentTime - lastSaved) / 1000);
+      if (timeAgo < 60) {
+        return { text: `Saved ${timeAgo}s ago`, color: '#52c41a' };
+      } else {
+        const minutesAgo = Math.round(timeAgo / 60);
+        return { text: `Saved ${minutesAgo}m ago`, color: '#52c41a' };
+      }
+    }
+    return { text: 'Autosave enabled', color: '#d9d9d9' };
+  };
+
+  const status = getStatusText();
+  
+  return (
+    <div style={{ 
+      fontSize: '12px', 
+      color: status.color, 
+      display: 'flex', 
+      alignItems: 'center',
+      marginLeft: '8px'
+    }}>
+      {isAutosaving && <span style={{ marginRight: '4px' }}>⏳</span>}
+      {autosaveError && <span style={{ marginRight: '4px' }}>⚠️</span>}
+      {lastSaved && !isAutosaving && !autosaveError && <span style={{ marginRight: '4px' }}>✓</span>}
+      {status.text}
+    </div>
+  );
 };
 
-// DUMMY DATA - Recent discovery results (moved from DashboardTab)
-const dummyDiscoveries = [
-  {
-    id: 'dummy_discovery_1',
-    type: 'keyword',
-    title: 'AI productivity tools',
-    description: 'Trending keyword with 40% search volume increase over last 30 days',
-    impact: 'High potential for traffic growth',
-    date: '2024-01-10T00:00:00Z',
-    confidence: 85,
-    actionTaken: false,
-    isDummy: true
-  },
-  {
-    id: 'dummy_discovery_2',
-    type: 'customer-segment',
-    title: 'Remote team managers',
-    description: 'New customer segment identified through social media analysis',
-    impact: 'Untapped audience with high conversion potential',
-    date: '2024-01-09T00:00:00Z',
-    confidence: 92,
-    actionTaken: true,
-    isDummy: true
-  }
-];
+// Content Discovery has been moved to SandboxTab for super-admin access
 
 const localizer = dateFnsLocalizer({
   format,
@@ -124,20 +93,14 @@ const localizer = dateFnsLocalizer({
   },
 });
 
-const PostsTab = ({ forceWorkflowMode = false }) => {
+const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode }) => {
   const { user } = useAuth();
   const tabMode = useTabMode('posts');
   const { 
-    selectedTopic: workflowSelectedTopic,
-    setSelectedTopic: setWorkflowSelectedTopic,
-    generatedContent,
-    setGeneratedContent,
-    blogGenerating,
-    setBlogGenerating,
-    requireAuth,
     requireSignUp,
     stepResults,
-    addStickyWorkflowStep
+    addStickyWorkflowStep,
+    selectedCustomerStrategy
   } = useWorkflowMode();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -163,9 +126,12 @@ const PostsTab = ({ forceWorkflowMode = false }) => {
   const [currentDraft, setCurrentDraft] = useState(null);
   const [postState, setPostState] = useState('draft'); // 'draft', 'exported', 'locked'
   
-  // Content Discovery state (moved from DashboardTab)
-  const [automationSettings, setAutomationSettings] = useState(dummyAutomationSettings);
-  const [discoveries, setDiscoveries] = useState(dummyDiscoveries.slice(0, 2)); // Show top 2
+  // Autosave state
+  const [isAutosaving, setIsAutosaving] = useState(false);
+  const [lastSaved, setLastSaved] = useState(null);
+  const [lastSavedContent, setLastSavedContent] = useState('');
+  const [autosaveError, setAutosaveError] = useState(null);
+  
   
   // UI helpers
   const responsive = ComponentHelpers.getResponsiveStyles();
@@ -174,29 +140,75 @@ const PostsTab = ({ forceWorkflowMode = false }) => {
   // Check if user can schedule (Creator, Professional, Enterprise)
   const canSchedule = user && user.plan && !['payasyougo', 'free'].includes(user.plan);
   
-  // Check user access for discovery features (moved from DashboardTab)
-  const isPaidUser = user && user.plan && !['payasyougo', 'free'].includes(user.plan);
-  const hasRemainingPosts = user?.remainingPosts > 0;
-  const canUseDiscovery = !user ? true : isPaidUser ? true : hasRemainingPosts;
 
   useEffect(() => {
     loadPosts();
-  }, [user]);
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Autosave timer - saves every 15 seconds when content is being edited
+  useEffect(() => {
+    let autosaveInterval;
+    
+    // Only set up autosave when we have content being edited
+    if (contentGenerated && editingContent && currentDraft) {
+      console.log('🕒 Starting autosave timer (15s intervals)');
+      
+      autosaveInterval = setInterval(() => {
+        console.log('⏰ Autosave timer triggered');
+        handleAutosave(false); // Silent autosave
+      }, 15000); // 15 seconds
+    }
+    
+    // Cleanup interval on unmount or when conditions change
+    return () => {
+      if (autosaveInterval) {
+        console.log('🛑 Clearing autosave timer');
+        clearInterval(autosaveInterval);
+      }
+    };
+  }, [contentGenerated, currentDraft]); // Re-setup when editing state changes, but not on every content change
+
+  // Keyboard shortcut for manual save (Ctrl+S / Cmd+S)
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if ((event.ctrlKey || event.metaKey) && event.key === 's') {
+        event.preventDefault();
+        if (contentGenerated && currentDraft && editingContent.trim()) {
+          console.log('⌨️ Manual save triggered via keyboard shortcut');
+          handleAutosave(true); // Manual save with user feedback
+        }
+      }
+    };
+
+    if (contentGenerated && currentDraft) {
+      document.addEventListener('keydown', handleKeyDown);
+      return () => {
+        document.removeEventListener('keydown', handleKeyDown);
+      };
+    }
+  }, [contentGenerated, currentDraft, editingContent]);
 
   const loadPosts = async () => {
     setLoading(true);
     try {
-      const result = await api.getBlogPosts(user?.id);
+      const result = await api.getPosts();
       
-      if (result.success && result.posts.length > 0) {
-        setPosts(result.posts);
+      if (result.success) {
+        // Set real posts from API (empty array if no posts)
+        setPosts(result.posts || []);
+        console.log('✅ Posts loaded successfully:', {
+          count: result.posts?.length || 0,
+          isAuthenticated: !!user,
+          hasSessionId: !!sessionStorage.getItem('audience_session_id')
+        });
       } else {
-        // Show dummy data if no real posts exist
-        setPosts(dummyPosts);
+        console.warn('Posts API returned unsuccessful response:', result);
+        setPosts([]);
       }
     } catch (error) {
       console.error('Error loading posts:', error);
-      setPosts(dummyPosts); // Fallback to dummy data
+      // For anonymous users, start with empty array instead of dummy data
+      setPosts([]);
     } finally {
       setLoading(false);
     }
@@ -213,39 +225,24 @@ const PostsTab = ({ forceWorkflowMode = false }) => {
 
   const getStatusText = (post) => {
     if (post.status === 'scheduled' && post.scheduledDate) {
-      return `Scheduled for ${format(new Date(post.scheduledDate), 'MMM dd, yyyy HH:mm')}`;
+      try {
+        return `Scheduled for ${format(new Date(post.scheduledDate), 'MMM dd, yyyy HH:mm')}`;
+      } catch (error) {
+        console.warn('Invalid scheduledDate:', post.scheduledDate);
+        return 'Scheduled';
+      }
     }
     if (post.status === 'published' && post.publishedDate) {
-      return `Published on ${format(new Date(post.publishedDate), 'MMM dd, yyyy')}`;
+      try {
+        return `Published on ${format(new Date(post.publishedDate), 'MMM dd, yyyy')}`;
+      } catch (error) {
+        console.warn('Invalid publishedDate:', post.publishedDate);
+        return 'Published';
+      }
     }
     return post.status.charAt(0).toUpperCase() + post.status.slice(1);
   };
 
-  // Content Discovery helper functions (moved from DashboardTab)
-  const getDiscoveryIcon = (type) => {
-    switch (type) {
-      case 'keyword': return <RiseOutlined style={{ color: '#1890ff' }} />;
-      case 'customer-segment': return <UserOutlined style={{ color: '#52c41a' }} />;
-      case 'industry-news': return <GlobalOutlined style={{ color: '#fa8c16' }} />;
-      case 'competitor': return <SearchOutlined style={{ color: '#722ed1' }} />;
-      default: return <RobotOutlined style={{ color: '#666' }} />;
-    }
-  };
-
-  const getConfidenceColor = (confidence) => {
-    if (confidence >= 80) return 'green';
-    if (confidence >= 60) return 'orange';
-    return 'red';
-  };
-
-  const handleGenerateContent = (discovery) => {
-    if (!canUseDiscovery) {
-      message.warning('Please upgrade your plan to generate content from discoveries');
-      return;
-    }
-    
-    message.success(`Content generation started for: ${discovery.title}`);
-  };
 
   const handleSchedulePost = (post) => {
     setSelectedPost(post);
@@ -340,17 +337,63 @@ const PostsTab = ({ forceWorkflowMode = false }) => {
       if (result.success) {
         setEditingContent(result.content);
         setContentGenerated(true);
-        setCurrentDraft({
-          id: Date.now().toString(),
+        
+        // Create initial post in database immediately
+        const initialPost = {
           title: topic.title,
           content: result.content,
           status: 'draft',
-          createdAt: new Date().toISOString(),
-          topic: topic,
-          blogPost: result.blogPost
-        });
+          topic_data: topic,
+          generation_metadata: {
+            strategy: contentStrategy,
+            generatedAt: new Date().toISOString(),
+            wordCount: result.content.length
+          }
+        };
         
-        message.success('Blog content generated successfully!');
+        // Save to database and get real post ID
+        const saveResult = await api.createPost(initialPost);
+        if (saveResult.success) {
+          setCurrentDraft({
+            id: saveResult.post.id, // Use real database ID
+            title: topic.title,
+            content: result.content,
+            status: 'draft',
+            createdAt: saveResult.post.created_at,
+            topic: topic,
+            blogPost: result.blogPost
+          });
+          
+          // Initialize autosave state for new content
+          setLastSavedContent(result.content); // Mark as saved since we just saved
+          setLastSaved(new Date());
+          setIsAutosaving(false);
+          setAutosaveError(null);
+          
+          // Update posts list
+          setPosts(prevPosts => [saveResult.post, ...prevPosts]);
+          
+          message.success('Blog content generated and saved!');
+        } else {
+          // Fallback to old behavior if save fails
+          setCurrentDraft({
+            id: null, // No ID means this needs to be created on first save
+            title: topic.title,
+            content: result.content,
+            status: 'draft',
+            createdAt: new Date().toISOString(),
+            topic: topic,
+            blogPost: result.blogPost
+          });
+          
+          // Initialize autosave state for new content
+          setLastSavedContent(''); // Mark as unsaved initially
+          setLastSaved(null);
+          setIsAutosaving(false);
+          setAutosaveError(null);
+          
+          message.success('Blog content generated successfully!');
+        }
       } else {
         throw new Error(result.error || 'Content generation failed');
       }
@@ -374,24 +417,124 @@ const PostsTab = ({ forceWorkflowMode = false }) => {
     }
   };
   
-  // Save draft to posts list
-  const handleSaveDraft = () => {
+  // Autosave function - saves silently without user notifications
+  const handleAutosave = async (showUserFeedback = false) => {
     if (currentDraft) {
-      const newPost = {
-        ...currentDraft,
-        exportCount: 0,
-        isDummy: false
-      };
-      setPosts([newPost, ...posts]);
-      message.success('Draft saved to your posts!');
-      
-      // Reset workflow state
-      setContentGenerated(false);
-      setCurrentDraft(null);
-      setSelectedTopic(null);
-      setEditingContent('');
-      setAvailableTopics([]);
+      try {
+        const isUpdate = currentDraft.id && currentDraft.id !== null; // Check if this is an update
+        
+        // Check if content has actually changed since last save
+        if (!showUserFeedback && editingContent === lastSavedContent) {
+          console.log('⏭️ Skipping autosave - no changes detected');
+          return { success: true, skipped: true };
+        }
+        
+        console.log(isUpdate ? '🔄 Autosaving existing post...' : '💾 Autosaving new draft...');
+        setIsAutosaving(true);
+        setAutosaveError(null);
+        
+        if (showUserFeedback) {
+          setLoading(true); // Show loading state for manual saves only
+        }
+        
+        const postData = {
+          title: currentDraft.title,
+          content: currentDraft.content,
+          status: 'draft',
+          topic_data: currentDraft.topic,
+          generation_metadata: {
+            strategy: contentStrategy,
+            generatedAt: new Date().toISOString(),
+            wordCount: currentDraft.content.length
+          }
+        };
+        
+        const result = isUpdate 
+          ? await api.updatePost(currentDraft.id, postData)
+          : await api.createPost(postData);
+        
+        if (result.success) {
+          if (isUpdate) {
+            // Update existing post in the list
+            setPosts(prevPosts => 
+              prevPosts.map(p => p.id === currentDraft.id ? result.post : p)
+            );
+          } else {
+            // Add new post to the list
+            setPosts(prevPosts => [result.post, ...prevPosts]);
+          }
+          
+          // Update last saved content and timestamp
+          setLastSavedContent(editingContent);
+          setLastSaved(new Date());
+          
+          // Reload posts from server to ensure consistency (only if not autosave)
+          if (showUserFeedback) {
+            setTimeout(() => {
+              loadPosts();
+            }, 100);
+          }
+          
+          // Show success message only for manual saves
+          if (showUserFeedback) {
+            message.success(
+              <div>
+                {isUpdate ? 'Post updated successfully!' : 'Draft saved successfully!'} 
+                <div style={{ marginTop: '8px' }}>
+                  <Button 
+                    type="link" 
+                    size="small"
+                    onClick={() => {
+                      // Reset workflow state to return to posts list
+                      setContentGenerated(false);
+                      setCurrentDraft(null);
+                      setSelectedTopic(null);
+                      setEditingContent('');
+                      setAvailableTopics([]);
+                      setLastSavedContent('');
+                      setLastSaved(null);
+                      message.destroy(); // Close the message
+                    }}
+                    style={{ padding: 0, height: 'auto' }}
+                  >
+                    Return to Posts List
+                  </Button>
+                </div>
+              </div>,
+              10 // Show for 10 seconds
+            );
+          }
+          
+          // Update the current draft with the saved post ID for future updates
+          setCurrentDraft(prev => ({
+            ...prev,
+            id: result.post.id,
+            createdAt: result.post.created_at
+          }));
+          
+          console.log(isUpdate ? '✅ Post autosaved successfully' : '✅ Draft autosaved successfully');
+          return { success: true, post: result.post };
+        } else {
+          throw new Error(result.error || 'Failed to save draft');
+        }
+      } catch (error) {
+        console.error('❌ Autosave failed:', error);
+        setAutosaveError(error.message);
+        
+        // Show error message only for manual saves or critical autosave failures
+        if (showUserFeedback) {
+          message.error(`Failed to save draft: ${error.message}`);
+        }
+        
+        return { success: false, error: error.message };
+      } finally {
+        setIsAutosaving(false);
+        if (showUserFeedback) {
+          setLoading(false); // Clear loading state
+        }
+      }
     }
+    return { success: false, error: 'No draft to save' };
   };
 
   // Content strategy helper functions
@@ -475,17 +618,138 @@ const PostsTab = ({ forceWorkflowMode = false }) => {
     }
   }, [tabMode.mode, tabMode.tabWorkflowData, availableTopics.length, generatingContent]);
 
-  // Prepare step data for workflow progression
-  const prepareStepData = () => {
-    if (!contentGenerated || !currentDraft) return null;
-    return {
-      contentCreated: true,
-      postTitle: currentDraft.title,
-      selectedTopic: selectedTopic,
-      generatedContent: editingContent,
-      contentStrategy: contentStrategy,
-      timestamp: new Date().toISOString()
-    };
+  // Edit post functionality - restore post to editor
+  const handleEditPost = (post) => {
+    try {
+      console.log('✏️ Loading post for editing:', post.title);
+
+      // Parse topic data if it exists
+      let topicData = null;
+      if (post.topic_data) {
+        try {
+          topicData = typeof post.topic_data === 'string' 
+            ? JSON.parse(post.topic_data) 
+            : post.topic_data;
+        } catch (error) {
+          console.warn('Failed to parse topic_data:', error);
+        }
+      }
+
+      // Parse generation metadata if it exists
+      let metadata = null;
+      if (post.generation_metadata) {
+        try {
+          metadata = typeof post.generation_metadata === 'string'
+            ? JSON.parse(post.generation_metadata)
+            : post.generation_metadata;
+        } catch (error) {
+          console.warn('Failed to parse generation_metadata:', error);
+        }
+      }
+
+      // Restore editor state
+      setCurrentDraft({
+        title: post.title,
+        content: post.content,
+        topic: topicData
+      });
+      
+      setEditingContent(post.content);
+      setContentGenerated(true);
+      
+      // Restore topic if available
+      if (topicData) {
+        setSelectedTopic(topicData);
+        setAvailableTopics([topicData]); // Add current topic to available topics
+      }
+
+      // Restore content strategy if available
+      if (metadata?.strategy) {
+        setContentStrategy(metadata.strategy);
+      }
+
+      // Initialize autosave state
+      setLastSavedContent(post.content);
+      setLastSaved(new Date(post.updated_at || post.created_at));
+      setIsAutosaving(false);
+      setAutosaveError(null);
+
+      message.success('Post loaded for editing!');
+      console.log('✅ Post editing state restored');
+      
+    } catch (error) {
+      console.error('❌ Failed to load post for editing:', error);
+      message.error('Failed to load post for editing');
+    }
+  };
+
+  // Export post directly from table
+  const handleExportPost = (post) => {
+    try {
+      console.log('📤 Exporting post:', post.title);
+      
+      // Create a blob with the post content
+      const blob = new Blob([post.content], { type: 'text/markdown' });
+      const url = URL.createObjectURL(blob);
+      
+      // Create download link
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${post.title.replace(/[^a-z0-9]/gi, '-').toLowerCase()}.md`;
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      message.success('Post exported successfully!');
+      console.log('✅ Post exported:', post.title);
+      
+    } catch (error) {
+      console.error('❌ Export error:', error);
+      message.error('Failed to export post');
+    }
+  };
+
+  // Close post function - saves final changes and returns to posts list
+  const handleClosePost = async () => {
+    try {
+      // Perform final save if there are unsaved changes
+      if (editingContent !== lastSavedContent && editingContent.trim()) {
+        console.log('💾 Performing final save before closing...');
+        const result = await handleAutosave(false);
+        if (!result.success && !result.skipped) {
+          // If final save fails, warn user
+          const confirmed = window.confirm(
+            'Failed to save your latest changes. Do you want to close anyway? Unsaved changes will be lost.'
+          );
+          if (!confirmed) {
+            return; // Don't close if user cancels
+          }
+        }
+      }
+      
+      // Reset all editor state and return to posts list
+      setContentGenerated(false);
+      setCurrentDraft(null);
+      setSelectedTopic(null);
+      setEditingContent('');
+      setAvailableTopics([]);
+      setLastSavedContent('');
+      setLastSaved(null);
+      setIsAutosaving(false);
+      setAutosaveError(null);
+      
+      // Reload posts to show any final changes
+      loadPosts();
+      
+      console.log('✅ Post closed successfully');
+      
+    } catch (error) {
+      console.error('❌ Error closing post:', error);
+      message.error('Error closing post. Please try again.');
+    }
   };
 
   const getPostActions = (post) => {
@@ -494,13 +758,13 @@ const PostsTab = ({ forceWorkflowMode = false }) => {
         key: 'edit',
         label: 'Edit',
         icon: <EditOutlined />,
-        onClick: () => {} // Edit post functionality
+        onClick: () => handleEditPost(post)
       },
       {
         key: 'export',
         label: 'Export',
         icon: <ExportOutlined />,
-        onClick: () => {} // Export post functionality
+        onClick: () => handleExportPost(post)
       }
     ];
 
@@ -542,14 +806,23 @@ const PostsTab = ({ forceWorkflowMode = false }) => {
     },
     {
       title: 'Created',
-      dataIndex: 'createdAt',
-      key: 'createdAt',
-      render: (date) => format(new Date(date), 'MMM dd, yyyy')
+      dataIndex: 'created_at',
+      key: 'created_at',
+      render: (date) => {
+        if (!date) return 'N/A';
+        try {
+          return format(new Date(date), 'MMM dd, yyyy');
+        } catch (error) {
+          console.warn('Invalid date value:', date);
+          return 'Invalid Date';
+        }
+      }
     },
     {
       title: 'Exports',
-      dataIndex: 'exportCount',
-      key: 'exportCount'
+      dataIndex: 'export_count',
+      key: 'export_count',
+      render: (count) => count || 0
     },
     {
       title: 'Actions',
@@ -573,13 +846,21 @@ const PostsTab = ({ forceWorkflowMode = false }) => {
   // Calendar events from scheduled posts
   const calendarEvents = posts
     .filter(post => post.status === 'scheduled' && post.scheduledDate)
-    .map(post => ({
-      id: post.id,
-      title: post.title,
-      start: new Date(post.scheduledDate),
-      end: new Date(post.scheduledDate),
-      resource: post
-    }));
+    .map(post => {
+      try {
+        return {
+          id: post.id,
+          title: post.title,
+          start: new Date(post.scheduledDate),
+          end: new Date(post.scheduledDate),
+          resource: post
+        };
+      } catch (error) {
+        console.warn('Invalid scheduledDate for calendar event:', post.scheduledDate);
+        return null;
+      }
+    })
+    .filter(event => event !== null);
 
   // Show simplified interface when no posts exist AND not in workflow mode
   if (posts.length === 0 && !loading && tabMode.mode === 'focus' && !forceWorkflowMode) {
@@ -637,8 +918,14 @@ const PostsTab = ({ forceWorkflowMode = false }) => {
                           size="large"
                           onClick={handleGenerateTopics}
                           icon={<BulbOutlined />}
+                          disabled={!tabMode.tabWorkflowData?.selectedCustomerStrategy}
                         >
-                          Generate Content Topics
+                          {!tabMode.tabWorkflowData?.selectedCustomerStrategy 
+                            ? 'Select an audience first'
+                            : user 
+                              ? (user.postsRemaining > 0 ? 'Create blog post' : 'Purchase or subscribe')
+                              : 'Get one free post'
+                          }
                         </Button>
                       )}
                     </div>
@@ -1004,40 +1291,6 @@ const PostsTab = ({ forceWorkflowMode = false }) => {
                     </div>
                   )}
                   
-                  {/* Brand Colors Indicator */}
-                  <div style={{ 
-                    marginBottom: '16px', 
-                    padding: '12px', 
-                    backgroundColor: defaultColors.secondary + '20', 
-                    borderRadius: '6px' 
-                  }}>
-                    <Text strong style={{ color: defaultColors.primary }}>
-                      Content styled with your brand colors:
-                    </Text>
-                    <Space style={{ marginLeft: '12px' }}>
-                      <div style={{ 
-                        display: 'inline-block', 
-                        width: '16px', 
-                        height: '16px', 
-                        backgroundColor: defaultColors.primary,
-                        borderRadius: '2px' 
-                      }} />
-                      <div style={{ 
-                        display: 'inline-block', 
-                        width: '16px', 
-                        height: '16px', 
-                        backgroundColor: defaultColors.secondary,
-                        borderRadius: '2px' 
-                      }} />
-                      <div style={{ 
-                        display: 'inline-block', 
-                        width: '16px', 
-                        height: '16px', 
-                        backgroundColor: defaultColors.accent,
-                        borderRadius: '2px' 
-                      }} />
-                    </Space>
-                  </div>
 
                   {/* Content Strategy Panel */}
                   <div style={{ 
@@ -1186,46 +1439,96 @@ const PostsTab = ({ forceWorkflowMode = false }) => {
                     />
                   )}
                   
-                  {/* Action Buttons */}
+                  {/* Action Buttons - Different for workflow vs focus mode */}
                   <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'space-between' }}>
-                    <Space>
-                      <Button 
-                        icon={<ReloadOutlined />}
-                        onClick={() => {
-                          setContentGenerated(false);
-                          setEditingContent('');
-                          setSelectedTopic(null);
-                          setCurrentDraft(null);
-                        }}
-                      >
-                        Start Over
-                      </Button>
-                    </Space>
-                    
-                    <Space>
-                      <Button 
-                        type="primary"
-                        icon={<CheckOutlined />}
-                        onClick={handleSaveDraft}
-                        disabled={!editingContent.trim()}
-                        style={{ marginRight: '8px' }}
-                      >
-                        Save as Draft
-                      </Button>
-                      <Button 
-                        type="primary"
-                        icon={postState !== 'exported' ? <LockOutlined /> : undefined}
-                        onClick={handleExport}
-                        disabled={!editingContent.trim() || postState === 'exported'}
-                        style={{
-                          backgroundColor: postState === 'exported' ? '#52c41a' : defaultColors.primary,
-                          borderColor: postState === 'exported' ? '#52c41a' : defaultColors.primary,
-                          fontWeight: '500'
-                        }}
-                      >
-                        {postState === 'exported' ? 'Content Exported' : 'Download Your Content'}
-                      </Button>
-                    </Space>
+                    {(tabMode.mode === 'workflow' || forceWorkflowMode) ? (
+                      // Workflow Mode: Only Export button
+                      <div style={{ width: '100%', display: 'flex', justifyContent: 'flex-end' }}>
+                        <Space>
+                          <SaveStatusIndicator 
+                            isAutosaving={isAutosaving}
+                            lastSaved={lastSaved}
+                            autosaveError={autosaveError}
+                          />
+                          <Button 
+                            type="primary"
+                            icon={<ExportOutlined />}
+                            onClick={() => {
+                              // Create export content using current draft (same as handleExportPost)
+                              const content = `# ${selectedTopic?.title || 'Generated Blog Post'}\n\n${editingContent}`;
+                              const blob = new Blob([content], { type: 'text/markdown' });
+                              const url = URL.createObjectURL(blob);
+                              
+                              // Create download link
+                              const link = document.createElement('a');
+                              link.href = url;
+                              link.download = `${(selectedTopic?.title || 'blog-post').replace(/[^a-z0-9]/gi, '_').toLowerCase()}.md`;
+                              document.body.appendChild(link);
+                              link.click();
+                              document.body.removeChild(link);
+                              URL.revokeObjectURL(url);
+                              
+                              setPostState('exported');
+                              message.success('Content exported successfully');
+                            }}
+                            disabled={!editingContent.trim() || postState === 'exported'}
+                            style={{
+                              backgroundColor: postState === 'exported' ? '#52c41a' : defaultColors.primary,
+                              borderColor: postState === 'exported' ? '#52c41a' : defaultColors.primary,
+                              fontWeight: '500',
+                              minWidth: '180px'
+                            }}
+                          >
+                            {postState === 'exported' ? 'Content Exported' : 'Export Content'}
+                          </Button>
+                        </Space>
+                      </div>
+                    ) : (
+                      // Focus Mode: Original buttons (Close, Start Over, Export)
+                      <>
+                        <Space>
+                          <Button 
+                            icon={<ReloadOutlined />}
+                            onClick={() => {
+                              setContentGenerated(false);
+                              setEditingContent('');
+                              setSelectedTopic(null);
+                              setCurrentDraft(null);
+                            }}
+                          >
+                            Start Over
+                          </Button>
+                        </Space>
+                        
+                        <Space>
+                          <SaveStatusIndicator 
+                            isAutosaving={isAutosaving}
+                            lastSaved={lastSaved}
+                            autosaveError={autosaveError}
+                          />
+                          <Button 
+                            type="default"
+                            onClick={handleClosePost}
+                            style={{ marginRight: '8px' }}
+                          >
+                            Close Post
+                          </Button>
+                          <Button 
+                            type="primary"
+                            icon={postState !== 'exported' ? <LockOutlined /> : undefined}
+                            onClick={handleExport}
+                            disabled={!editingContent.trim() || postState === 'exported'}
+                            style={{
+                              backgroundColor: postState === 'exported' ? '#52c41a' : defaultColors.primary,
+                              borderColor: postState === 'exported' ? '#52c41a' : defaultColors.primary,
+                              fontWeight: '500'
+                            }}
+                          >
+                            {postState === 'exported' ? 'Content Exported' : 'Download Your Content'}
+                          </Button>
+                        </Space>
+                      </>
+                    )}
                   </div>
                 </Card>
               )}
@@ -1233,12 +1536,7 @@ const PostsTab = ({ forceWorkflowMode = false }) => {
           ) : (
             // Focus Mode: Show Empty State for No Posts
             <Card 
-              title="Blog Posts" 
-              extra={
-                <Button type="primary" icon={<PlusOutlined />}>
-                  Create New Post
-                </Button>
-              }
+              title="Blog Posts"
             >
               <Empty
                 description="No blog posts yet"
@@ -1258,8 +1556,8 @@ const PostsTab = ({ forceWorkflowMode = false }) => {
   return (
     <div>
       
-      {/* Workflow Guidance */}
-      {(tabMode.mode === 'workflow' || forceWorkflowMode) && (
+      {/* Workflow Guidance - Only show when in workflow mode AND audience is selected */}
+      {(tabMode.mode === 'workflow' || forceWorkflowMode) && tabMode.tabWorkflowData?.selectedCustomerStrategy && (
         <div style={{ padding: '16px 24px 0' }}>
           <WorkflowGuidance
             step={3}
@@ -1273,15 +1571,198 @@ const PostsTab = ({ forceWorkflowMode = false }) => {
         </div>
       )}
       
-      <div style={{ padding: '24px' }}>
-        {/* ENHANCED TOPIC GENERATION SECTION - Available in both workflow and focus modes */}
-        {(tabMode.mode === 'workflow' || forceWorkflowMode || (tabMode.mode === 'focus' && !contentGenerated)) && (
+      {/* WORKFLOW MODE CONTENT */}
+      {(tabMode.mode === 'workflow' || forceWorkflowMode) && (
+        <div style={{ padding: '24px' }}>
+          {/* Preview topic cards when no audience selected */}
+          {!selectedCustomerStrategy && (
+            <Card title="Content Topics Preview" style={{ marginBottom: '24px' }}>
+              <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+                <Paragraph style={{ fontSize: '16px', color: '#666', marginBottom: '16px' }}>
+                  Select an audience strategy to generate personalized content topics like these:
+                </Paragraph>
+              </div>
+              
+              <Row gutter={[16, 16]}>
+                {/* Preview Topic Card 1 */}
+                <Col xs={24} md={12}>
+                  <Card 
+                    hoverable
+                    cover={
+                      <div style={{
+                        height: '200px',
+                        background: 'linear-gradient(135deg, #667eea30 0%, #764ba230 100%)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: '#999',
+                        fontSize: '16px',
+                        fontWeight: 500,
+                        padding: '20px',
+                        textAlign: 'center',
+                        position: 'relative'
+                      }}>
+                        <div style={{
+                          position: 'absolute',
+                          top: '50%',
+                          left: '50%',
+                          transform: 'translate(-50%, -50%)',
+                          background: 'rgba(255,255,255,0.9)',
+                          padding: '12px 20px',
+                          borderRadius: '6px',
+                          fontSize: '14px',
+                          color: '#666'
+                        }}>
+                          🎯 Topic Preview
+                        </div>
+                      </div>
+                    }
+                    style={{
+                      border: '2px dashed #d9d9d9',
+                      opacity: 0.6
+                    }}
+                  >
+                    {/* Preview Tags */}
+                    <div style={{ marginBottom: '12px' }}>
+                      <Tag color="blue">Content</Tag>
+                      <Tag color="purple">Strategy</Tag>
+                      <Tag color="orange">Expert</Tag>
+                    </div>
+                    
+                    {/* Preview Title and Description */}
+                    <Title level={4} style={{ marginBottom: '8px', color: '#ccc' }}>
+                      Your Custom Topic Title
+                    </Title>
+                    <Paragraph style={{ color: '#999', fontSize: '14px', marginBottom: '12px' }}>
+                      AI-generated content idea tailored specifically to your selected audience strategy and business goals.
+                    </Paragraph>
+                    
+                    {/* Disabled Action Button */}
+                    <div style={{ textAlign: 'center', marginTop: '16px' }}>
+                      <Button
+                        type="primary"
+                        size="large"
+                        disabled
+                        style={{
+                          width: '100%',
+                          marginBottom: '12px'
+                        }}
+                      >
+                        Select Audience First
+                      </Button>
+                    </div>
+                  </Card>
+                </Col>
+
+                {/* Preview Topic Card 2 */}
+                <Col xs={24} md={12}>
+                  <Card 
+                    hoverable
+                    cover={
+                      <div style={{
+                        height: '200px',
+                        background: 'linear-gradient(135deg, #f093fb30 0%, #f5576c30 100%)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: '#999',
+                        fontSize: '16px',
+                        fontWeight: 500,
+                        padding: '20px',
+                        textAlign: 'center',
+                        position: 'relative'
+                      }}>
+                        <div style={{
+                          position: 'absolute',
+                          top: '50%',
+                          left: '50%',
+                          transform: 'translate(-50%, -50%)',
+                          background: 'rgba(255,255,255,0.9)',
+                          padding: '12px 20px',
+                          borderRadius: '6px',
+                          fontSize: '14px',
+                          color: '#666'
+                        }}>
+                          📊 Topic Preview
+                        </div>
+                      </div>
+                    }
+                    style={{
+                      border: '2px dashed #d9d9d9',
+                      opacity: 0.6
+                    }}
+                  >
+                    {/* Preview Tags */}
+                    <div style={{ marginBottom: '12px' }}>
+                      <Tag color="green">How-To</Tag>
+                      <Tag color="purple">Conversion</Tag>
+                      <Tag color="cyan">Standard</Tag>
+                    </div>
+                    
+                    {/* Preview Title and Description */}
+                    <Title level={4} style={{ marginBottom: '8px', color: '#ccc' }}>
+                      Another Targeted Topic
+                    </Title>
+                    <Paragraph style={{ color: '#999', fontSize: '14px', marginBottom: '12px' }}>
+                      Personalized content suggestions based on your audience's search behavior and pain points.
+                    </Paragraph>
+                    
+                    {/* Disabled Action Button */}
+                    <div style={{ textAlign: 'center', marginTop: '16px' }}>
+                      <Button
+                        type="primary"
+                        size="large"
+                        disabled
+                        style={{
+                          width: '100%',
+                          marginBottom: '12px'
+                        }}
+                      >
+                        Select Audience First
+                      </Button>
+                    </div>
+                  </Card>
+                </Col>
+              </Row>
+
+              {/* Call to Action */}
+              <div style={{ textAlign: 'center', marginTop: '24px', padding: '20px', backgroundColor: '#f6ffed', borderRadius: '8px', border: '1px solid #b7eb8f' }}>
+                <Title level={4} style={{ color: '#52c41a', marginBottom: '12px' }}>
+                  Ready to Generate Your Topics?
+                </Title>
+                <Button 
+                  type="primary" 
+                  size="large"
+                  icon={<TeamOutlined />}
+                  onClick={() => {
+                    const audienceSection = document.getElementById('audience-segments');
+                    if (audienceSection) {
+                      audienceSection.scrollIntoView({ 
+                        behavior: 'smooth', 
+                        block: 'start' 
+                      });
+                    }
+                  }}
+                  style={{
+                    backgroundColor: '#52c41a',
+                    borderColor: '#52c41a',
+                    minWidth: '200px'
+                  }}
+                >
+                  Select Audience Strategy
+                </Button>
+              </div>
+            </Card>
+          )}
+
+          {/* ENHANCED TOPIC GENERATION SECTION - Available when audience is selected */}
+          {selectedCustomerStrategy && (
           <div style={{ marginBottom: '24px' }}>
             {!contentGenerated ? (
               // Topic Generation Phase
               <Card title="Generate Content Topics" style={{ marginBottom: '24px' }}>
                 <Paragraph style={{ color: '#666', marginBottom: '20px' }}>
-                  {tabMode.tabWorkflowData?.selectedCustomerStrategy ? 
+                  {selectedCustomerStrategy ? 
                     'AI will generate trending topics based on your selected audience strategy.' :
                     'Generate content topics that resonate with your target audience.'
                   }
@@ -1309,8 +1790,14 @@ const PostsTab = ({ forceWorkflowMode = false }) => {
                         size="large"
                         onClick={handleGenerateTopics}
                         icon={<BulbOutlined />}
+                        disabled={!tabMode.tabWorkflowData?.selectedCustomerStrategy}
                       >
-                        Generate Content Topics
+                        {!tabMode.tabWorkflowData?.selectedCustomerStrategy 
+                          ? 'Select an audience first'
+                          : user 
+                            ? (user.postsRemaining > 0 ? 'Create blog post' : 'Purchase or subscribe')
+                            : 'Get one free post'
+                        }
                       </Button>
                     )}
                   </div>
@@ -1445,7 +1932,14 @@ const PostsTab = ({ forceWorkflowMode = false }) => {
                                 <Button
                                   type="primary"
                                   size="large"
-                                  onClick={() => handleTopicSelection(topic.id)}
+                                  onClick={() => {
+                                    if (user && user.postsRemaining === 0) {
+                                      // Navigate to settings tab for subscriptions
+                                      window.dispatchEvent(new CustomEvent('navigateToTab', { detail: 'settings' }));
+                                    } else {
+                                      handleTopicSelection(topic.id);
+                                    }
+                                  }}
                                   loading={isGenerating}
                                   style={{
                                     backgroundColor: defaultColors.primary,
@@ -1454,7 +1948,11 @@ const PostsTab = ({ forceWorkflowMode = false }) => {
                                     marginBottom: '12px'
                                   }}
                                 >
-                                  {isGenerating ? 'Generating Content...' : 'Get One Free Post'}
+                                  {isGenerating ? 'Generating Content...' : 
+                                   user ? 
+                                     (user.postsRemaining > 0 ? 'Create blog post' : 'Purchase or subscribe') :
+                                     'Get one free post'
+                                  }
                                 </Button>
                                 
                                 <Button
@@ -1878,35 +2376,36 @@ const PostsTab = ({ forceWorkflowMode = false }) => {
               </Space>
               
               <Space>
+                <SaveStatusIndicator 
+                  isAutosaving={isAutosaving}
+                  lastSaved={lastSaved}
+                  autosaveError={autosaveError}
+                />
                 <Button 
-                  type="primary"
-                  icon={<CheckOutlined />}
-                  onClick={handleSaveDraft}
-                  disabled={!editingContent.trim()}
+                  type="default"
+                  onClick={handleClosePost}
                 >
-                  Save as Draft
+                  Close Post
                 </Button>
               </Space>
             </div>
           </Card>
         )}
+        </div>
+      )}
 
-        {/* POSTS MANAGEMENT SECTION - Only visible in focus mode */}
-        {tabMode.mode === 'focus' && !forceWorkflowMode && (
+      {/* POSTS MANAGEMENT SECTION - Only visible in focus mode */}
+      {tabMode.mode === 'focus' && !forceWorkflowMode && (
+        <div style={{ padding: '24px' }}>
           <Card 
             title="Blog Posts" 
             extra={
-              <Space>
-                <Switch
-                  checkedChildren={<CalendarOutlined />}
-                  unCheckedChildren={<UnorderedListOutlined />}
-                  checked={viewMode === 'calendar'}
-                  onChange={(checked) => setViewMode(checked ? 'calendar' : 'list')}
-                />
-                <Button type="primary" icon={<PlusOutlined />}>
-                  Create New Post
-                </Button>
-              </Space>
+              <Switch
+                checkedChildren={<CalendarOutlined />}
+                unCheckedChildren={<UnorderedListOutlined />}
+                checked={viewMode === 'calendar'}
+                onChange={(checked) => setViewMode(checked ? 'calendar' : 'list')}
+              />
             }
           >
             {!canSchedule && (
@@ -1929,127 +2428,38 @@ const PostsTab = ({ forceWorkflowMode = false }) => {
             )}
 
             {viewMode === 'list' ? (
-              <Table
-                columns={columns}
-                dataSource={posts}
-                rowKey="id"
-                loading={loading}
-                pagination={{ pageSize: 10 }}
-              />
-            ) : (
-              <div style={{ height: '500px' }}>
-                <Calendar
-                  localizer={localizer}
-                  events={calendarEvents}
-                  startAccessor="start"
-                  endAccessor="end"
-                  onSelectEvent={(event) => {
-                    if (canSchedule) {
-                      handleSchedulePost(event.resource);
-                    }
-                  }}
-                  views={['month', 'week', 'day']}
-                  defaultView="month"
-                  popup
-                  style={{ height: '100%' }}
+                <Table
+                  columns={columns}
+                  dataSource={posts}
+                  rowKey="id"
+                  loading={loading}
+                  pagination={{ pageSize: 10 }}
                 />
-              </div>
-            )}
-          </Card>
-        )}
-
-        {/* CONTENT DISCOVERY SECTION - Moved from Home Tab */}
-        {tabMode.mode === 'focus' && !forceWorkflowMode && (
-          <Card 
-            title={
-              <Space>
-                <SearchOutlined style={{ color: '#1890ff' }} />
-                Content Discovery
-              </Space>
+              ) : (
+                <div style={{ height: '500px' }}>
+                  <Calendar
+                    localizer={localizer}
+                    events={calendarEvents}
+                    startAccessor="start"
+                    endAccessor="end"
+                    onSelectEvent={(event) => {
+                      if (canSchedule) {
+                        handleSchedulePost(event.resource);
+                      }
+                    }}
+                    views={['month', 'week', 'day']}
+                    defaultView="month"
+                    popup
+                    style={{ height: '100%' }}
+                  />
+                </div>
+              )
             }
-            extra={
-              <Button 
-                type="link" 
-                size="small"
-                onClick={() => message.info('Configure automation in Settings → Content Discovery')}
-              >
-                Settings
-              </Button>
-            }
-            style={{ marginTop: '24px' }}
-          >
-            {!canUseDiscovery && !user && (
-              <Alert
-                message="Demo Mode"
-                description="Create an account to use automated discovery features."
-                type="info"
-                showIcon
-                style={{ marginBottom: '16px' }}
-              />
-            )}
-
-            <div style={{ marginBottom: '16px' }}>
-              <Text strong>Discovery Status: </Text>
-              <Tag color={automationSettings.enabled && canUseDiscovery ? 'green' : 'default'}>
-                {automationSettings.enabled && canUseDiscovery ? 'Active' : 'Paused'}
-              </Tag>
-            </div>
-
-            <Divider style={{ margin: '12px 0' }} />
-
-            {discoveries.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '20px' }}>
-                <SearchOutlined style={{ fontSize: '48px', color: '#d9d9d9', marginBottom: '16px' }} />
-                <Text type="secondary">No recent discoveries</Text>
-              </div>
-            ) : (
-              <div>
-                {discoveries.map((discovery) => (
-                  <div
-                    key={discovery.id}
-                    style={{ borderBottom: '1px solid #f0f0f0', paddingBottom: '12px', marginBottom: '12px' }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'flex-start' }}>
-                      <div style={{ marginRight: '16px', marginTop: '4px' }}>
-                        {getDiscoveryIcon(discovery.type)}
-                      </div>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ marginBottom: '8px' }}>
-                          <Space>
-                            <span style={{ fontSize: '14px', fontWeight: 500 }}>{discovery.title}</span>
-                            <Tag size="small" color={getConfidenceColor(discovery.confidence)}>
-                              {discovery.confidence}%
-                            </Tag>
-                          </Space>
-                        </div>
-                        <div>
-                          <Text style={{ fontSize: '12px', color: '#666', display: 'block', marginBottom: '4px' }}>
-                            {discovery.description}
-                          </Text>
-                          <Text strong style={{ fontSize: '12px', color: '#1890ff' }}>
-                            {discovery.impact}
-                          </Text>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <Button
-              type="primary"
-              icon={<PlayCircleOutlined />}
-              onClick={() => message.info('Run discovery from Settings → Content Discovery')}
-              disabled={!canUseDiscovery}
-              block
-              style={{ marginTop: '12px' }}
-            >
-              Configure Discovery
-            </Button>
           </Card>
-        )}
-      </div>
+        </div>
+      )}
+
+      {/* Content Discovery has been moved to Sandbox tab for super-admin access */}
 
       {showSchedulingModal && (
         <SchedulingModal

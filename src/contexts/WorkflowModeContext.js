@@ -385,6 +385,32 @@ export const WorkflowModeProvider = ({ children }) => {
         
         console.log('🔍 DEBUG: Current audiences count after loadUserAudiences:', audiences.length);
         
+        // Adopt website analysis session data separately
+        try {
+          const analysisResponse = await autoBlogAPI.adoptAnalysisSession(adoptSessionId);
+          console.log('🔍 DEBUG: Analysis adoption response:', analysisResponse);
+          
+          // Restore website analysis data to workflow context if adoption was successful
+          if (analysisResponse?.success && analysisResponse?.analysis) {
+            console.log('🔄 Restoring website analysis from session adoption');
+            updateWebsiteAnalysis(analysisResponse.analysis);
+            updateAnalysisCompleted(true);
+            
+            // Update sticky workflow step if needed
+            updateStickyWorkflowStep('websiteAnalysis', {
+              websiteUrl: analysisResponse.analysis.websiteUrl || '',
+              businessName: analysisResponse.analysis.businessName || '',
+              businessType: analysisResponse.analysis.businessType || '',
+              ...analysisResponse.analysis
+            });
+            
+            console.log('✅ Website analysis restored from session adoption');
+          }
+        } catch (analysisError) {
+          console.error('⚠️ Website analysis adoption failed (non-critical):', analysisError.message);
+          // Don't fail main adoption if analysis adoption fails
+        }
+        
         // Only clear session ID if we successfully have data in our context
         if (audiences.length > 0) {
           console.log('✅ Session data verified, clearing session ID');

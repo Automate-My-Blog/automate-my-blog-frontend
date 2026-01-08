@@ -438,22 +438,6 @@ const WebsiteAnalysisStepStandalone = ({
           </div>
         )}
 
-        {webSearchInsights?.researchQuality === 'enhanced' && (
-          <div style={{
-            padding: '16px',
-            backgroundColor: '#f6ffed',
-            border: '1px solid #b7eb8f',
-            borderRadius: '8px',
-            marginBottom: '20px'
-          }}>
-            <Text strong style={{ color: '#389e0d', fontSize: '14px', marginBottom: '8px', display: 'block' }}>
-              🎯 Enhanced Analysis with Web Research
-            </Text>
-            <div style={{ fontSize: '13px', color: '#389e0d' }}>
-              Analysis enhanced with brand guidelines, competitive analysis, and current market keyword research.
-            </div>
-          </div>
-        )}
 
         {/* Business Overview Cards */}
         <Row gutter={responsive.gutter}>
@@ -545,69 +529,6 @@ const WebsiteAnalysisStepStandalone = ({
             </div>
           </Col>
 
-          <Col xs={24} md={12}>
-            <div style={{ 
-              padding: '16px', 
-              backgroundColor: defaultColors.secondary + '20', 
-              borderRadius: '8px',
-              border: `1px solid ${defaultColors.secondary}40`,
-              height: '100%'
-            }}>
-              <Text strong style={{ 
-                color: defaultColors.primary, 
-                fontSize: responsive.fontSize.text, 
-                marginBottom: '12px', 
-                display: 'block' 
-              }}>
-                Brand Colors
-              </Text>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div style={{
-                    width: '20px',
-                    height: '20px',
-                    backgroundColor: analysis.brandColors?.primary || defaultColors.primary,
-                    borderRadius: '4px',
-                    border: '1px solid #ddd',
-                    flexShrink: 0
-                  }} />
-                  <Text style={{ fontSize: responsive.fontSize.small, color: '#666' }}>
-                    <Text strong>Primary:</Text> {analysis.brandColors?.primary || defaultColors.primary}
-                  </Text>
-                </div>
-                {analysis.brandColors?.secondary && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <div style={{
-                      width: '20px',
-                      height: '20px',
-                      backgroundColor: analysis.brandColors.secondary,
-                      borderRadius: '4px',
-                      border: '1px solid #ddd',
-                      flexShrink: 0
-                    }} />
-                    <Text style={{ fontSize: responsive.fontSize.small, color: '#666' }}>
-                      <Text strong>Secondary:</Text> {analysis.brandColors.secondary}
-                    </Text>
-                  </div>
-                )}
-                {analysis.brandColors?.accent && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <div style={{
-                      width: '20px',
-                      height: '20px',
-                      backgroundColor: analysis.brandColors.accent,
-                      borderRadius: '4px',
-                      border: '1px solid #ddd',
-                      flexShrink: 0
-                    }} />
-                    <Text style={{ fontSize: responsive.fontSize.small, color: '#666' }}>
-                      <Text strong>Accent:</Text> {analysis.brandColors.accent}
-                    </Text>
-                  </div>
-                )}
-              </div>
-            </div>
-          </Col>
         </Row>
 
         {/* Business Strategy - Only show if AI generated these fields */}
@@ -721,32 +642,6 @@ const WebsiteAnalysisStepStandalone = ({
           </div>
         )}
         
-        {/* Action buttons */}
-        <div style={{ marginTop: '20px', textAlign: 'center' }}>
-          <Space>
-            <Button 
-              type="primary"
-              size="large"
-              onClick={() => onAnalysisComplete && onAnalysisComplete({
-                analysis: analysisResults,
-                webSearchInsights,
-                websiteUrl
-              })}
-              style={{
-                backgroundColor: defaultColors.primary,
-                borderColor: defaultColors.primary
-              }}
-            >
-              Continue to Next Step
-            </Button>
-            <Button 
-              size="large"
-              onClick={handleStartOver}
-            >
-              Analyze Different Website
-            </Button>
-          </Space>
-        </div>
       </Card>
     );
   };
