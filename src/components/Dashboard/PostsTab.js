@@ -693,6 +693,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode }) => {
       
       setEditingContent(post.content);
       setContentGenerated(true);
+      console.log('🔧 DEBUG: contentGenerated set to true, editorViewMode should show');
       
       // Restore topic if available
       if (topicData) {
@@ -1271,7 +1272,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode }) => {
                 <Card 
                   title={
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span>Edit Your Content</span>
+                      <span>Edit Your Content {console.log('🔧 DEBUG: Showing enhanced editor buttons')}</span>
                       <Space>
                         <Button 
                           type={editorViewMode === 'edit' ? "primary" : "default"}
@@ -1302,8 +1303,9 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode }) => {
                             setPreviewMode(false);
                           }}
                           size="small"
+                          style={{ marginLeft: '4px' }}
                         >
-                          Split
+                          Split View
                         </Button>
                       </Space>
                     </div>
