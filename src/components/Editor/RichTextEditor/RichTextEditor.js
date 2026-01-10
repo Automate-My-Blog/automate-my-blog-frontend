@@ -1,0 +1,345 @@
+import React, { useState, useCallback } from 'react';
+import { useEditor, EditorContent } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import { TextStyle } from '@tiptap/extension-text-style';
+import { Color } from '@tiptap/extension-color';
+import TextAlign from '@tiptap/extension-text-align';
+import Link from '@tiptap/extension-link';
+import Image from '@tiptap/extension-image';
+import Underline from '@tiptap/extension-underline';
+import { Table } from '@tiptap/extension-table';
+import { TableRow } from '@tiptap/extension-table-row';
+import { TableCell } from '@tiptap/extension-table-cell';
+import { TableHeader } from '@tiptap/extension-table-header';
+import { Placeholder } from '@tiptap/extension-placeholder';
+
+import { colors, spacing, borderRadius, typography } from '../../DesignSystem/tokens';
+import InlineToolbar from '../InlineToolbar/InlineToolbar';
+import { KeyboardShortcuts } from '../extensions/KeyboardShortcuts';
+
+/**
+ * Modern WYSIWYG Rich Text Editor using TipTap
+ */
+const RichTextEditor = ({
+  content = '',
+  onChange,
+  onEditorReady,
+  placeholder = 'Start typing...',
+  editable = true,
+  className = '',
+  style = {},
+  showInlineToolbar = true,
+  ...props
+}) => {
+  // Inline toolbar state
+  const [inlineToolbarVisible, setInlineToolbarVisible] = useState(false);
+  const [inlineToolbarPosition, setInlineToolbarPosition] = useState({ top: 0, left: 0 });
+
+  const editor = useEditor({
+    extensions: [
+      StarterKit.configure({
+        bulletList: {
+          keepMarks: true,
+          keepAttributes: false,
+        },
+        orderedList: {
+          keepMarks: true,
+          keepAttributes: false,
+        },
+      }),
+      TextStyle,
+      Color,
+      Underline,
+      TextAlign.configure({
+        types: ['heading', 'paragraph'],
+      }),
+      Link.configure({
+        openOnClick: false,
+        HTMLAttributes: {
+          class: 'editor-link',
+        },
+      }),
+      Image.configure({
+        HTMLAttributes: {
+          class: 'editor-image',
+        },
+      }),
+      Table.configure({
+        resizable: true,
+      }),
+      TableRow,
+      TableHeader,
+      TableCell,
+      Placeholder.configure({
+        placeholder,
+      }),
+      KeyboardShortcuts,
+    ],
+    content: content,
+    editable: editable,
+    onUpdate: ({ editor }) => {
+      const html = editor.getHTML();
+      if (onChange) {
+        onChange(html);
+      }
+    },
+    onSelectionUpdate: ({ editor }) => {
+      // Update inline toolbar position when selection changes
+      if (showInlineToolbar) {
+        setTimeout(() => updateInlineToolbarPosition(editor), 10);
+      }
+    },
+    editorProps: {
+      attributes: {
+        class: 'rich-text-editor',
+        'data-placeholder': placeholder,
+      },
+    },
+  });
+
+  // Update editor content when prop changes
+  React.useEffect(() => {
+    if (editor && content !== editor.getHTML()) {
+      editor.commands.setContent(content);
+    }
+  }, [editor, content]);
+
+  // Call onEditorReady when editor is ready
+  React.useEffect(() => {
+    if (editor && onEditorReady) {
+      onEditorReady(editor);
+    }
+  }, [editor, onEditorReady]);
+
+  // Calculate inline toolbar position based on text selection
+  const updateInlineToolbarPosition = useCallback((editorInstance) => {
+    const currentEditor = editorInstance || editor;
+    if (!currentEditor || !showInlineToolbar) return;
+    
+    const { selection } = currentEditor.state;
+    const { from, to } = selection;
+    
+    // Hide if no selection or cursor only
+    if (from === to) {
+      setInlineToolbarVisible(false);
+      return;
+    }
+    
+    // Get the DOM element for the editor
+    const editorElement = currentEditor.view.dom;
+    const editorRect = editorElement.getBoundingClientRect();
+    
+    // Get selection coordinates
+    const { view } = currentEditor;
+    const start = view.coordsAtPos(from);
+    const end = view.coordsAtPos(to);
+    
+    // Calculate position relative to editor
+    const selectionWidth = end.left - start.left;
+    const centerX = start.left + (selectionWidth / 2);
+    
+    setInlineToolbarPosition({
+      top: start.top - editorRect.top - 10, // 10px above selection
+      left: centerX - editorRect.left
+    });
+    
+    setInlineToolbarVisible(true);
+  }, [editor, showInlineToolbar]);
+
+  const editorStyles = {
+    border: `1px solid ${colors.border.light}`,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.background.elevated,
+    minHeight: '300px',
+    maxHeight: '600px',
+    overflow: 'auto',
+    fontFamily: typography.fontFamily.primary,
+    fontSize: typography.fontSize.base,
+    lineHeight: typography.lineHeight.normal,
+    ...style
+  };
+
+  const editorContentStyles = {
+    padding: spacing.lg,
+    outline: 'none',
+  };
+
+  return (
+    <div style={{ ...editorStyles, position: 'relative' }} className={className} {...props}>
+      <EditorContent 
+        editor={editor} 
+        style={editorContentStyles}
+      />
+      
+      {/* Inline formatting toolbar */}
+      {showInlineToolbar && (
+        <InlineToolbar
+          editor={editor}
+          visible={inlineToolbarVisible}
+          position={inlineToolbarPosition}
+        />
+      )}
+      
+      <style jsx>{`
+        .rich-text-editor {
+          position: relative;
+        }
+        
+        .rich-text-editor .ProseMirror {
+          outline: none;
+          color: ${colors.text.primary};
+        }
+        
+        .rich-text-editor .ProseMirror:focus {
+          outline: none;
+        }
+        
+        .rich-text-editor .ProseMirror p.is-editor-empty:first-child::before {
+          content: attr(data-placeholder);
+          float: left;
+          color: ${colors.text.secondary};
+          pointer-events: none;
+          height: 0;
+        }
+        
+        /* Typography styles */
+        .rich-text-editor h1 {
+          font-size: ${typography.fontSize.xxl};
+          font-weight: ${typography.fontWeight.bold};
+          color: ${colors.text.primary};
+          margin: ${spacing.lg} 0 ${spacing.md} 0;
+          line-height: ${typography.lineHeight.tight};
+        }
+        
+        .rich-text-editor h2 {
+          font-size: ${typography.fontSize.xl};
+          font-weight: ${typography.fontWeight.semibold};
+          color: ${colors.text.primary};
+          margin: ${spacing.lg} 0 ${spacing.md} 0;
+          line-height: ${typography.lineHeight.tight};
+        }
+        
+        .rich-text-editor h3 {
+          font-size: ${typography.fontSize.lg};
+          font-weight: ${typography.fontWeight.semibold};
+          color: ${colors.text.primary};
+          margin: ${spacing.md} 0 ${spacing.sm} 0;
+          line-height: ${typography.lineHeight.tight};
+        }
+        
+        .rich-text-editor p {
+          margin: 0 0 ${spacing.md} 0;
+          line-height: ${typography.lineHeight.normal};
+        }
+        
+        .rich-text-editor strong {
+          font-weight: ${typography.fontWeight.semibold};
+          color: ${colors.text.primary};
+        }
+        
+        .rich-text-editor em {
+          font-style: italic;
+          color: ${colors.text.primary};
+        }
+        
+        .rich-text-editor u {
+          text-decoration: underline;
+          color: ${colors.text.primary};
+        }
+        
+        .rich-text-editor code {
+          background-color: ${colors.background.container};
+          padding: 2px 6px;
+          border-radius: ${borderRadius.sm};
+          font-family: ${typography.fontFamily.mono};
+          font-size: 0.9em;
+          color: ${colors.text.primary};
+        }
+        
+        .rich-text-editor pre {
+          background-color: ${colors.background.container};
+          padding: ${spacing.md};
+          border-radius: ${borderRadius.base};
+          overflow: auto;
+          margin: ${spacing.md} 0;
+        }
+        
+        .rich-text-editor pre code {
+          background: none;
+          padding: 0;
+          font-family: ${typography.fontFamily.mono};
+          font-size: ${typography.fontSize.sm};
+        }
+        
+        .rich-text-editor ul,
+        .rich-text-editor ol {
+          margin: ${spacing.md} 0;
+          padding-left: ${spacing.xl};
+        }
+        
+        .rich-text-editor li {
+          margin: ${spacing.xs} 0;
+          line-height: ${typography.lineHeight.normal};
+        }
+        
+        .rich-text-editor blockquote {
+          border-left: 4px solid ${colors.primary};
+          padding-left: ${spacing.lg};
+          margin: ${spacing.lg} 0;
+          font-style: italic;
+          color: ${colors.text.secondary};
+        }
+        
+        .rich-text-editor .editor-link {
+          color: ${colors.primary};
+          text-decoration: underline;
+        }
+        
+        .rich-text-editor .editor-link:hover {
+          color: ${colors.primaryHover};
+        }
+        
+        .rich-text-editor .editor-image {
+          max-width: 100%;
+          height: auto;
+          border-radius: ${borderRadius.base};
+          margin: ${spacing.md} 0;
+        }
+        
+        .rich-text-editor hr {
+          border: none;
+          border-top: 1px solid ${colors.border.base};
+          margin: ${spacing.xl} 0;
+        }
+        
+        /* Table styles */
+        .rich-text-editor table {
+          border-collapse: collapse;
+          margin: ${spacing.lg} 0;
+          width: 100%;
+        }
+        
+        .rich-text-editor td,
+        .rich-text-editor th {
+          border: 1px solid ${colors.border.base};
+          padding: ${spacing.sm} ${spacing.md};
+          text-align: left;
+          vertical-align: top;
+          min-width: 100px;
+        }
+        
+        .rich-text-editor th {
+          background-color: ${colors.background.container};
+          font-weight: ${typography.fontWeight.semibold};
+          color: ${colors.text.primary};
+        }
+        
+        .rich-text-editor .selectedCell {
+          background-color: ${colors.primary}20;
+        }
+      `}</style>
+    </div>
+  );
+};
+
+export default RichTextEditor;

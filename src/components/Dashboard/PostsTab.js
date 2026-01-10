@@ -23,9 +23,15 @@ import { topicAPI, contentAPI } from '../../services/workflowAPI';
 import SchedulingModal from '../Modals/SchedulingModal';
 import { ComponentHelpers } from '../Workflow/interfaces/WorkflowComponentInterface';
 import MarkdownPreview from '../MarkdownPreview/MarkdownPreview';
+import HTMLPreview from '../HTMLPreview/HTMLPreview';
 import TypographySettings from '../TypographySettings/TypographySettings';
 import FormattingToolbar from '../FormattingToolbar/FormattingToolbar';
 import ExportModal from '../ExportModal/ExportModal';
+
+// New Enhanced Components
+import EditorLayout, { EditorPane, PreviewPane } from '../Editor/Layout/EditorLayout';
+import EditorToolbar from '../Editor/Toolbar/EditorToolbar';
+import RichTextEditor from '../Editor/RichTextEditor/RichTextEditor';
 
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
@@ -124,11 +130,17 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode }) => {
   const [currentDraft, setCurrentDraft] = useState(null);
   const [postState, setPostState] = useState('draft'); // 'draft', 'exported', 'locked'
   
+  // Editor state for TipTap integration
+  const [richTextEditor, setRichTextEditor] = useState(null);
+  
   // Autosave state
   const [isAutosaving, setIsAutosaving] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
   const [lastSavedContent, setLastSavedContent] = useState('');
   const [autosaveError, setAutosaveError] = useState(null);
+  
+  // Enhanced content generation options
+  const [useEnhancedGeneration, setUseEnhancedGeneration] = useState(true);
   
   
   // UI helpers
@@ -347,11 +359,24 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode }) => {
     });
     
     try {
+      const enhancementOptions = {
+        useEnhancedGeneration,
+        goal: contentStrategy.goal,
+        voice: contentStrategy.voice,
+        template: contentStrategy.template,
+        length: contentStrategy.length,
+        includeCaseStudies: true,
+        emphasizeROI: true,
+        includeActionables: true,
+        addStatistics: true
+      };
+
       const result = await contentAPI.generateContent(
         topic, // selectedTopic
         stepResults?.home?.websiteAnalysis || {}, // analysisData
         tabMode.tabWorkflowData?.selectedCustomerStrategy, // selectedStrategy
-        stepResults?.home?.webSearchInsights || {} // webSearchInsights
+        stepResults?.home?.webSearchInsights || {}, // webSearchInsights
+        enhancementOptions // Enhanced generation options
       );
       
       if (result.success) {
@@ -694,6 +719,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode }) => {
       setEditingContent(post.content);
       setContentGenerated(true);
       console.log('🔧 DEBUG: contentGenerated set to true, editorViewMode should show');
+      console.log('🔧 DEBUG: Current state after handleEditPost - contentGenerated:', true, 'editorViewMode:', editorViewMode);
       
       // Restore topic if available
       if (topicData) {
@@ -878,6 +904,16 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode }) => {
     }
   ];
 
+  // Debug logging for component state
+  console.log('🔧 DEBUG: PostsTab render state:', {
+    contentGenerated,
+    editorViewMode,
+    previewMode,
+    tabMode: tabMode.mode,
+    forceWorkflowMode,
+    postsLength: posts.length,
+    currentDraft: !!currentDraft
+  });
 
   // Show simplified interface when no posts exist AND not in workflow mode
   if (posts.length === 0 && !loading && tabMode.mode === 'focus' && !forceWorkflowMode) {
@@ -1272,12 +1308,13 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode }) => {
                 <Card 
                   title={
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span>Edit Your Content {console.log('🔧 DEBUG: Showing enhanced editor buttons')}</span>
+                      <span>Edit Your Content</span>
                       <Space>
                         <Button 
                           type={editorViewMode === 'edit' ? "primary" : "default"}
                           icon={<EditOutlined />}
                           onClick={() => {
+                            console.log('🔧 DEBUG: Edit button clicked, editorViewMode:', editorViewMode);
                             setEditorViewMode('edit');
                             setPreviewMode(false);
                           }}
@@ -1289,6 +1326,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode }) => {
                           type={editorViewMode === 'preview' ? "primary" : "default"}
                           icon={<EyeOutlined />}
                           onClick={() => {
+                            console.log('🔧 DEBUG: Preview button clicked, editorViewMode:', editorViewMode);
                             setEditorViewMode('preview');
                             setPreviewMode(true);
                           }}
@@ -1299,13 +1337,20 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode }) => {
                         <Button 
                           type={editorViewMode === 'split' ? "primary" : "default"}
                           onClick={() => {
+                            console.log('🔧 DEBUG: Split View button clicked, editorViewMode:', editorViewMode);
                             setEditorViewMode('split');
                             setPreviewMode(false);
                           }}
                           size="small"
-                          style={{ marginLeft: '4px' }}
+                          style={{ 
+                            marginLeft: '4px',
+                            backgroundColor: editorViewMode === 'split' ? '#1890ff' : '#52c41a',
+                            borderColor: editorViewMode === 'split' ? '#1890ff' : '#52c41a',
+                            color: 'white',
+                            fontWeight: 'bold'
+                          }}
                         >
-                          Split View
+                          🔀 Split View
                         </Button>
                       </Space>
                     </div>
@@ -1440,6 +1485,39 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode }) => {
                           </Col>
                         </Row>
                       )}
+                      
+                      {/* Enhanced Generation Toggle */}
+                      <div style={{ 
+                          marginTop: '16px', 
+                          padding: '12px',
+                          backgroundColor: '#f0f9ff',
+                          borderRadius: '6px',
+                          border: '1px solid #e0f2fe'
+                        }}>
+                          <div style={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'space-between',
+                            flexWrap: 'wrap',
+                            gap: '8px'
+                          }}>
+                            <div>
+                              <Text strong style={{ fontSize: '14px', color: '#0369a1' }}>
+                                Enhanced AI Generation
+                              </Text>
+                              <div style={{ fontSize: '12px', color: '#0369a1', marginTop: '2px' }}>
+                                Comprehensive context, SEO optimization, strategic CTAs
+                              </div>
+                            </div>
+                            <Switch
+                              checked={useEnhancedGeneration}
+                              onChange={setUseEnhancedGeneration}
+                              checkedChildren="Enhanced"
+                              unCheckedChildren="Standard"
+                              disabled={previewMode}
+                            />
+                          </div>
+                        </div>
                     </div>
                   </div>
                   
@@ -2248,34 +2326,9 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode }) => {
           </div>
         )}
 
-        {/* CONTENT EDITING SECTION - Available in both modes when content is generated */}
+        {/* ENHANCED CONTENT EDITING SECTION - Available in both modes when content is generated */}
         {contentGenerated && (
-          <Card 
-            title={
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span>Edit Your Content</span>
-                <Space>
-                  <Button 
-                    type={previewMode ? "default" : "primary"}
-                    icon={<EditOutlined />}
-                    onClick={() => setPreviewMode(false)}
-                    size="small"
-                  >
-                    Edit
-                  </Button>
-                  <Button 
-                    type={previewMode ? "primary" : "default"}
-                    icon={<EyeOutlined />}
-                    onClick={() => setPreviewMode(true)}
-                    size="small"
-                  >
-                    Preview
-                  </Button>
-                </Space>
-              </div>
-            }
-            style={{ marginBottom: '24px' }}
-          >
+          <div style={{ marginBottom: '24px' }}>
             {selectedTopic && (
               <div style={{ 
                 backgroundColor: '#f6ffed',
@@ -2288,41 +2341,6 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode }) => {
                 <Text style={{ color: '#389e0d' }}>{selectedTopic.title}</Text>
               </div>
             )}
-            
-            {/* Brand Colors Indicator */}
-            <div style={{ 
-              marginBottom: '16px', 
-              padding: '12px', 
-              backgroundColor: defaultColors.secondary + '20', 
-              borderRadius: '6px' 
-            }}>
-              <Text strong style={{ color: defaultColors.primary }}>
-                Content styled with your brand colors:
-              </Text>
-              <Space style={{ marginLeft: '12px' }}>
-                <div style={{ 
-                  display: 'inline-block', 
-                  width: '16px', 
-                  height: '16px', 
-                  backgroundColor: defaultColors.primary,
-                  borderRadius: '2px' 
-                }} />
-                <div style={{ 
-                  display: 'inline-block', 
-                  width: '16px', 
-                  height: '16px', 
-                  backgroundColor: defaultColors.secondary,
-                  borderRadius: '2px' 
-                }} />
-                <div style={{ 
-                  display: 'inline-block', 
-                  width: '16px', 
-                  height: '16px', 
-                  backgroundColor: defaultColors.accent,
-                  borderRadius: '2px' 
-                }} />
-              </Space>
-            </div>
 
             {/* Content Strategy Panel */}
             <div style={{ 
@@ -2441,35 +2459,61 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode }) => {
               </div>
             </div>
             
-            {previewMode ? (
-              // Preview Mode
-              <div style={{ 
-                border: '1px solid #f0f0f0',
-                borderRadius: '6px',
-                padding: '20px',
-                backgroundColor: '#fafafa',
-                minHeight: '400px'
-              }}>
-                <div 
-                  style={{ 
-                    whiteSpace: 'pre-wrap',
-                    lineHeight: '1.6',
-                    fontSize: '14px'
-                  }}
-                >
-                  {editingContent || 'No content generated yet.'}
-                </div>
-              </div>
-            ) : (
-              // Edit Mode
-              <TextArea
-                value={editingContent}
-                onChange={(e) => handleContentChange(e.target.value)}
-                placeholder="Your generated content will appear here for editing..."
-                rows={20}
-                style={{ fontSize: '14px', lineHeight: '1.6' }}
+            {/* ENHANCED MODERN EDITOR SECTION */}
+            <EditorLayout 
+              mode={editorViewMode}
+              onModeChange={setEditorViewMode}
+              toolbarContent={
+                <EditorToolbar 
+                  editor={richTextEditor}
+                  content={editingContent}
+                  onInsert={handleTextInsert}
+                />
+              }
+            >
+              {editorViewMode === 'split' ? (
+                <>
+                  <EditorPane>
+                    <RichTextEditor
+                      content={editingContent}
+                      onChange={handleContentChange}
+                      onEditorReady={setRichTextEditor}
+                      placeholder="Your generated content will appear here for editing..."
+                    />
+                  </EditorPane>
+                  <PreviewPane>
+                    <HTMLPreview 
+                      content={editingContent || 'No content generated yet.'}
+                      typographySettings={typography}
+                    />
+                  </PreviewPane>
+                </>
+              ) : editorViewMode === 'preview' ? (
+                <PreviewPane>
+                  <HTMLPreview 
+                    content={editingContent || 'No content generated yet.'}
+                    typographySettings={typography}
+                  />
+                </PreviewPane>
+              ) : (
+                <EditorPane>
+                  <RichTextEditor
+                    content={editingContent}
+                    onChange={handleContentChange}
+                    onEditorReady={setRichTextEditor}
+                    placeholder="Your generated content will appear here for editing..."
+                  />
+                </EditorPane>
+              )}
+            </EditorLayout>
+            
+            {/* Typography Settings Panel */}
+            <div style={{ marginTop: '20px', marginBottom: '20px' }}>
+              <TypographySettings 
+                typography={typography}
+                onTypographyChange={handleTypographyChange}
               />
-            )}
+            </div>
             
             {/* Action Buttons */}
             <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'space-between' }}>
@@ -2494,6 +2538,12 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode }) => {
                   autosaveError={autosaveError}
                 />
                 <Button 
+                  icon={<ExportOutlined />}
+                  onClick={() => setShowExportModal(true)}
+                >
+                  Export
+                </Button>
+                <Button 
                   type="default"
                   onClick={handleClosePost}
                 >
@@ -2501,7 +2551,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode }) => {
                 </Button>
               </Space>
             </div>
-          </Card>
+          </div>
         )}
         </div>
       )}

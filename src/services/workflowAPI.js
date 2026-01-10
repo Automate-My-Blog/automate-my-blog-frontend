@@ -1,4 +1,5 @@
 import autoBlogAPI from './api';
+import enhancedContentAPI from './enhancedContentAPI';
 
 /**
  * Workflow API Service Layer
@@ -223,11 +224,46 @@ export const contentAPI = {
    * @param {Object} analysisData - Website analysis results
    * @param {Object} selectedStrategy - Customer strategy (optional)
    * @param {Object} webSearchInsights - Research insights
+   * @param {Object} enhancementOptions - Enhancement options for content generation
    * @returns {Promise<Object>} Generated content
    */
-  async generateContent(selectedTopic, analysisData, selectedStrategy = null, webSearchInsights = {}) {
+  async generateContent(selectedTopic, analysisData, selectedStrategy = null, webSearchInsights = {}, enhancementOptions = {}) {
     try {
-      // Build context prompt based on selected strategy
+      // Check if enhanced content generation is requested
+      if (enhancementOptions.useEnhancedGeneration) {
+        console.log('🚀 Using enhanced content generation with comprehensive context');
+        console.log('🔍 Enhancement options:', enhancementOptions);
+        console.log('🎯 Strategy provided:', !!selectedStrategy);
+        
+        const enhancedResult = await enhancedContentAPI.generateEnhancedContent(
+          selectedTopic,
+          analysisData,
+          selectedStrategy,
+          enhancementOptions
+        );
+        
+        if (enhancedResult.success) {
+          return {
+            success: true,
+            content: enhancedResult.content,
+            blogPost: {
+              content: enhancedResult.content,
+              ...enhancedResult.enhancedMetadata
+            },
+            enhancedMetadata: enhancedResult.enhancedMetadata,
+            generationContext: enhancedResult.generationContext,
+            strategicCTAs: enhancedResult.strategicCTAs,
+            selectedTopic: selectedTopic
+          };
+        } else if (enhancedResult.fallbackAvailable) {
+          console.log('⚠️ Enhanced generation failed, falling back to standard generation');
+          console.log('📝 Fallback reason:', enhancedResult.error);
+        } else {
+          return enhancedResult;
+        }
+      }
+
+      // Standard content generation (fallback or default)
       const contextPrompt = selectedStrategy ? 
         `Focus on ${selectedStrategy.customerProblem}. Target customers who search for: ${selectedStrategy.customerLanguage?.join(', ') || 'relevant terms'}. Make this content align with the business goal: ${selectedStrategy.conversionPath}. ${webSearchInsights.researchQuality === 'enhanced' ? 'Enhanced with web research insights including competitive analysis and current market keywords.' : ''}` :
         `Make this engaging and actionable for the target audience. ${webSearchInsights.researchQuality === 'enhanced' ? 'Enhanced with web research insights including brand guidelines and keyword analysis.' : ''}`;
