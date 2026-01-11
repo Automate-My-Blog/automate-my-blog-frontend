@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, Button, Row, Col, Typography, Tag, Space, Select, Input, message } from 'antd';
 import { 
   EyeOutlined,
@@ -6,9 +6,18 @@ import {
   DatabaseOutlined,
   ReloadOutlined,
   LockOutlined,
-  CheckOutlined
+  CheckOutlined,
+  TrophyOutlined,
+  ThunderboltOutlined
 } from '@ant-design/icons';
 import { ComponentHelpers } from '../interfaces/WorkflowComponentInterface';
+
+// Modern Editor Components
+import EditorLayout, { EditorPane, PreviewPane } from '../../Editor/Layout/EditorLayout';
+import EditorToolbar from '../../Editor/Toolbar/EditorToolbar';
+import RichTextEditor from '../../Editor/RichTextEditor/RichTextEditor';
+import SEOAnalysis from '../../SEOAnalysis/SEOAnalysis';
+import HTMLPreview from '../../HTMLPreview/HTMLPreview';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -85,6 +94,12 @@ const ContentEditingStepV2 = (props) => {
   const defaultColors = getDefaultColors();
   const analysis = stepResults?.websiteAnalysis || {};
 
+  // Modern Editor State
+  const [editorViewMode, setEditorViewMode] = useState('edit'); // 'edit', 'preview', 'split'
+  const [richTextEditor, setRichTextEditor] = useState(null);
+  const [seoAnalysisVisible, setSeoAnalysisVisible] = useState(false);
+  const [showComprehensiveAnalysis, setShowComprehensiveAnalysis] = useState(false);
+
   // Helper to determine if user can edit post
   const canEditPost = () => user || demoMode;
 
@@ -112,11 +127,22 @@ const ContentEditingStepV2 = (props) => {
   };
 
   /**
-   * Handle preview/edit mode toggle
+   * Handle editor view mode changes (edit/preview/split)
+   * Updated for modern editor with three-mode support
+   */
+  const handleEditorModeChange = (mode) => {
+    setEditorViewMode(mode);
+    // Update legacy previewMode for backward compatibility
+    setPreviewMode(mode === 'preview' || mode === 'split');
+  };
+
+  /**
+   * Legacy toggle function for backward compatibility
    * EXTRACTED FROM: App.js setPreviewMode toggle logic
    */
   const togglePreviewMode = () => {
-    setPreviewMode(!previewMode);
+    const nextMode = editorViewMode === 'edit' ? 'preview' : 'edit';
+    handleEditorModeChange(nextMode);
   };
 
   /**
@@ -219,17 +245,44 @@ const ContentEditingStepV2 = (props) => {
         )}
       </div>
       <Space size={responsive.isMobile ? 'small' : 'middle'}>
-        <Button 
-          icon={<EyeOutlined />} 
-          onClick={togglePreviewMode}
-          type={previewMode ? 'primary' : 'default'}
-          style={previewMode ? {
-            backgroundColor: defaultColors.primary,
-            borderColor: defaultColors.primary
-          } : {}}
-        >
-          {previewMode ? 'Edit Mode' : 'Preview Mode'}
-        </Button>
+        {/* Modern Three-Mode Editor Buttons */}
+        <Space size="small">
+          <Button
+            icon={<EditOutlined />}
+            onClick={() => handleEditorModeChange('edit')}
+            type={editorViewMode === 'edit' ? 'primary' : 'default'}
+            size="small"
+            style={editorViewMode === 'edit' ? {
+              backgroundColor: defaultColors.primary,
+              borderColor: defaultColors.primary
+            } : {}}
+          >
+            Edit
+          </Button>
+          <Button
+            icon={<EyeOutlined />}
+            onClick={() => handleEditorModeChange('preview')}
+            type={editorViewMode === 'preview' ? 'primary' : 'default'}
+            size="small"
+            style={editorViewMode === 'preview' ? {
+              backgroundColor: defaultColors.primary,
+              borderColor: defaultColors.primary
+            } : {}}
+          >
+            Preview
+          </Button>
+          <Button
+            onClick={() => handleEditorModeChange('split')}
+            type={editorViewMode === 'split' ? 'primary' : 'default'}
+            size="small"
+            style={editorViewMode === 'split' ? {
+              backgroundColor: defaultColors.primary,
+              borderColor: defaultColors.primary
+            } : {}}
+          >
+            🔀 Split
+          </Button>
+        </Space>
         
         {user && (
           <Button 
@@ -570,45 +623,103 @@ const ContentEditingStepV2 = (props) => {
   };
 
   /**
-   * Render content area (preview or edit)
-   * EXTRACTED FROM: App.js content editing area
+   * Render modern content editor with rich text and SEO analysis
+   * Updated with EditorLayout, RichTextEditor, and comprehensive analysis
    */
   const renderContentArea = () => (
     <div>
-      {previewMode ? (
-        <div style={{ minHeight: '600px' }}>
-          <Title level={4} style={{ marginBottom: '16px', color: defaultColors.primary }}>
-            Styled Preview
-          </Title>
-          {/* Note: renderStyledContent would be implemented separately */}
-          <div style={{ 
-            padding: '20px', 
-            backgroundColor: '#fafafa', 
-            borderRadius: '8px',
-            fontFamily: 'serif',
-            lineHeight: '1.6'
-          }}>
-            <div style={{ 
-              whiteSpace: 'pre-wrap',
-              fontSize: responsive.fontSize.text
-            }}>
-              {generatedContent || 'Generated content will appear here...'}
-            </div>
-          </div>
+      {/* SEO Analysis Toggle */}
+      {generatedContent && generatedContent.length >= 200 && (
+        <div style={{ marginBottom: '16px' }}>
+          <Space size="middle">
+            <Button
+              icon={<TrophyOutlined />}
+              onClick={() => setSeoAnalysisVisible(!seoAnalysisVisible)}
+              type={seoAnalysisVisible ? 'primary' : 'default'}
+              size="small"
+            >
+              {seoAnalysisVisible ? 'Hide Analysis' : 'Show SEO Analysis'}
+            </Button>
+            {seoAnalysisVisible && (
+              <Button
+                icon={<ThunderboltOutlined />}
+                onClick={() => setShowComprehensiveAnalysis(!showComprehensiveAnalysis)}
+                type={showComprehensiveAnalysis ? 'primary' : 'default'}
+                size="small"
+              >
+                {showComprehensiveAnalysis ? 'Basic' : 'Comprehensive'}
+              </Button>
+            )}
+          </Space>
         </div>
-      ) : (
-        <div>
-          <Title level={4} style={{ marginBottom: '16px' }}>Edit Content</Title>
-          <TextArea
-            value={generatedContent}
-            onChange={handleContentChange}
-            rows={25}
-            style={{ fontFamily: 'monospace', fontSize: '14px' }}
-            placeholder="Your generated content will appear here..."
-            disabled={isPostLocked()}
+      )}
+
+      {/* SEO Analysis Panel */}
+      {seoAnalysisVisible && generatedContent && generatedContent.length >= 200 && (
+        <div style={{ marginBottom: '20px' }}>
+          <SEOAnalysis
+            content={generatedContent}
+            context={{
+              businessType: analysis.businessType,
+              targetAudience: analysis.targetAudience,
+              primaryKeywords: [],
+              businessGoals: 'Generate more customers through content'
+            }}
+            postId={null} // Will be set once post is saved
+            style={{ marginBottom: '16px' }}
           />
         </div>
       )}
+
+      {/* Modern Editor Layout */}
+      <EditorLayout
+        mode={editorViewMode}
+        onModeChange={handleEditorModeChange}
+        minHeight="600px"
+      >
+        {/* Editor Pane */}
+        <EditorPane>
+          <div style={{ position: 'relative', height: '100%' }}>
+            <EditorToolbar
+              editor={richTextEditor}
+              onBold={() => richTextEditor?.chain().focus().toggleBold().run()}
+              onItalic={() => richTextEditor?.chain().focus().toggleItalic().run()}
+              onUnderline={() => richTextEditor?.chain().focus().toggleUnderline().run()}
+              onHeading={(level) => richTextEditor?.chain().focus().toggleHeading({ level }).run()}
+            />
+            <RichTextEditor
+              value={generatedContent}
+              onChange={handleContentChange}
+              placeholder="Your generated content will appear here..."
+              disabled={isPostLocked()}
+              onEditorReady={(editor) => setRichTextEditor(editor)}
+              minHeight="500px"
+              style={{ 
+                marginTop: '8px',
+                fontSize: '14px' 
+              }}
+            />
+          </div>
+        </EditorPane>
+
+        {/* Preview Pane */}
+        <PreviewPane>
+          <Title level={4} style={{ marginBottom: '16px', color: defaultColors.primary }}>
+            Styled Preview
+          </Title>
+          <HTMLPreview
+            content={generatedContent}
+            style={{
+              minHeight: '500px',
+              padding: '20px',
+              backgroundColor: '#fafafa',
+              borderRadius: '8px',
+              fontFamily: 'serif',
+              lineHeight: '1.6'
+            }}
+          />
+        </PreviewPane>
+      </EditorLayout>
     </div>
   );
 

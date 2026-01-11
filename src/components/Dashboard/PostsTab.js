@@ -11,7 +11,8 @@ import {
   CheckOutlined,
   ReloadOutlined,
   LockOutlined,
-  TeamOutlined
+  TeamOutlined,
+  TrophyOutlined
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTabMode } from '../../hooks/useTabMode';
@@ -32,6 +33,7 @@ import ExportModal from '../ExportModal/ExportModal';
 import EditorLayout, { EditorPane, PreviewPane } from '../Editor/Layout/EditorLayout';
 import EditorToolbar from '../Editor/Toolbar/EditorToolbar';
 import RichTextEditor from '../Editor/RichTextEditor/RichTextEditor';
+import SEOAnalysis from '../SEOAnalysis/SEOAnalysis';
 
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
@@ -142,6 +144,9 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode }) => {
   // Enhanced content generation options
   const [useEnhancedGeneration, setUseEnhancedGeneration] = useState(true);
   
+  // Enhanced metadata from content generation
+  const [enhancedMetadata, setEnhancedMetadata] = useState(null);
+  const [seoAnalysisVisible, setSeoAnalysisVisible] = useState(false);
   
   // UI helpers
   const responsive = ComponentHelpers.getResponsiveStyles();
@@ -382,6 +387,33 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode }) => {
       if (result.success) {
         setEditingContent(result.content);
         setContentGenerated(true);
+        
+        // Store enhanced metadata if available
+        console.log('🔍 DEBUG: Generation result structure:', {
+          hasResult: !!result,
+          resultKeys: result ? Object.keys(result) : [],
+          hasEnhancedMetadata: !!result.enhancedMetadata,
+          hasSeoAnalysis: !!result.seoAnalysis,
+          hasContentQuality: !!result.contentQuality,
+          useEnhancedGeneration,
+          enhancementOptions
+        });
+        
+        if (result.enhancedMetadata || result.seoAnalysis) {
+          const metadata = {
+            seoAnalysis: result.seoAnalysis,
+            contentQuality: result.contentQuality,
+            strategicElements: result.strategicElements,
+            improvementSuggestions: result.improvementSuggestions,
+            keywordOptimization: result.keywordOptimization,
+            generationContext: result.generationContext
+          };
+          setEnhancedMetadata(metadata);
+          setSeoAnalysisVisible(true); // Show analysis by default for enhanced generation
+          console.log('📊 Enhanced metadata captured:', metadata);
+        } else {
+          console.log('⚠️ No enhanced metadata found in result');
+        }
         
         // Create initial post in database immediately
         const initialPost = {
@@ -904,16 +936,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode }) => {
     }
   ];
 
-  // Debug logging for component state
-  console.log('🔧 DEBUG: PostsTab render state:', {
-    contentGenerated,
-    editorViewMode,
-    previewMode,
-    tabMode: tabMode.mode,
-    forceWorkflowMode,
-    postsLength: posts.length,
-    currentDraft: !!currentDraft
-  });
+  // Component state tracking (debug logging removed to prevent infinite loops)
 
   // Show simplified interface when no posts exist AND not in workflow mode
   if (posts.length === 0 && !loading && tabMode.mode === 'focus' && !forceWorkflowMode) {
@@ -1371,7 +1394,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode }) => {
                   )}
                   
                   {/* Enhanced Generation Toggle - Standalone Panel */}
-                  {console.log('🔧 DEBUG: Rendering Enhanced Generation Toggle', { useEnhancedGeneration, selectedTopic: !!selectedTopic })}
+                  {console.log('🔧 DEBUG: Rendering Enhanced Generation Toggle', { useEnhancedGeneration, selectedTopic: !!selectedTopic }) && null}
                   <div style={{ 
                     marginBottom: '20px',
                     padding: '16px',
@@ -2341,6 +2364,54 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode }) => {
               </div>
             )}
 
+            {/* Enhanced Generation Toggle - Main Section */}
+            <div style={{ 
+              marginBottom: '20px',
+              padding: '16px',
+              backgroundColor: '#f0f9ff',
+              borderRadius: '8px',
+              border: '1px solid #e0f2fe'
+            }}>
+              <div style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '8px'
+              }}>
+                <div>
+                  <Text strong style={{ fontSize: '14px', color: '#0369a1' }}>
+                    Enhanced AI Generation
+                  </Text>
+                  <div style={{ fontSize: '12px', color: '#0369a1', marginTop: '2px' }}>
+                    Comprehensive context, SEO optimization, strategic CTAs
+                  </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  {editingContent && editingContent.length >= 200 && (
+                    <Button
+                      size="small"
+                      type={seoAnalysisVisible ? "primary" : "default"}
+                      icon={<TrophyOutlined />}
+                      onClick={() => setSeoAnalysisVisible(!seoAnalysisVisible)}
+                      style={{
+                        fontSize: '12px',
+                        height: '28px'
+                      }}
+                    >
+                      {seoAnalysisVisible ? 'Hide Analysis' : 'Show SEO Analysis'}
+                    </Button>
+                  )}
+                  <Switch
+                    checked={useEnhancedGeneration}
+                    onChange={setUseEnhancedGeneration}
+                    checkedChildren="Enhanced"
+                    unCheckedChildren="Standard"
+                  />
+                </div>
+              </div>
+            </div>
+
             {/* Content Strategy Panel */}
             <div style={{ 
               marginBottom: '20px',
@@ -2506,13 +2577,36 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode }) => {
               )}
             </EditorLayout>
             
-            {/* Typography Settings Panel */}
-            <div style={{ marginTop: '20px', marginBottom: '20px' }}>
+            {/* Typography Settings Panel - Temporarily disabled to fix infinite loop */}
+            {/* <div style={{ marginTop: '20px', marginBottom: '20px' }}>
               <TypographySettings 
                 typography={typography}
                 onTypographyChange={handleTypographyChange}
               />
-            </div>
+            </div> */}
+
+            {/* SEO Analysis Panel - Available for all content */}
+            {seoAnalysisVisible && editingContent && editingContent.length >= 200 && (
+              <div style={{ marginBottom: '20px' }}>
+                <SEOAnalysis
+                  // Pass basic metadata if available (for newly generated content)
+                  seoAnalysis={enhancedMetadata?.seoAnalysis}
+                  contentQuality={enhancedMetadata?.contentQuality}
+                  strategicElements={enhancedMetadata?.strategicElements}
+                  improvementSuggestions={enhancedMetadata?.improvementSuggestions}
+                  keywordOptimization={enhancedMetadata?.keywordOptimization}
+                  // Enable comprehensive analysis for all content (new and existing)
+                  content={editingContent}
+                  context={{
+                    businessType: selectedTopic?.businessType || currentDraft?.topic?.businessType || 'Business',
+                    targetAudience: selectedTopic?.targetAudience || currentDraft?.topic?.targetAudience || 'General audience',
+                    primaryKeywords: [],
+                    businessGoals: 'Generate more customers through content'
+                  }}
+                  postId={currentDraft?.id || null}
+                />
+              </div>
+            )}
             
             {/* Action Buttons */}
             <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'space-between' }}>
@@ -2599,26 +2693,80 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode }) => {
                 </div>
               )}
               
-              {/* Content Editor */}
-              {previewMode ? (
-                <div 
-                  style={{ 
-                    minHeight: '400px',
-                    border: '1px solid #e8e8e8',
-                    borderRadius: '6px',
-                    padding: '20px',
-                    backgroundColor: '#fafafa'
-                  }}
-                  dangerouslySetInnerHTML={{ __html: editingContent.replace(/\n/g, '<br>') }}
-                />
-              ) : (
-                <TextArea
-                  value={editingContent}
-                  onChange={(e) => handleContentChange(e.target.value)}
-                  style={{ minHeight: '400px', fontSize: '14px' }}
-                  placeholder="Enter your blog content..."
-                />
+              {/* SEO Analysis Toggle */}
+              {editingContent && editingContent.length >= 200 && (
+                <div style={{ marginBottom: '16px' }}>
+                  <Space size="middle">
+                    <Button
+                      icon={<TrophyOutlined />}
+                      onClick={() => setSeoAnalysisVisible(!seoAnalysisVisible)}
+                      type={seoAnalysisVisible ? 'primary' : 'default'}
+                      size="small"
+                    >
+                      {seoAnalysisVisible ? 'Hide Analysis' : 'Show SEO Analysis'}
+                    </Button>
+                  </Space>
+                </div>
               )}
+
+              {/* SEO Analysis Panel */}
+              {seoAnalysisVisible && editingContent && editingContent.length >= 200 && (
+                <div style={{ marginBottom: '20px' }}>
+                  <SEOAnalysis
+                    content={editingContent}
+                    context={{
+                      businessType: selectedTopic?.businessType || currentDraft?.topic?.businessType || 'Business',
+                      targetAudience: selectedTopic?.targetAudience || currentDraft?.topic?.targetAudience || 'General audience',
+                      primaryKeywords: [],
+                      businessGoals: 'Generate more customers through content'
+                    }}
+                    postId={currentDraft?.id || null}
+                  />
+                </div>
+              )}
+
+              {/* Modern Content Editor */}
+              <EditorLayout
+                mode={previewMode ? 'preview' : 'edit'}
+                onModeChange={(mode) => setPreviewMode(mode === 'preview')}
+                minHeight="400px"
+              >
+                {previewMode ? (
+                  <PreviewPane>
+                    <HTMLPreview
+                      content={editingContent || 'Enter your blog content...'}
+                      style={{
+                        minHeight: '400px',
+                        padding: '20px',
+                        backgroundColor: '#fafafa'
+                      }}
+                    />
+                  </PreviewPane>
+                ) : (
+                  <EditorPane>
+                    <div style={{ position: 'relative', height: '100%' }}>
+                      <EditorToolbar
+                        editor={richTextEditor}
+                        onBold={() => richTextEditor?.chain().focus().toggleBold().run()}
+                        onItalic={() => richTextEditor?.chain().focus().toggleItalic().run()}
+                        onUnderline={() => richTextEditor?.chain().focus().toggleUnderline().run()}
+                        onHeading={(level) => richTextEditor?.chain().focus().toggleHeading({ level }).run()}
+                      />
+                      <RichTextEditor
+                        content={editingContent}
+                        onChange={handleContentChange}
+                        onEditorReady={setRichTextEditor}
+                        placeholder="Enter your blog content..."
+                        minHeight="400px"
+                        style={{ 
+                          marginTop: '8px',
+                          fontSize: '14px' 
+                        }}
+                      />
+                    </div>
+                  </EditorPane>
+                )}
+              </EditorLayout>
               
               {/* Content Actions */}
               <div style={{ 

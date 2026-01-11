@@ -191,6 +191,479 @@ class AutoBlogAPI {
   }
 
   /**
+   * Generate enhanced content with comprehensive metadata and SEO analysis
+   * Returns structured response with content, SEO data, quality metrics, and suggestions
+   */
+  async generateEnhancedContent(enhancedPayload) {
+    try {
+      const response = await this.makeRequest('/api/generate-enhanced-content', {
+        method: 'POST',
+        body: JSON.stringify(enhancedPayload),
+      });
+
+      // If backend returns enhanced structure, return it directly
+      if (response.blogPost && response.metadata) {
+        return {
+          blogPost: response.blogPost,
+          enhancedMetadata: response.metadata,
+          seoAnalysis: response.seoAnalysis,
+          contentQuality: response.contentQuality,
+          strategicElements: response.strategicElements,
+          improvementSuggestions: response.improvementSuggestions,
+          keywordOptimization: response.keywordOptimization
+        };
+      }
+
+      // Fallback to standard endpoint with client-side enhancement
+      return this.generateContentWithClientEnhancement(enhancedPayload);
+    } catch (error) {
+      console.log('Enhanced endpoint not available, falling back to client-side enhancement');
+      return this.generateContentWithClientEnhancement(enhancedPayload);
+    }
+  }
+
+  /**
+   * Generate content with client-side enhancement when backend enhanced endpoint is not available
+   */
+  async generateContentWithClientEnhancement(enhancedPayload) {
+    try {
+      // Use existing generateContent with enhanced instructions
+      const fallbackInstructions = this.buildEnhancedInstructions(
+        enhancedPayload.comprehensiveContext, 
+        enhancedPayload.strategicCTAs
+      );
+
+      const standardResponse = await this.generateContent(
+        enhancedPayload.topic,
+        enhancedPayload.businessInfo,
+        fallbackInstructions
+      );
+
+      // Generate client-side metadata analysis with AI enhancement
+      const enhancedMetadata = await this.generateClientSideMetadata(
+        standardResponse, 
+        enhancedPayload.comprehensiveContext
+      );
+
+      return {
+        blogPost: standardResponse,
+        enhancedMetadata: enhancedMetadata,
+        seoAnalysis: enhancedMetadata.seoAnalysis,
+        contentQuality: enhancedMetadata.contentQuality,
+        strategicElements: enhancedMetadata.strategicElements,
+        improvementSuggestions: enhancedMetadata.improvementSuggestions,
+        keywordOptimization: enhancedMetadata.keywordOptimization
+      };
+    } catch (error) {
+      throw new Error(`Enhanced content generation failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * Build enhanced instructions for fallback generation
+   */
+  buildEnhancedInstructions(comprehensiveContext, strategicCTAs) {
+    const instructions = [];
+
+    // Business context
+    if (comprehensiveContext.businessContext) {
+      instructions.push(`Business Context: ${comprehensiveContext.businessContext.industryType} company focused on ${comprehensiveContext.businessContext.businessObjectives}. Brand voice: ${comprehensiveContext.businessContext.brandTone}.`);
+    }
+
+    // SEO requirements
+    if (comprehensiveContext.seoInstructions?.primaryKeywords?.length > 0) {
+      instructions.push(`SEO Focus: Target keywords: ${comprehensiveContext.seoInstructions.primaryKeywords.join(', ')}. Include these naturally throughout the content.`);
+    }
+
+    // Formatting requirements
+    instructions.push(`Format: IMPORTANT - Use clean markdown formatting with proper headings (## for main sections, ### for subsections), bullet points (-), numbered lists (1., 2., 3.), and paragraph breaks. Add blank lines between sections.`);
+
+    // Strategic CTAs
+    if (strategicCTAs) {
+      instructions.push(`Strategic CTAs: Include "${strategicCTAs.primary}" as primary CTA. Place CTAs ${strategicCTAs.placement?.join(' and ') || 'at end of content'}.`);
+    }
+
+    return instructions.join(' ');
+  }
+
+  /**
+   * Generate client-side metadata analysis for enhanced response
+   * Hybrid approach: Fast metrics + OpenAI educational explanations
+   */
+  async generateClientSideMetadata(content, comprehensiveContext) {
+    const contentText = content?.content || content || '';
+    const wordCount = contentText.split(/\s+/).length;
+    const sentences = contentText.split(/[.!?]+/).length;
+    const paragraphs = contentText.split(/\n\s*\n/).length;
+
+    // Fast client-side metrics (instant)
+    const fastMetrics = {
+      generationTimestamp: new Date().toISOString(),
+      contentStrategy: comprehensiveContext.contentStrategy,
+      
+      seoAnalysis: {
+        wordCount: wordCount,
+        headingStructure: this.analyzeHeadings(contentText),
+        keywordDensity: this.analyzeKeywordDensity(contentText, comprehensiveContext.seoInstructions?.primaryKeywords || []),
+        readabilityScore: this.calculateReadabilityScore(contentText, sentences, wordCount),
+        metaDescription: this.extractMetaDescription(contentText),
+        internalLinkOpportunities: this.identifyLinkOpportunities(contentText)
+      },
+
+      contentQuality: {
+        overallScore: this.calculateQualityScore(wordCount, sentences, paragraphs),
+        structureScore: this.analyzeStructure(contentText),
+        engagementScore: this.analyzeEngagement(contentText),
+        clarityScore: this.analyzeClarity(contentText, sentences, wordCount),
+        actionabilityScore: this.analyzeActionability(contentText)
+      },
+
+      strategicElements: {
+        ctaPresence: this.detectCTAs(contentText),
+        valuePropositions: this.extractValueProps(contentText),
+        credibilitySignals: this.detectCredibilitySignals(contentText),
+        emotionalHooks: this.detectEmotionalHooks(contentText)
+      },
+
+      improvementSuggestions: this.generateImprovementSuggestions(contentText, wordCount, comprehensiveContext),
+
+      keywordOptimization: this.analyzeKeywordOptimization(contentText, comprehensiveContext.seoInstructions?.primaryKeywords || [])
+    };
+
+    // Try to enhance with OpenAI explanations
+    try {
+      console.log('📊 Enhancing SEO analysis with AI educational explanations...');
+      const enhancedMetadata = await this.enhanceMetadataWithOpenAI(contentText, fastMetrics, comprehensiveContext);
+      
+      // Merge enhanced explanations with fast metrics
+      return {
+        ...fastMetrics,
+        ...enhancedMetadata,
+        aiAnalysisComplete: true
+      };
+    } catch (error) {
+      console.log('📊 OpenAI enhancement failed, using client-side analysis only:', error.message);
+      return fastMetrics;
+    }
+  }
+
+  /**
+   * Enhance metadata with OpenAI educational explanations
+   */
+  async enhanceMetadataWithOpenAI(contentText, fastMetrics, comprehensiveContext) {
+    try {
+      const analysisPrompt = this.buildSEOAnalysisPrompt(contentText, fastMetrics, comprehensiveContext);
+      
+      const response = await this.makeRequest('/api/generate-content', {
+        method: 'POST',
+        body: JSON.stringify({
+          topic: { title: 'SEO Analysis', subheader: 'Educational SEO analysis and content insights' },
+          businessInfo: {},
+          prompt: analysisPrompt
+        }),
+      });
+
+      if (response && response.blogPost && response.blogPost.content) {
+        return this.parseSEOAnalysisResponse(response.blogPost.content, fastMetrics);
+      }
+      
+      return {};
+    } catch (error) {
+      throw new Error(`OpenAI SEO analysis failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * Build specialized prompt for SEO analysis
+   */
+  buildSEOAnalysisPrompt(contentText, metrics, comprehensiveContext) {
+    const primaryKeywords = comprehensiveContext.seoInstructions?.primaryKeywords || [];
+    
+    return `You are an expert SEO educator helping someone understand why their blog post will rank well on Google. Analyze this blog post content and provide educational, specific explanations.
+
+BLOG POST CONTENT:
+"""
+${contentText.substring(0, 2000)}${contentText.length > 2000 ? '...' : ''}
+"""
+
+CURRENT METRICS:
+- Word Count: ${metrics.seoAnalysis.wordCount}
+- Readability Score: ${metrics.seoAnalysis.readabilityScore}
+- Headings: ${metrics.seoAnalysis.headingStructure.h2} H2s, ${metrics.seoAnalysis.headingStructure.h3} H3s
+- Primary Keywords: ${primaryKeywords.join(', ') || 'None specified'}
+
+INSTRUCTIONS:
+1. Find specific examples from the actual blog post content
+2. Explain WHY each element helps with Google ranking
+3. Use an encouraging, educational tone that makes them excited about their content quality
+4. Be specific - quote actual phrases from their content
+5. Assume they know nothing about SEO
+
+Please provide analysis in this JSON format:
+{
+  "seoStrengths": "Explain what's working well with specific examples from their content and why Google likes it",
+  "contentQualityHighlights": "Point out specific phrases or sections that increase engagement with explanations",
+  "strategicElementsFound": "Identify emotional language, credibility signals, or CTAs with actual quotes",
+  "specificImprovements": ["List of 3-4 specific, actionable improvements with examples"],
+  "whyThisRanksWell": "Compelling explanation of why this content will perform well in search results"
+}`;
+  }
+
+  /**
+   * Parse OpenAI SEO analysis response and merge with fast metrics
+   */
+  parseSEOAnalysisResponse(aiResponse, fastMetrics) {
+    console.log('🔍 Raw OpenAI response:', aiResponse);
+    console.log('🔍 Response length:', aiResponse?.length || 0);
+    console.log('🔍 Response type:', typeof aiResponse);
+    
+    try {
+      // Extract JSON from AI response
+      const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
+      console.log('🔍 JSON regex match found:', !!jsonMatch);
+      
+      if (!jsonMatch) {
+        console.log('🔍 No JSON pattern found in response');
+        throw new Error('No valid JSON found in response');
+      }
+      
+      console.log('🔍 Extracted JSON string:', jsonMatch[0]);
+      const analysis = JSON.parse(jsonMatch[0]);
+      console.log('🔍 Parsed analysis object:', analysis);
+      
+      return {
+        seoAnalysis: {
+          ...fastMetrics.seoAnalysis,
+          aiExplanation: analysis.seoStrengths,
+          whyItRanks: analysis.whyThisRanksWell
+        },
+        contentQuality: {
+          ...fastMetrics.contentQuality,
+          aiExplanation: analysis.contentQualityHighlights
+        },
+        strategicElements: {
+          ...fastMetrics.strategicElements,
+          aiExplanation: analysis.strategicElementsFound
+        },
+        improvementSuggestions: [
+          ...fastMetrics.improvementSuggestions,
+          ...(analysis.specificImprovements || [])
+        ],
+        aiAnalysisComplete: true
+      };
+    } catch (error) {
+      console.log('🔍 Parsing failed:', error.message);
+      return {};
+    }
+  }
+
+  // Helper methods for metadata analysis
+  analyzeHeadings(content) {
+    const headings = {
+      h1: (content.match(/^# /gm) || []).length,
+      h2: (content.match(/^## /gm) || []).length,
+      h3: (content.match(/^### /gm) || []).length
+    };
+    return {
+      ...headings,
+      total: headings.h1 + headings.h2 + headings.h3,
+      hierarchy: headings.h2 > 0 ? 'Good' : 'Needs Improvement'
+    };
+  }
+
+  analyzeKeywordDensity(content, keywords) {
+    const wordCount = content.split(/\s+/).length;
+    const keywordAnalysis = {};
+    
+    keywords.forEach(keyword => {
+      const count = (content.toLowerCase().match(new RegExp(keyword.toLowerCase(), 'g')) || []).length;
+      const density = (count / wordCount * 100).toFixed(2);
+      keywordAnalysis[keyword] = {
+        count,
+        density: parseFloat(density),
+        status: density > 0.5 && density < 3 ? 'Optimal' : density === 0 ? 'Missing' : 'Overused'
+      };
+    });
+
+    return keywordAnalysis;
+  }
+
+  calculateReadabilityScore(content, sentences, wordCount) {
+    if (sentences === 0 || wordCount === 0) return 0;
+    
+    const avgSentenceLength = wordCount / sentences;
+    const complexWords = (content.match(/\b\w{7,}\b/g) || []).length;
+    
+    // Simplified readability formula
+    const score = 206.835 - (1.015 * avgSentenceLength) - (84.6 * (complexWords / wordCount));
+    return Math.max(0, Math.min(100, Math.round(score)));
+  }
+
+  calculateQualityScore(wordCount, sentences, paragraphs) {
+    let score = 0;
+    
+    // Word count scoring (25 points)
+    if (wordCount >= 1000) score += 25;
+    else if (wordCount >= 500) score += 15;
+    else score += 5;
+    
+    // Structure scoring (25 points)
+    if (paragraphs >= 5) score += 25;
+    else if (paragraphs >= 3) score += 15;
+    else score += 5;
+    
+    // Sentence variety (25 points)
+    const avgSentenceLength = wordCount / sentences;
+    if (avgSentenceLength >= 15 && avgSentenceLength <= 25) score += 25;
+    else if (avgSentenceLength >= 10 && avgSentenceLength <= 30) score += 15;
+    else score += 5;
+    
+    // Base content quality (25 points)
+    score += 25;
+    
+    return Math.min(100, score);
+  }
+
+  analyzeStructure(content) {
+    let score = 0;
+    if (content.includes('##')) score += 25; // Has headings
+    if (content.includes('-') || content.includes('1.')) score += 25; // Has lists
+    if (content.split('\n\n').length >= 3) score += 25; // Has paragraphs
+    if (content.includes('**') || content.includes('*')) score += 25; // Has emphasis
+    return score;
+  }
+
+  analyzeEngagement(content) {
+    let score = 0;
+    if (content.includes('?')) score += 20; // Has questions
+    if (content.match(/\b(you|your)\b/gi)) score += 20; // Direct address
+    if (content.match(/\b(example|case|story)\b/gi)) score += 20; // Examples
+    if (content.includes('!')) score += 20; // Enthusiasm
+    if (content.match(/\b(action|step|implement|try)\b/gi)) score += 20; // Action words
+    return Math.min(100, score);
+  }
+
+  analyzeClarity(content, sentences, wordCount) {
+    const avgSentenceLength = wordCount / sentences;
+    let score = 100;
+    
+    if (avgSentenceLength > 30) score -= 20; // Long sentences
+    if (content.match(/\b(however|nevertheless|consequently)\b/gi)?.length > 5) score -= 10; // Too much complexity
+    if (content.match(/\b(the|a|an|and|or|but)\b/gi)?.length / wordCount > 0.3) score -= 10; // Filler words
+    
+    return Math.max(0, score);
+  }
+
+  analyzeActionability(content) {
+    const actionWords = (content.match(/\b(start|begin|create|build|implement|try|use|apply|practice|learn|discover)\b/gi) || []).length;
+    const steps = (content.match(/\b(step|phase|stage|first|next|then|finally)\b/gi) || []).length;
+    const instructions = (content.match(/\b(should|must|need to|have to|can|will)\b/gi) || []).length;
+    
+    return Math.min(100, (actionWords * 10) + (steps * 15) + (instructions * 5));
+  }
+
+  extractMetaDescription(content) {
+    // Extract first meaningful paragraph for meta description
+    const paragraphs = content.split(/\n\s*\n/).filter(p => p.trim() && !p.startsWith('#'));
+    const firstParagraph = paragraphs[0]?.replace(/[#*]/g, '').trim() || '';
+    return firstParagraph.substring(0, 155) + (firstParagraph.length > 155 ? '...' : '');
+  }
+
+  identifyLinkOpportunities(content) {
+    const opportunities = [];
+    
+    // Look for terms that could be internally linked
+    const linkableTerms = ['strategy', 'guide', 'tips', 'best practices', 'solutions', 'tools', 'resources'];
+    linkableTerms.forEach(term => {
+      if (content.toLowerCase().includes(term)) {
+        opportunities.push(`Consider linking "${term}" to relevant internal pages`);
+      }
+    });
+    
+    return opportunities.slice(0, 3); // Limit to top 3
+  }
+
+  detectCTAs(content) {
+    const ctaPatterns = ['contact', 'learn more', 'get started', 'sign up', 'download', 'subscribe', 'try', 'discover'];
+    return ctaPatterns.some(pattern => content.toLowerCase().includes(pattern));
+  }
+
+  extractValueProps(content) {
+    // Extract sentences that contain value proposition keywords
+    const sentences = content.split(/[.!?]+/);
+    return sentences.filter(s => 
+      s.match(/\b(benefit|advantage|value|save|improve|increase|reduce|help)\b/i)
+    ).slice(0, 3).map(s => s.trim());
+  }
+
+  detectCredibilitySignals(content) {
+    const signals = [];
+    if (content.match(/\b(\d+%|statistics?|research|study|survey|data)\b/i)) signals.push('Contains data/statistics');
+    if (content.match(/\b(expert|professional|certified|experienced)\b/i)) signals.push('Appeals to authority');
+    if (content.match(/\b(proven|tested|verified|validated)\b/i)) signals.push('Uses proof words');
+    return signals;
+  }
+
+  detectEmotionalHooks(content) {
+    const hooks = [];
+    if (content.match(/\b(imagine|picture|feel|experience|discover)\b/i)) hooks.push('Sensory language');
+    if (content.match(/\b(secret|hidden|exclusive|insider)\b/i)) hooks.push('Exclusivity appeal');
+    if (content.match(/\b(struggle|challenge|problem|frustrated)\b/i)) hooks.push('Problem awareness');
+    return hooks;
+  }
+
+  generateImprovementSuggestions(content, wordCount, context) {
+    const suggestions = [];
+    
+    if (wordCount < 800) suggestions.push('Consider expanding content to 800+ words for better SEO performance');
+    if (!content.includes('##')) suggestions.push('Add section headings to improve readability and SEO');
+    if (!content.includes('-') && !content.includes('1.')) suggestions.push('Add bullet points or numbered lists for better scanability');
+    if (!(content.includes('**') || content.includes('*'))) suggestions.push('Use bold or italic text to emphasize key points');
+    
+    // SEO-specific suggestions
+    const primaryKeywords = context.seoInstructions?.primaryKeywords || [];
+    primaryKeywords.forEach(keyword => {
+      if (!content.toLowerCase().includes(keyword.toLowerCase())) {
+        suggestions.push(`Consider including the keyword "${keyword}" in your content`);
+      }
+    });
+    
+    return suggestions.slice(0, 5); // Limit to top 5 suggestions
+  }
+
+  analyzeKeywordOptimization(content, keywords) {
+    const optimization = {
+      overall: 'Good',
+      keywordPlacement: {},
+      suggestions: []
+    };
+
+    keywords.forEach(keyword => {
+      const positions = [];
+      const lowerContent = content.toLowerCase();
+      const lowerKeyword = keyword.toLowerCase();
+      
+      // Check keyword placement in different sections
+      const inTitle = lowerContent.substring(0, 100).includes(lowerKeyword);
+      const inFirstParagraph = lowerContent.substring(0, 300).includes(lowerKeyword);
+      const inHeadings = content.match(/^##.*$/gm)?.some(h => h.toLowerCase().includes(lowerKeyword));
+      
+      optimization.keywordPlacement[keyword] = {
+        inTitle,
+        inFirstParagraph,
+        inHeadings,
+        optimization: (inTitle && inFirstParagraph && inHeadings) ? 'Excellent' : 
+                     (inTitle || inFirstParagraph) ? 'Good' : 'Needs Improvement'
+      };
+
+      if (!inTitle) optimization.suggestions.push(`Include "${keyword}" in the title or first heading`);
+      if (!inFirstParagraph) optimization.suggestions.push(`Include "${keyword}" in the first paragraph`);
+    });
+
+    return optimization;
+  }
+
+  /**
    * Export blog post in different formats
    */
   async exportContent(blogPost, format) {
@@ -1796,6 +2269,75 @@ class AutoBlogAPI {
     } catch (error) {
       console.error('❌ Failed to update analysis:', error);
       throw new Error(`Failed to update analysis: ${error.message}`);
+    }
+  }
+
+  /**
+   * Generate comprehensive SEO analysis for content
+   * Provides AI-powered educational analysis for solopreneurs
+   */
+  async generateComprehensiveAnalysis(content, context = {}, postId = null) {
+    try {
+      console.log('🔍 Starting comprehensive SEO analysis...', {
+        contentLength: content?.length || 0,
+        contextProvided: !!context,
+        postId
+      });
+
+      if (!content || content.trim().length < 200) {
+        throw new Error('Content must be at least 200 characters long for meaningful analysis');
+      }
+
+      const response = await this.makeRequest('/api/v1/seo-analysis', {
+        method: 'POST',
+        body: JSON.stringify({
+          content: content.trim(),
+          context: {
+            businessType: context.businessType || 'Business',
+            targetAudience: context.targetAudience || 'General audience',
+            primaryKeywords: context.primaryKeywords || [],
+            businessGoals: context.businessGoals || 'Generate more customers through content'
+          },
+          postId
+        }),
+      });
+
+      console.log('✅ Comprehensive SEO analysis completed:', {
+        analysisId: response.analysisId,
+        overallScore: response.analysis?.overallScore,
+        fromCache: response.fromCache
+      });
+
+      return response;
+    } catch (error) {
+      console.error('❌ Comprehensive SEO analysis failed:', error);
+      throw new Error(`Comprehensive SEO analysis failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get comprehensive SEO analysis history for user
+   */
+  async getAnalysisHistory(limit = 10) {
+    try {
+      const response = await this.makeRequest(`/api/v1/seo-analysis/history?limit=${limit}`);
+      return response;
+    } catch (error) {
+      console.error('❌ Failed to get analysis history:', error);
+      throw new Error(`Failed to get analysis history: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get specific comprehensive SEO analysis by ID
+   */
+  async getComprehensiveAnalysis(analysisId) {
+    try {
+      const response = await this.makeRequest(`/api/v1/seo-analysis/${analysisId}`);
+      return response;
+    } catch (error) {
+      console.error('❌ Failed to get analysis:', error);
+      throw new Error(`Failed to get analysis: ${error.message}`);
     }
   }
 }
