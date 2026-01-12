@@ -14,6 +14,7 @@ import {
   UserSwitchOutlined,
   CloseOutlined,
   PlusOutlined,
+  BarChartOutlined,
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useWorkflowMode } from '../../contexts/WorkflowModeContext';
@@ -32,6 +33,7 @@ import AdminAnalyticsTab from './AdminAnalyticsTab';
 import AdminContentTab from './AdminContentTab';
 import AdminSystemTab from './AdminSystemTab';
 import AdminLeadsTab from './AdminLeadsTab';
+import ComprehensiveAnalysisTab from './ComprehensiveAnalysisTab';
 
 const { Header, Sider, Content } = Layout;
 
@@ -355,6 +357,11 @@ const DashboardLayout = ({
       icon: <FileTextOutlined />,
       label: 'Posts',
     },
+    {
+      key: 'comprehensive-analysis',
+      icon: <BarChartOutlined />,
+      label: 'Content Analysis',
+    },
   ];
 
   // Admin menu items - conditionally added based on permissions
@@ -429,10 +436,12 @@ const DashboardLayout = ({
 
   const renderContent = () => {
     // Special tabs that don't use scrollable layout
-    if (activeTab === 'settings' || activeTab.startsWith('admin-') || activeTab === 'sandbox') {
+    if (activeTab === 'settings' || activeTab.startsWith('admin-') || activeTab === 'sandbox' || activeTab === 'comprehensive-analysis') {
       switch (activeTab) {
         case 'settings':
           return <SettingsTab />;
+        case 'comprehensive-analysis':
+          return <ComprehensiveAnalysisTab />;
         case 'admin-users':
           return <AdminUsersTab />;
         case 'admin-leads':

@@ -251,6 +251,11 @@ export const contentAPI = {
               ...enhancedResult.enhancedMetadata
             },
             enhancedMetadata: enhancedResult.enhancedMetadata,
+            seoAnalysis: enhancedResult.seoAnalysis,
+            contentQuality: enhancedResult.contentQuality,
+            strategicElements: enhancedResult.strategicElements,
+            improvementSuggestions: enhancedResult.improvementSuggestions,
+            keywordOptimization: enhancedResult.keywordOptimization,
             generationContext: enhancedResult.generationContext,
             strategicCTAs: enhancedResult.strategicCTAs,
             selectedTopic: selectedTopic

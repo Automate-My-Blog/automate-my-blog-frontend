@@ -1,6 +1,8 @@
-import React from 'react';
-import { Card, Button, Row, Col, Typography, Input, Form, Space, Tag } from 'antd';
-import { GlobalOutlined, ScanOutlined, LoginOutlined, UserAddOutlined } from '@ant-design/icons';
+import React, { useState, useEffect } from 'react';
+import { Card, Button, Row, Col, Typography, Input, Form, Space, Tag, Divider, Statistic } from 'antd';
+import { GlobalOutlined, ScanOutlined, LoginOutlined, UserAddOutlined, BookOutlined, AimOutlined, LinkOutlined, BarChartOutlined } from '@ant-design/icons';
+import { useAuth } from '../../../contexts/AuthContext';
+import autoBlogAPI from '../../../services/api';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -16,11 +18,65 @@ const WebsiteAnalysisStep = ({
   requireAuth,
   setNavContext
 }) => {
+  const { currentOrganization } = useAuth();
+  const [comprehensiveResults, setComprehensiveResults] = useState(null);
+  const [blogContent, setBlogContent] = useState([]);
+  const [ctaAnalysis, setCtaAnalysis] = useState([]);
+  const [linkingAnalysis, setLinkingAnalysis] = useState([]);
+  const [loadingResults, setLoadingResults] = useState(false);
 
   // EXTRACTED FROM APP.JS: Website URL handler
-  const handleWebsiteSubmit = () => {
+  const handleWebsiteSubmit = async () => {
     if (websiteUrl.trim()) {
       setCurrentStep(1);
+      
+      // Trigger comprehensive analysis if user is authenticated
+      if (user && currentOrganization) {
+        try {
+          await autoBlogAPI.discoverWebsiteContent(websiteUrl);
+        } catch (error) {
+          console.error('Failed to trigger comprehensive analysis:', error);
+        }
+      }
+    }
+  };
+
+  // Load comprehensive analysis results when analysis is complete
+  useEffect(() => {
+    if (analysisCompleted && user && currentOrganization) {
+      loadComprehensiveResults();
+    }
+  }, [analysisCompleted, user, currentOrganization]);
+
+  const loadComprehensiveResults = async () => {
+    if (!currentOrganization?.id) return;
+    
+    setLoadingResults(true);
+    try {
+      // Load all Phase 1A analysis results
+      const [blogData, ctaData, linkData, comprehensiveData] = await Promise.allSettled([
+        autoBlogAPI.getBlogContent(currentOrganization.id),
+        autoBlogAPI.getCTAAnalysis(currentOrganization.id),
+        autoBlogAPI.getInternalLinkingAnalysis(currentOrganization.id),
+        autoBlogAPI.getComprehensiveAnalysis(currentOrganization.id)
+      ]);
+
+      if (blogData.status === 'fulfilled') {
+        setBlogContent(blogData.value.contentPieces || []);
+      }
+      if (ctaData.status === 'fulfilled') {
+        setCtaAnalysis(ctaData.value.ctas || []);
+      }
+      if (linkData.status === 'fulfilled') {
+        setLinkingAnalysis(linkData.value.internalLinks || []);
+      }
+      if (comprehensiveData.status === 'fulfilled') {
+        setComprehensiveResults(comprehensiveData.value);
+      }
+    } catch (error) {
+      console.error('Failed to load comprehensive results:', error);
+    } finally {
+      setLoadingResults(false);
     }
   };
 
@@ -84,7 +140,7 @@ const WebsiteAnalysisStep = ({
 
             <div style={{ marginTop: '32px', textAlign: 'center' }}>
               <Text style={{ color: '#666', fontSize: '14px' }}>
-                ✓ AI-powered website analysis  ✓ Personalized content strategy  ✓ SEO optimization
+                ✓ Comprehensive blog discovery  ✓ CTA effectiveness analysis  ✓ Internal linking insights  ✓ Content pattern analysis
               </Text>
             </div>
           </div>
@@ -165,9 +221,92 @@ const WebsiteAnalysisStep = ({
             </Title>
             
             <Paragraph style={{ fontSize: '16px', marginBottom: '32px', maxWidth: '500px', margin: '0 auto 32px auto' }}>
-              We've successfully analyzed your website and understand your business. 
+              We've completed a comprehensive analysis of your website, including blog discovery, CTA analysis, and content patterns. 
               Ready to create targeted content for your audience?
             </Paragraph>
+
+            {/* Phase 1A: Comprehensive Analysis Results */}
+            {user && currentOrganization && (
+              <div style={{ marginBottom: '32px' }}>
+                <Row gutter={16} justify="center" style={{ marginBottom: '24px' }}>
+                  <Col xs={12} sm={6}>
+                    <Card size="small" style={{ textAlign: 'center' }}>
+                      <Statistic
+                        title="Blog Posts Found"
+                        value={blogContent.length}
+                        prefix={<BookOutlined style={{ color: '#52c41a' }} />}
+                      />
+                    </Card>
+                  </Col>
+                  <Col xs={12} sm={6}>
+                    <Card size="small" style={{ textAlign: 'center' }}>
+                      <Statistic
+                        title="CTAs Analyzed"
+                        value={ctaAnalysis.length}
+                        prefix={<AimOutlined style={{ color: '#1890ff' }} />}
+                      />
+                    </Card>
+                  </Col>
+                  <Col xs={12} sm={6}>
+                    <Card size="small" style={{ textAlign: 'center' }}>
+                      <Statistic
+                        title="Internal Links"
+                        value={linkingAnalysis.length}
+                        prefix={<LinkOutlined style={{ color: '#722ed1' }} />}
+                      />
+                    </Card>
+                  </Col>
+                  <Col xs={12} sm={6}>
+                    <Card size="small" style={{ textAlign: 'center' }}>
+                      <Statistic
+                        title="Analysis Quality"
+                        value={comprehensiveResults?.analysisQuality || 85}
+                        suffix="%"
+                        prefix={<BarChartOutlined style={{ color: '#fa8c16' }} />}
+                      />
+                    </Card>
+                  </Col>
+                </Row>
+
+                {comprehensiveResults && (
+                  <div style={{ maxWidth: '600px', margin: '0 auto', textAlign: 'left' }}>
+                    <Divider orientation="left">
+                      <Text strong>Key Insights Discovered</Text>
+                    </Divider>
+                    
+                    {comprehensiveResults.contentPatterns && (
+                      <div style={{ marginBottom: '16px' }}>
+                        <Text strong style={{ color: '#52c41a' }}>Content Patterns:</Text>
+                        <br />
+                        <Text style={{ fontSize: '14px' }}>
+                          {comprehensiveResults.contentPatterns.tone || 'Professional'} tone with focus on {comprehensiveResults.contentPatterns.topics?.join(', ') || 'industry expertise'}
+                        </Text>
+                      </div>
+                    )}
+                    
+                    {comprehensiveResults.ctaStrategy && (
+                      <div style={{ marginBottom: '16px' }}>
+                        <Text strong style={{ color: '#1890ff' }}>CTA Strategy:</Text>
+                        <br />
+                        <Text style={{ fontSize: '14px' }}>
+                          {comprehensiveResults.ctaStrategy.primaryGoal || 'Lead generation'} with {comprehensiveResults.ctaStrategy.placement || 'strategic'} placement
+                        </Text>
+                      </div>
+                    )}
+                    
+                    {comprehensiveResults.linkingStrategy && (
+                      <div style={{ marginBottom: '16px' }}>
+                        <Text strong style={{ color: '#722ed1' }}>Linking Strategy:</Text>
+                        <br />
+                        <Text style={{ fontSize: '14px' }}>
+                          {comprehensiveResults.linkingStrategy.structure || 'Hub and spoke'} structure with focus on {comprehensiveResults.linkingStrategy.focus || 'product pages'}
+                        </Text>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
             <Space direction="vertical" size="large" style={{ width: '100%' }}>
               {user ? (
@@ -208,8 +347,9 @@ const WebsiteAnalysisStep = ({
               )}
 
               <div style={{ marginTop: '24px' }}>
-                <Tag color="green">Business Analysis Complete</Tag>
-                <Tag color="blue">Target Audience Identified</Tag>
+                <Tag color="green">Blog Content Discovered</Tag>
+                <Tag color="blue">CTA Strategy Analyzed</Tag>
+                <Tag color="purple">Linking Patterns Mapped</Tag>
                 <Tag color="orange">Content Strategy Ready</Tag>
               </div>
             </Space>

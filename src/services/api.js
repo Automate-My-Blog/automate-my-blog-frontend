@@ -729,6 +729,394 @@ Please provide analysis in this JSON format:
     }
   }
 
+  // ===== PHASE 1A: COMPREHENSIVE WEBSITE ANALYSIS =====
+
+  /**
+   * Trigger comprehensive website content discovery
+   */
+  async discoverWebsiteContent(websiteUrl) {
+    console.log(`🔍 Starting comprehensive content discovery for: ${websiteUrl}`);
+    
+    try {
+      const response = await this.makeRequest('api/v1/analysis/discover-content', {
+        method: 'POST',
+        body: JSON.stringify({ websiteUrl }),
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      if (response.success) {
+        console.log('✅ Content discovery successful:', response);
+        this.clearCachedAnalysis();
+        return response;
+      } else {
+        console.error('❌ Content discovery failed:', response);
+        throw new Error(response.error || 'Content discovery failed');
+      }
+    } catch (error) {
+      console.error('❌ Content discovery request failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get discovered blog content for organization
+   */
+  async getBlogContent(organizationId) {
+    console.log(`📖 Fetching blog content for organization: ${organizationId}`);
+    
+    try {
+      const response = await this.makeRequest(`api/v1/analysis/blog-content/${organizationId}`, {
+        method: 'GET'
+      });
+      
+      if (response.success) {
+        console.log('✅ Blog content retrieved:', response);
+        return response;
+      } else {
+        console.error('❌ Blog content retrieval failed:', response);
+        throw new Error(response.error || 'Failed to retrieve blog content');
+      }
+    } catch (error) {
+      console.error('❌ Blog content request failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get CTA analysis results for organization
+   */
+  async getCTAAnalysis(organizationId) {
+    console.log(`🎯 Fetching CTA analysis for organization: ${organizationId}`);
+    
+    try {
+      const response = await this.makeRequest(`api/v1/analysis/cta-analysis/${organizationId}`, {
+        method: 'GET'
+      });
+      
+      if (response.success) {
+        console.log('✅ CTA analysis retrieved:', response);
+        return response;
+      } else {
+        console.error('❌ CTA analysis retrieval failed:', response);
+        throw new Error(response.error || 'Failed to retrieve CTA analysis');
+      }
+    } catch (error) {
+      console.error('❌ CTA analysis request failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get internal linking analysis for organization
+   */
+  async getInternalLinkingAnalysis(organizationId) {
+    console.log(`🔗 Fetching internal linking analysis for organization: ${organizationId}`);
+    
+    try {
+      const response = await this.makeRequest(`api/v1/analysis/internal-links/${organizationId}`, {
+        method: 'GET'
+      });
+      
+      if (response.success) {
+        console.log('✅ Internal linking analysis retrieved:', response);
+        return response;
+      } else {
+        console.error('❌ Internal linking analysis retrieval failed:', response);
+        throw new Error(response.error || 'Failed to retrieve internal linking analysis');
+      }
+    } catch (error) {
+      console.error('❌ Internal linking analysis request failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get visual design analysis for organization
+   */
+  async getVisualDesignAnalysis(organizationId) {
+    console.log(`🎨 Fetching visual design analysis for organization: ${organizationId}`);
+    
+    try {
+      const response = await this.makeRequest(`api/v1/analysis/visual-design/${organizationId}`, {
+        method: 'GET'
+      });
+      
+      if (response.success) {
+        console.log('✅ Visual design analysis retrieved:', response);
+        return response;
+      } else {
+        console.error('❌ Visual design analysis retrieval failed:', response);
+        throw new Error(response.error || 'Failed to retrieve visual design analysis');
+      }
+    } catch (error) {
+      console.error('❌ Visual design analysis request failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get comprehensive analysis summary for organization
+   */
+  async getComprehensiveAnalysis(organizationId) {
+    console.log(`📊 Fetching comprehensive analysis for organization: ${organizationId}`);
+    
+    try {
+      const response = await this.makeRequest(`api/v1/analysis/comprehensive-summary/${organizationId}`, {
+        method: 'GET'
+      });
+      
+      if (response.success) {
+        console.log('✅ Comprehensive analysis retrieved:', response);
+        return response;
+      } else {
+        console.error('❌ Comprehensive analysis retrieval failed:', response);
+        throw new Error(response.error || 'Failed to retrieve comprehensive analysis');
+      }
+    } catch (error) {
+      console.error('❌ Comprehensive analysis request failed:', error);
+      throw error;
+    }
+  }
+
+  // ===== PHASE 1A: AUTHENTICATION ENDPOINTS =====
+
+  /**
+   * Register new user with organization
+   */
+  async register(userData) {
+    console.log(`📝 Registering new user: ${userData.email}`);
+    
+    try {
+      const response = await this.makeRequest('api/v1/auth/register', {
+        method: 'POST',
+        body: JSON.stringify(userData),
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      if (response.success) {
+        console.log('✅ Registration successful:', response);
+        // Store tokens
+        if (response.accessToken) {
+          localStorage.setItem('accessToken', response.accessToken);
+        }
+        if (response.refreshToken) {
+          localStorage.setItem('refreshToken', response.refreshToken);
+        }
+        return response;
+      } else {
+        console.error('❌ Registration failed:', response);
+        throw new Error(response.error || 'Registration failed');
+      }
+    } catch (error) {
+      console.error('❌ Registration request failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Login existing user
+   */
+  async login(email, password) {
+    console.log(`🔐 Logging in user: ${email}`);
+    
+    try {
+      const response = await this.makeRequest('api/v1/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email, password }),
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      if (response.success) {
+        console.log('✅ Login successful:', response);
+        // Store tokens
+        if (response.accessToken) {
+          localStorage.setItem('accessToken', response.accessToken);
+        }
+        if (response.refreshToken) {
+          localStorage.setItem('refreshToken', response.refreshToken);
+        }
+        return response;
+      } else {
+        console.error('❌ Login failed:', response);
+        throw new Error(response.error || 'Login failed');
+      }
+    } catch (error) {
+      console.error('❌ Login request failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get current user profile
+   */
+  async getCurrentUser() {
+    console.log(`👤 Fetching current user profile`);
+    
+    try {
+      const response = await this.makeRequest('api/v1/auth/me', {
+        method: 'GET'
+      });
+      
+      if (response.success) {
+        console.log('✅ User profile retrieved:', response);
+        return response;
+      } else {
+        console.error('❌ User profile retrieval failed:', response);
+        throw new Error(response.error || 'Failed to retrieve user profile');
+      }
+    } catch (error) {
+      console.error('❌ User profile request failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Refresh access token
+   */
+  async refreshAccessToken() {
+    console.log(`🔄 Refreshing access token`);
+    
+    try {
+      const refreshToken = localStorage.getItem('refreshToken');
+      if (!refreshToken) {
+        throw new Error('No refresh token available');
+      }
+      
+      const response = await this.makeRequest('api/v1/auth/refresh', {
+        method: 'POST',
+        body: JSON.stringify({ refreshToken }),
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      if (response.success) {
+        console.log('✅ Token refresh successful');
+        // Store new access token
+        if (response.accessToken) {
+          localStorage.setItem('accessToken', response.accessToken);
+        }
+        return response;
+      } else {
+        console.error('❌ Token refresh failed:', response);
+        throw new Error(response.error || 'Token refresh failed');
+      }
+    } catch (error) {
+      console.error('❌ Token refresh request failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Logout user (client-side cleanup)
+   */
+  async logout() {
+    console.log(`🚪 Logging out user`);
+    
+    try {
+      // Call logout endpoint (for any server-side cleanup)
+      await this.makeRequest('api/v1/auth/logout', {
+        method: 'POST',
+        body: JSON.stringify({}),
+        headers: { 'Content-Type': 'application/json' }
+      });
+    } catch (error) {
+      console.warn('Logout endpoint call failed:', error);
+      // Continue with client-side cleanup even if server call fails
+    }
+    
+    // Clear local storage
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    sessionStorage.clear();
+    
+    console.log('✅ Logout completed');
+  }
+
+  // ===== PHASE 1A: MANUAL CONTENT UPLOAD =====
+
+  /**
+   * Upload manually entered blog posts
+   */
+  async uploadManualPosts(organizationId, posts) {
+    console.log(`📝 Uploading ${posts.length} manual posts for organization: ${organizationId}`);
+    
+    try {
+      const response = await this.makeRequest('api/v1/content-upload/manual-posts', {
+        method: 'POST',
+        body: JSON.stringify({ organizationId, posts }),
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      if (response.success) {
+        console.log('✅ Manual posts uploaded:', response);
+        return response;
+      } else {
+        console.error('❌ Manual posts upload failed:', response);
+        throw new Error(response.error || 'Failed to upload manual posts');
+      }
+    } catch (error) {
+      console.error('❌ Manual posts upload request failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Upload blog export files (WordPress, etc.)
+   */
+  async uploadBlogExports(organizationId, files) {
+    console.log(`📁 Uploading ${files.length} blog export files for organization: ${organizationId}`);
+    
+    try {
+      const formData = new FormData();
+      formData.append('organizationId', organizationId);
+      
+      // Add each file to the form data
+      for (let i = 0; i < files.length; i++) {
+        formData.append('files', files[i]);
+      }
+      
+      const response = await this.makeRequest('api/v1/content-upload/blog-export', {
+        method: 'POST',
+        body: formData
+        // Note: Don't set Content-Type for FormData, let browser set it
+      });
+      
+      if (response.success) {
+        console.log('✅ Blog exports uploaded:', response);
+        return response;
+      } else {
+        console.error('❌ Blog exports upload failed:', response);
+        throw new Error(response.error || 'Failed to upload blog exports');
+      }
+    } catch (error) {
+      console.error('❌ Blog exports upload request failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get content upload status and history
+   */
+  async getUploadStatus(organizationId) {
+    console.log(`📋 Fetching upload status for organization: ${organizationId}`);
+    
+    try {
+      const response = await this.makeRequest(`api/v1/content-upload/status/${organizationId}`, {
+        method: 'GET'
+      });
+      
+      if (response.success) {
+        console.log('✅ Upload status retrieved:', response);
+        return response;
+      } else {
+        console.error('❌ Upload status retrieval failed:', response);
+        throw new Error(response.error || 'Failed to retrieve upload status');
+      }
+    } catch (error) {
+      console.error('❌ Upload status request failed:', error);
+      throw error;
+    }
+  }
+
   /**
    * Test API connectivity
    */
@@ -754,31 +1142,10 @@ Please provide analysis in this JSON format:
   }
 
   /**
-   * User authentication methods
+   * User authentication methods (DUPLICATE REMOVED - using Phase 1A version above)
    */
-  async login(email, password) {
-    try {
-      const response = await this.makeRequest('/api/v1/auth/login', {
-        method: 'POST',
-        body: JSON.stringify({ email, password }),
-      });
-      return response;
-    } catch (error) {
-      throw new Error(`Login failed: ${error.message}`);
-    }
-  }
 
-  async register(userData) {
-    try {
-      const response = await this.makeRequest('/api/v1/auth/register', {
-        method: 'POST',
-        body: JSON.stringify(userData),
-      });
-      return response;
-    } catch (error) {
-      throw new Error(`Registration failed: ${error.message}`);
-    }
-  }
+  // DUPLICATE register method removed - using Phase 1A version above
 
   async me() {
     try {
@@ -2359,17 +2726,8 @@ Please provide analysis in this JSON format:
   }
 
   /**
-   * Get specific comprehensive SEO analysis by ID
+   * Get specific comprehensive SEO analysis by ID (DUPLICATE REMOVED - using Phase 1A version above)
    */
-  async getComprehensiveAnalysis(analysisId) {
-    try {
-      const response = await this.makeRequest(`/api/v1/seo-analysis/${analysisId}`);
-      return response;
-    } catch (error) {
-      console.error('❌ Failed to get analysis:', error);
-      throw new Error(`Failed to get analysis: ${error.message}`);
-    }
-  }
 }
 
 // Create singleton instance

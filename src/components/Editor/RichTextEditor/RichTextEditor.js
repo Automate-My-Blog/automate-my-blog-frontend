@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { TextStyle } from '@tiptap/extension-text-style';
@@ -16,6 +16,7 @@ import { Placeholder } from '@tiptap/extension-placeholder';
 import { colors, spacing, borderRadius, typography } from '../../DesignSystem/tokens';
 import InlineToolbar from '../InlineToolbar/InlineToolbar';
 import { KeyboardShortcuts } from '../extensions/KeyboardShortcuts';
+import { markdownToHtml, htmlToMarkdown } from '../../../utils/markdownToHtml';
 
 /**
  * Modern WYSIWYG Rich Text Editor using TipTap
@@ -34,6 +35,12 @@ const RichTextEditor = ({
   // Inline toolbar state
   const [inlineToolbarVisible, setInlineToolbarVisible] = useState(false);
   const [inlineToolbarPosition, setInlineToolbarPosition] = useState({ top: 0, left: 0 });
+
+  // Memoize markdown to HTML conversion to prevent infinite loops
+  const htmlContent = useMemo(() => {
+    if (!content) return '';
+    return markdownToHtml(content);
+  }, [content]);
 
   const editor = useEditor({
     extensions: [
@@ -75,12 +82,13 @@ const RichTextEditor = ({
       }),
       KeyboardShortcuts,
     ],
-    content: content,
+    content: htmlContent,
     editable: editable,
     onUpdate: ({ editor }) => {
       const html = editor.getHTML();
+      const markdown = htmlToMarkdown(html);
       if (onChange) {
-        onChange(html);
+        onChange(markdown);
       }
     },
     onSelectionUpdate: ({ editor }) => {
@@ -97,12 +105,6 @@ const RichTextEditor = ({
     },
   });
 
-  // Update editor content when prop changes
-  React.useEffect(() => {
-    if (editor && content !== editor.getHTML()) {
-      editor.commands.setContent(content);
-    }
-  }, [editor, content]);
 
   // Call onEditorReady when editor is ready
   React.useEffect(() => {
@@ -110,6 +112,18 @@ const RichTextEditor = ({
       onEditorReady(editor);
     }
   }, [editor, onEditorReady]);
+
+  // Update editor content when content prop changes
+  React.useEffect(() => {
+    if (editor && content !== undefined && htmlContent) {
+      const currentHtml = editor.getHTML();
+      
+      // Only update if content has actually changed to avoid cursor issues
+      if (htmlContent !== currentHtml) {
+        editor.commands.setContent(htmlContent);
+      }
+    }
+  }, [htmlContent, editor]);
 
   // Calculate inline toolbar position based on text selection
   const updateInlineToolbarPosition = useCallback((editorInstance) => {

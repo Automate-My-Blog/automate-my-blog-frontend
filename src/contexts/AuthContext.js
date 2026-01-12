@@ -87,8 +87,8 @@ export const AuthProvider = ({ children }) => {
         }
       }
 
-      // Make API request with deduplication
-      const apiPromise = autoBlogAPI.me();
+      // Make API request with deduplication - use new auth endpoint
+      const apiPromise = autoBlogAPI.getCurrentUser();
       activeAuthRequests.set(requestKey, apiPromise);
 
       try {
@@ -101,12 +101,15 @@ export const AuthProvider = ({ children }) => {
         }));
         
         setUser(response.user);
-        // Handle new database structure with organization data
-        if (response.user.organizationId) {
+        // Handle organization data from Phase 1A auth system
+        if (response.user?.organization) {
+          setCurrentOrganization(response.user.organization);
+        } else if (response.user?.organizationId) {
+          // Fallback for legacy structure
           setCurrentOrganization({
             id: response.user.organizationId,
             name: response.user.organizationName,
-            role: response.user.organizationRole
+            role: response.user.organizationRole || 'owner'
           });
         }
       } finally {
@@ -123,15 +126,17 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password, context = null) => {
     const response = await autoBlogAPI.login(email, password);
-    localStorage.setItem('accessToken', response.accessToken);
-    localStorage.setItem('refreshToken', response.refreshToken);
+    // Tokens are now handled in the API service
     setUser(response.user);
-    // Handle new database structure with organization data
-    if (response.user.organizationId) {
+    // Handle organization data from Phase 1A auth system
+    if (response.user?.organization) {
+      setCurrentOrganization(response.user.organization);
+    } else if (response.user?.organizationId) {
+      // Fallback for legacy structure
       setCurrentOrganization({
         id: response.user.organizationId,
         name: response.user.organizationName,
-        role: response.user.organizationRole
+        role: response.user.organizationRole || 'owner'
       });
     }
     
@@ -171,13 +176,16 @@ export const AuthProvider = ({ children }) => {
   const register = async (userData, context = null) => {
     const response = await autoBlogAPI.register(userData);
     
-    // If registration includes auto-login, handle context
+    // Registration now includes auto-login with organization setup
     if (response.user) {
       setUser(response.user);
-      if (response.accessToken) {
-        localStorage.setItem('accessToken', response.accessToken);
-        localStorage.setItem('refreshToken', response.refreshToken);
+      // Handle organization data from Phase 1A registration
+      if (response.user?.organization) {
+        setCurrentOrganization(response.user.organization);
+      } else if (response.organization) {
+        setCurrentOrganization(response.organization);
       }
+      
       setLoginContext(context);
       setIsNewRegistration(true); // Mark as new registration
       
@@ -247,15 +255,20 @@ export const AuthProvider = ({ children }) => {
     return { ...response, context };
   };
 
-  const logout = () => {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    // Clear session ID to start fresh anonymous session
-    sessionStorage.removeItem('audience_session_id');
+  const logout = async () => {
+    try {
+      // Use new API logout method (handles token cleanup)
+      await autoBlogAPI.logout();
+    } catch (error) {
+      console.error('Logout API call failed:', error);
+      // Continue with local cleanup even if server call fails
+    }
+    
+    // Clear local state
     setUser(null);
     setCurrentOrganization(null);
     setLoginContext(null);
-    setIsNewRegistration(false); // Clear registration flag on logout
+    setIsNewRegistration(false);
   };
 
   const clearLoginContext = () => {
