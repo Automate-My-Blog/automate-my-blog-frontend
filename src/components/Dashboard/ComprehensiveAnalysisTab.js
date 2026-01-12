@@ -32,7 +32,8 @@ import {
   NodeIndexOutlined,
   FundOutlined,
   SearchOutlined,
-  CalendarOutlined
+  CalendarOutlined,
+  ThunderboltOutlined
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import autoBlogAPI from '../../services/api';
@@ -47,6 +48,7 @@ const ComprehensiveAnalysisTab = () => {
   console.log('🔍 ComprehensiveAnalysisTab - user:', user?.email, 'org:', currentOrganization?.id);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [reanalyzing, setReanalyzing] = useState(false);
   
   // Analysis data state
   const [blogContent, setBlogContent] = useState([]);
@@ -110,6 +112,28 @@ const ComprehensiveAnalysisTab = () => {
     setRefreshing(true);
     await loadAnalysisData();
     setRefreshing(false);
+  };
+
+  const forceReanalyze = async () => {
+    if (!currentOrganization?.websiteUrl) {
+      console.error('No website URL found for comprehensive analysis');
+      return;
+    }
+    
+    setReanalyzing(true);
+    try {
+      console.log('🔍 Triggering force re-analysis for:', currentOrganization.websiteUrl);
+      await autoBlogAPI.triggerComprehensiveAnalysis(currentOrganization.websiteUrl);
+      
+      // Wait a moment then reload data
+      setTimeout(() => {
+        loadAnalysisData();
+      }, 2000);
+    } catch (error) {
+      console.error('Force re-analysis failed:', error);
+    } finally {
+      setReanalyzing(false);
+    }
   };
 
   const handleUploadSuccess = () => {
@@ -374,6 +398,15 @@ const ComprehensiveAnalysisTab = () => {
               loading={refreshing}
             >
               Refresh
+            </Button>
+            <Button 
+              icon={<ThunderboltOutlined />}
+              onClick={forceReanalyze}
+              loading={reanalyzing}
+              type="default"
+              danger
+            >
+              Force Re-analyze
             </Button>
             <Button 
               type="primary"

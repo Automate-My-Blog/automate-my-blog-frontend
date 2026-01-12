@@ -2728,6 +2728,35 @@ Please provide analysis in this JSON format:
   /**
    * Get specific comprehensive SEO analysis by ID (DUPLICATE REMOVED - using Phase 1A version above)
    */
+
+  /**
+   * Trigger comprehensive content discovery and analysis (forces fresh analysis)
+   */
+  async triggerComprehensiveAnalysis(websiteUrl) {
+    console.log(`🔍 Triggering comprehensive content discovery for: ${websiteUrl}`);
+    
+    try {
+      const response = await this.makeRequest('api/v1/analysis/discover-content', {
+        method: 'POST',
+        body: JSON.stringify({ 
+          websiteUrl, 
+          forceRefresh: true 
+        }),
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      if (response.success) {
+        console.log('✅ Comprehensive content discovery triggered:', response);
+        return response;
+      } else {
+        console.error('❌ Comprehensive content discovery failed:', response);
+        throw new Error(response.error || 'Failed to trigger comprehensive content discovery');
+      }
+    } catch (error) {
+      console.error('❌ Comprehensive content discovery request failed:', error);
+      throw error;
+    }
+  }
 }
 
 // Create singleton instance
