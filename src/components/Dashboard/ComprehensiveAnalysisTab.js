@@ -42,7 +42,9 @@ const { Title, Text, Paragraph } = Typography;
 const { TabPane } = Tabs;
 
 const ComprehensiveAnalysisTab = () => {
+  console.log('🔍 ComprehensiveAnalysisTab component is rendering!');
   const { user, currentOrganization } = useAuth();
+  console.log('🔍 ComprehensiveAnalysisTab - user:', user?.email, 'org:', currentOrganization?.id);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   
@@ -336,7 +338,12 @@ const ComprehensiveAnalysisTab = () => {
   ];
 
 
+  const hasData = blogContent.length > 0 || ctaAnalysis.length > 0 || linkingAnalysis.length > 0;
+  
+  console.log('🔍 ComprehensiveAnalysisTab render state:', { loading, hasData, blogContentLength: blogContent.length, ctaLength: ctaAnalysis.length });
+
   if (loading) {
+    console.log('🔍 ComprehensiveAnalysisTab: Showing loading state');
     return (
       <div style={{ textAlign: 'center', padding: '60px' }}>
         <Spin size="large" />
@@ -346,8 +353,6 @@ const ComprehensiveAnalysisTab = () => {
       </div>
     );
   }
-
-  const hasData = blogContent.length > 0 || ctaAnalysis.length > 0 || linkingAnalysis.length > 0;
 
   return (
     <div>
