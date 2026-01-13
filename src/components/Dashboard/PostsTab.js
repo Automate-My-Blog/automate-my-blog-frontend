@@ -364,8 +364,27 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode }) => {
     });
     
     try {
-      const enhancementOptions = {
+      // Determine if enhanced generation should be used based on available organization data
+      const organizationId = user?.organizationId || user?.id; // Use user ID as fallback
+      const organizationName = user?.organizationName || '';
+      const websiteAnalysisData = stepResults?.home?.websiteAnalysis || {};
+      const hasWebsiteAnalysis = websiteAnalysisData && Object.keys(websiteAnalysisData).length > 0;
+      
+      // Enable enhanced generation if we have organization ID and analysis data
+      const shouldUseEnhancement = !!(organizationId && hasWebsiteAnalysis);
+      
+      console.log('🔍 Enhancement decision:', {
+        organizationId,
+        organizationName,
+        hasWebsiteAnalysis,
+        shouldUseEnhancement,
         useEnhancedGeneration,
+        finalDecision: shouldUseEnhancement,
+        websiteAnalysisKeys: Object.keys(websiteAnalysisData)
+      });
+
+      const enhancementOptions = {
+        useEnhancedGeneration: shouldUseEnhancement,
         goal: contentStrategy.goal,
         voice: contentStrategy.voice,
         template: contentStrategy.template,
@@ -373,7 +392,17 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode }) => {
         includeCaseStudies: true,
         emphasizeROI: true,
         includeActionables: true,
-        addStatistics: true
+        addStatistics: true,
+        // Pass organization context for enhanced generation
+        organizationId: organizationId,
+        organizationName: organizationName,
+        comprehensiveContext: shouldUseEnhancement ? {
+          organizationId: organizationId,
+          organizationName: organizationName,
+          websiteAnalysis: websiteAnalysisData
+        } : null,
+        targetSEOScore: 95,
+        includeVisuals: shouldUseEnhancement
       };
 
       const result = await contentAPI.generateContent(
