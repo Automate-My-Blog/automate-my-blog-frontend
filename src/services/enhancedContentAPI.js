@@ -51,8 +51,8 @@ export class EnhancedContentAPI {
         organizationName: enhancementOptions.organizationName,
         targetSEOScore: enhancementOptions.targetSEOScore,
         includeVisuals: enhancementOptions.includeVisuals,
-        // Pass website analysis for enhancement detection
-        websiteAnalysis: enhancementOptions.comprehensiveContext?.websiteAnalysis
+        // Pass website analysis for enhancement detection - try multiple possible sources
+        websiteAnalysis: analysisData || enhancementOptions.websiteAnalysis || enhancementOptions.comprehensiveContext?.websiteAnalysis
       };
 
       // Call enhanced generation endpoint with rich metadata
