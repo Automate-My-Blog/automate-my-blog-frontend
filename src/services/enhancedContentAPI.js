@@ -45,7 +45,14 @@ export class EnhancedContentAPI {
         comprehensiveContext: comprehensivePrompt,
         strategicCTAs: strategicCTAs,
         enhancementOptions: enhancementOptions,
-        requestEnhancedResponse: true // Flag for backend to return enhanced structure
+        requestEnhancedResponse: true, // Flag for backend to return enhanced structure
+        // Extract organization data from enhancementOptions for API detection
+        organizationId: enhancementOptions.organizationId,
+        organizationName: enhancementOptions.organizationName,
+        targetSEOScore: enhancementOptions.targetSEOScore,
+        includeVisuals: enhancementOptions.includeVisuals,
+        // Pass website analysis for enhancement detection
+        websiteAnalysis: enhancementOptions.comprehensiveContext?.websiteAnalysis
       };
 
       // Call enhanced generation endpoint with rich metadata
