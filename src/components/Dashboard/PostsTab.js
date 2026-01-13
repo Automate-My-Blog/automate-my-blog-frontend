@@ -34,6 +34,7 @@ import EditorLayout, { EditorPane, PreviewPane } from '../Editor/Layout/EditorLa
 import EditorToolbar from '../Editor/Toolbar/EditorToolbar';
 import RichTextEditor from '../Editor/RichTextEditor/RichTextEditor';
 import SEOAnalysis from '../SEOAnalysis/SEOAnalysis';
+import { VisualContentSuggestions } from '../VisualContent';
 
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
@@ -428,18 +429,24 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode }) => {
           enhancementOptions
         });
         
-        if (result.enhancedMetadata || result.seoAnalysis) {
+        if (result.enhancedMetadata || result.seoAnalysis || result.visualSuggestions) {
           const metadata = {
             seoAnalysis: result.seoAnalysis,
             contentQuality: result.contentQuality,
             strategicElements: result.strategicElements,
             improvementSuggestions: result.improvementSuggestions,
             keywordOptimization: result.keywordOptimization,
-            generationContext: result.generationContext
+            generationContext: result.generationContext,
+            visualSuggestions: result.visualSuggestions || []
           };
           setEnhancedMetadata(metadata);
           setSeoAnalysisVisible(true); // Show analysis by default for enhanced generation
           console.log('📊 Enhanced metadata captured:', metadata);
+          
+          // Log visual suggestions specifically
+          if (result.visualSuggestions && result.visualSuggestions.length > 0) {
+            console.log('🎨 Visual suggestions received:', result.visualSuggestions);
+          }
         } else {
           console.log('⚠️ No enhanced metadata found in result');
         }
@@ -2633,6 +2640,20 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode }) => {
                     businessGoals: 'Generate more customers through content'
                   }}
                   postId={currentDraft?.id || null}
+                />
+              </div>
+            )}
+
+            {/* Visual Content Suggestions Panel - Only shown when enhanced generation provides suggestions */}
+            {enhancedMetadata?.visualSuggestions && enhancedMetadata.visualSuggestions.length > 0 && (
+              <div style={{ marginBottom: '20px' }}>
+                <VisualContentSuggestions
+                  visualSuggestions={enhancedMetadata.visualSuggestions}
+                  onGenerateVisual={(suggestion) => {
+                    console.log('🎨 Generate visual requested:', suggestion);
+                    // TODO: Implement visual generation
+                    message.info('Visual generation coming soon!');
+                  }}
                 />
               </div>
             )}
