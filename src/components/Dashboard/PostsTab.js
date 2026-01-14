@@ -149,6 +149,10 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode }) => {
   const [enhancedMetadata, setEnhancedMetadata] = useState(null);
   const [seoAnalysisVisible, setSeoAnalysisVisible] = useState(false);
   
+  // Organization data for enhanced generation
+  const organizationId = user?.organizationId || user?.id; // Use user ID as fallback
+  const organizationName = user?.organizationName || '';
+  
   // UI helpers
   const responsive = ComponentHelpers.getResponsiveStyles();
   const defaultColors = ComponentHelpers.getDefaultColors();
@@ -366,8 +370,6 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode }) => {
     
     try {
       // Determine if enhanced generation should be used based on available organization data
-      const organizationId = user?.organizationId || user?.id; // Use user ID as fallback
-      const organizationName = user?.organizationName || '';
       const websiteAnalysisData = stepResults?.home?.websiteAnalysis || {};
       const hasWebsiteAnalysis = websiteAnalysisData && Object.keys(websiteAnalysisData).length > 0;
       
@@ -2649,10 +2651,75 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode }) => {
               <div style={{ marginBottom: '20px' }}>
                 <VisualContentSuggestions
                   visualSuggestions={enhancedMetadata.visualSuggestions}
-                  onGenerateVisual={(suggestion) => {
-                    console.log('🎨 Generate visual requested:', suggestion);
-                    // TODO: Implement visual generation
-                    message.info('Visual generation coming soon!');
+                  onGenerateVisual={async (suggestion) => {
+                    const serviceName = suggestion.testService || suggestion.recommendedService || suggestion.selectedService;
+                    const serviceDisplayName = {
+                      'quickchart': 'QuickChart (Free)',
+                      'stable_diffusion': 'Replicate',
+                      'dalle': 'DALL-E'
+                    }[serviceName] || serviceName;
+                    
+                    console.log('🎨 Generate visual requested:', {
+                      contentType: suggestion.contentType,
+                      service: serviceName,
+                      testService: !!suggestion.testService
+                    });
+                    
+                    try {
+                      message.loading({ content: `Generating ${suggestion.title} with ${serviceDisplayName}...`, key: 'visual-gen', duration: 0 });
+                      
+                      // Call visual generation API
+                      const response = await api.makeRequest('/api/v1/visual-content/generate', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                          contentType: suggestion.contentType,
+                          prompt: suggestion.prompt,
+                          organizationId: organizationId,
+                          postId: currentDraft?.id,
+                          servicePreference: serviceName,
+                          options: {
+                            width: 1024,
+                            height: 1024,
+                            quality: 'standard'
+                          }
+                        })
+                      });
+                      
+                      if (response.success) {
+                        // Show generated image information
+                        if (response.data?.imageUrl) {
+                          console.log('🎨 Generated image:', {
+                            id: response.data.id,
+                            url: response.data.imageUrl,
+                            service: response.data.serviceUsed,
+                            cost: response.data.cost
+                          });
+                          
+                          // Show success notification 
+                          message.success({
+                            content: `${suggestion.title} generated with ${serviceDisplayName}!`,
+                            key: 'visual-gen-success',
+                            duration: 4
+                          });
+                          
+                          // Return the result for inline display
+                          return response.data;
+                        } else {
+                          message.success({ 
+                            content: `${suggestion.title} generated with ${serviceDisplayName}!`, 
+                            key: 'visual-gen' 
+                          });
+                        }
+                      } else {
+                        throw new Error(response.error || 'Visual generation failed');
+                      }
+                    } catch (error) {
+                      console.error('Visual generation error:', error);
+                      message.error({ 
+                        content: `Failed to generate ${suggestion.title} with ${serviceDisplayName}: ${error.message}`, 
+                        key: 'visual-gen' 
+                      });
+                    }
                   }}
                 />
               </div>

@@ -36,8 +36,14 @@ const VisualContentSuggestions = ({
 }) => {
   const [previewModal, setPreviewModal] = useState({ visible: false, content: null });
   const [generating, setGenerating] = useState(null);
+  const [generatedImages, setGeneratedImages] = useState({});
 
-  if (!visualSuggestions || visualSuggestions.length === 0) {
+  // Ensure we have valid data structure
+  const validSuggestions = Array.isArray(visualSuggestions) 
+    ? visualSuggestions.filter(s => s && typeof s === 'object' && s.contentType)
+    : [];
+
+  if (!validSuggestions || validSuggestions.length === 0) {
     return (
       <Card style={style} size="small">
         <div style={{ textAlign: 'center', padding: 16 }}>
@@ -53,7 +59,14 @@ const VisualContentSuggestions = ({
     
     setGenerating(suggestion.id);
     try {
-      await onGenerateVisual(suggestion);
+      const result = await onGenerateVisual(suggestion);
+      // Store the generated image if successful
+      if (result && result.imageUrl) {
+        setGeneratedImages(prev => ({
+          ...prev,
+          [suggestion.id]: result.imageUrl
+        }));
+      }
     } finally {
       setGenerating(null);
     }
@@ -114,7 +127,7 @@ const VisualContentSuggestions = ({
           <Space>
             <PictureOutlined style={{ color: '#1890ff' }} />
             Visual Content Suggestions
-            <Badge count={visualSuggestions.length} style={{ backgroundColor: '#52c41a' }} />
+            <Badge count={validSuggestions.length} style={{ backgroundColor: '#52c41a' }} />
           </Space>
         }
         size="small"
@@ -129,10 +142,10 @@ const VisualContentSuggestions = ({
         />
 
         <List
-          dataSource={visualSuggestions}
+          dataSource={validSuggestions}
           renderItem={(suggestion) => (
             <List.Item
-              key={suggestion.id}
+              key={suggestion.id || `visual-${suggestion.contentType}-${Math.random()}`}
               actions={[
                 <Tooltip title="Preview suggestion details">
                   <Button 
@@ -143,16 +156,37 @@ const VisualContentSuggestions = ({
                     Preview
                   </Button>
                 </Tooltip>,
+                // Test buttons for different services
                 onGenerateVisual && (
-                  <Button 
-                    size="small" 
-                    type="primary"
-                    icon={<PictureOutlined />}
-                    loading={generating === suggestion.id}
-                    onClick={() => handleGenerateVisual(suggestion)}
-                  >
-                    Generate
-                  </Button>
+                  <Space size="small">
+                    <Button 
+                      size="small" 
+                      style={{ backgroundColor: '#52c41a', borderColor: '#52c41a', color: 'white' }}
+                      icon={<PictureOutlined />}
+                      loading={generating === `${suggestion.id}-quickchart`}
+                      onClick={() => handleGenerateVisual({...suggestion, testService: 'quickchart', id: `${suggestion.id}-quickchart`})}
+                    >
+                      QuickChart (Free)
+                    </Button>
+                    <Button 
+                      size="small" 
+                      style={{ backgroundColor: '#722ed1', borderColor: '#722ed1', color: 'white' }}
+                      icon={<PictureOutlined />}
+                      loading={generating === `${suggestion.id}-stable_diffusion`}
+                      onClick={() => handleGenerateVisual({...suggestion, testService: 'stable_diffusion', id: `${suggestion.id}-stable_diffusion`})}
+                    >
+                      Replicate ($)
+                    </Button>
+                    <Button 
+                      size="small" 
+                      style={{ backgroundColor: '#fa8c16', borderColor: '#fa8c16', color: 'white' }}
+                      icon={<PictureOutlined />}
+                      loading={generating === `${suggestion.id}-dalle`}
+                      onClick={() => handleGenerateVisual({...suggestion, testService: 'dalle', id: `${suggestion.id}-dalle`})}
+                    >
+                      DALL-E ($)
+                    </Button>
+                  </Space>
                 )
               ].filter(Boolean)}
             >
@@ -160,8 +194,8 @@ const VisualContentSuggestions = ({
                 avatar={getContentTypeIcon(suggestion.contentType)}
                 title={
                   <Space>
-                    <Text strong>{suggestion.title}</Text>
-                    <Tag color="blue">{suggestion.contentType.replace('_', ' ')}</Tag>
+                    <Text strong>{suggestion.title || 'Visual Content'}</Text>
+                    <Tag color="blue">{(suggestion.contentType || 'visual').replace('_', ' ')}</Tag>
                     {suggestion.priority === 'high' && (
                       <StarOutlined style={{ color: '#faad14' }} />
                     )}
@@ -169,14 +203,49 @@ const VisualContentSuggestions = ({
                 }
                 description={
                   <div>
-                    <Text style={{ fontSize: 12 }}>{suggestion.description}</Text>
+                    <Text style={{ fontSize: 12 }}>{suggestion.description || 'Visual content suggestion'}</Text>
+                    
+                    {/* Show AI Prompt */}
+                    {suggestion.prompt && (
+                      <div style={{ marginTop: 8, padding: 8, background: '#f5f5f5', borderRadius: 4, fontSize: 11 }}>
+                        <Text strong>AI Prompt: </Text>
+                        <Text style={{ fontFamily: 'monospace' }}>{suggestion.prompt}</Text>
+                      </div>
+                    )}
+                    
                     <div style={{ marginTop: 4 }}>
-                      {getServiceBadge(suggestion.recommendedService, suggestion.estimatedCost)}
+                      {getServiceBadge(suggestion.recommendedService || 'unknown', suggestion.estimatedCost || 0)}
                       <Text type="secondary" style={{ fontSize: 11, marginLeft: 8 }}>
                         <ClockCircleOutlined style={{ marginRight: 2 }} />
                         {suggestion.estimatedTime || '1-2 min'}
                       </Text>
                     </div>
+                    
+                    {/* Show Generated Image */}
+                    {generatedImages[suggestion.id] && (
+                      <div style={{ marginTop: 12 }}>
+                        <Text strong style={{ fontSize: 12 }}>Generated Image:</Text>
+                        <div style={{ marginTop: 4 }}>
+                          <img 
+                            src={generatedImages[suggestion.id]} 
+                            alt={suggestion.title}
+                            style={{ 
+                              maxWidth: '200px', 
+                              maxHeight: '150px', 
+                              borderRadius: 4,
+                              border: '1px solid #d9d9d9'
+                            }}
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                              e.target.nextSibling.style.display = 'block';
+                            }}
+                          />
+                          <div style={{ display: 'none', padding: 8, background: '#fff2f0', borderRadius: 4, marginTop: 4 }}>
+                            <Text type="secondary" style={{ fontSize: 11 }}>Image failed to load</Text>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 }
               />
@@ -188,8 +257,8 @@ const VisualContentSuggestions = ({
         <div style={{ marginTop: 16, padding: 12, background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 6 }}>
           <Text style={{ fontSize: 12 }}>
             <strong>Total estimated cost:</strong> ${' '}
-            {visualSuggestions.reduce((sum, s) => sum + (s.estimatedCost || 0), 0).toFixed(3)}
-            {' '} | <strong>Free suggestions:</strong> {visualSuggestions.filter(s => s.estimatedCost === 0).length}
+            {validSuggestions.reduce((sum, s) => sum + (s.estimatedCost || 0), 0).toFixed(3)}
+            {' '} | <strong>Free suggestions:</strong> {validSuggestions.filter(s => (s.estimatedCost || 0) === 0).length}
           </Text>
         </div>
       </Card>
