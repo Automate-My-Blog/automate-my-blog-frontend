@@ -38,6 +38,7 @@ const VisualContentSuggestions = ({
   const [previewModal, setPreviewModal] = useState({ visible: false, content: null });
   const [generating, setGenerating] = useState(null);
   const [generatedImages, setGeneratedImages] = useState({});
+  const [zoomModal, setZoomModal] = useState({ visible: false, imageUrl: '', title: '', service: '' });
 
   // Ensure we have valid data structure
   const validSuggestions = Array.isArray(visualSuggestions) 
@@ -152,45 +153,65 @@ const VisualContentSuggestions = ({
               onClick={async () => {
                 if (!onGenerateVisual) return;
                 
-                const services = ['quickchart', 'stable_diffusion', 'dalle'];
-                const totalGenerations = validSuggestions.length * services.length;
+                // Different services for different content types
+                const getServicesForType = (contentType) => {
+                  switch (contentType) {
+                    case 'hero_image':
+                      return ['stable_diffusion', 'dalle']; // No QuickChart for photos
+                    case 'infographic':
+                      return ['quickchart', 'stable_diffusion']; // Test both approaches
+                    case 'social_media':
+                      return ['stable_diffusion', 'dalle']; // No QuickChart for social
+                    default:
+                      return ['quickchart', 'stable_diffusion', 'dalle'];
+                  }
+                };
+                
+                // Calculate total generations based on content types
+                const allGenerations = [];
+                for (const suggestion of validSuggestions) {
+                  const services = getServicesForType(suggestion.contentType);
+                  for (const service of services) {
+                    allGenerations.push({ suggestion, service });
+                  }
+                }
+                const totalGenerations = allGenerations.length;
                 
                 message.loading({ 
-                  content: `Generating all ${totalGenerations} visuals (${validSuggestions.length} suggestions × ${services.length} services)...`, 
+                  content: `Generating ${totalGenerations} test visuals...`, 
                   key: 'bulk-visual-gen', 
                   duration: 0 
                 });
                 
                 let successCount = 0;
-                let currentCount = 0;
                 
-                for (const suggestion of validSuggestions) {
-                  for (const service of services) {
-                    currentCount++;
-                    try {
-                      // Update progress message
-                      message.loading({ 
-                        content: `Generating ${currentCount}/${totalGenerations}: ${suggestion.title} with ${service}...`, 
-                        key: 'bulk-visual-gen', 
-                        duration: 0 
-                      });
-                      
-                      const result = await onGenerateVisual({
-                        ...suggestion,
-                        testService: service,
-                        id: `${suggestion.id}-${service}`
-                      });
-                      
-                      if (result && result.imageUrl) {
-                        setGeneratedImages(prev => ({
-                          ...prev,
-                          [`${suggestion.id}-${service}`]: result.imageUrl
-                        }));
-                        successCount++;
-                      }
-                    } catch (error) {
-                      console.error(`Bulk generation error for ${suggestion.title} with ${service}:`, error);
+                for (let i = 0; i < allGenerations.length; i++) {
+                  const { suggestion, service } = allGenerations[i];
+                  const currentCount = i + 1;
+                  
+                  try {
+                    // Update progress message
+                    message.loading({ 
+                      content: `Generating ${currentCount}/${totalGenerations}: ${suggestion.title} with ${service}...`, 
+                      key: 'bulk-visual-gen', 
+                      duration: 0 
+                    });
+                    
+                    const result = await onGenerateVisual({
+                      ...suggestion,
+                      testService: service,
+                      id: `${suggestion.id}-${service}`
+                    });
+                    
+                    if (result && result.imageUrl) {
+                      setGeneratedImages(prev => ({
+                        ...prev,
+                        [`${suggestion.id}-${service}`]: result.imageUrl
+                      }));
+                      successCount++;
                     }
+                  } catch (error) {
+                    console.error(`Bulk generation error for ${suggestion.title} with ${service}:`, error);
                   }
                 }
                 
@@ -208,7 +229,7 @@ const VisualContentSuggestions = ({
                 padding: '0 32px'
               }}
             >
-              Generate All 9 Visuals ({validSuggestions.length} × 3 services)
+              Generate Test Visuals (Hero: 2, Infographic: 2, Social: 2)
             </Button>
           </div>
         )}
@@ -319,8 +340,16 @@ const VisualContentSuggestions = ({
                                     height: '90px', 
                                     objectFit: 'cover',
                                     borderRadius: 4,
-                                    border: '1px solid #d9d9d9'
+                                    border: '1px solid #d9d9d9',
+                                    cursor: 'pointer'
                                   }}
+                                  onClick={() => setZoomModal({
+                                    visible: true,
+                                    imageUrl: url,
+                                    title: suggestion.title,
+                                    service: service === 'quickchart' ? 'QuickChart' : 
+                                             service === 'stable_diffusion' ? 'Replicate' : 'DALL-E'
+                                  })}
                                   onError={(e) => {
                                     e.target.style.display = 'none';
                                   }}
@@ -428,6 +457,36 @@ const VisualContentSuggestions = ({
                 </div>
               </div>
             )}
+          </div>
+        )}
+      </Modal>
+
+      {/* Zoom Modal */}
+      <Modal
+        title={`${zoomModal.title} - ${zoomModal.service}`}
+        open={zoomModal.visible}
+        onCancel={() => setZoomModal({ visible: false, imageUrl: '', title: '', service: '' })}
+        footer={[
+          <Button key="close" onClick={() => setZoomModal({ visible: false, imageUrl: '', title: '', service: '' })}>
+            Close
+          </Button>
+        ]}
+        width="80%"
+        style={{ top: 20 }}
+      >
+        {zoomModal.imageUrl && (
+          <div style={{ textAlign: 'center' }}>
+            <img 
+              src={zoomModal.imageUrl}
+              alt={`${zoomModal.title} - ${zoomModal.service}`}
+              style={{ 
+                maxWidth: '100%', 
+                maxHeight: '70vh', 
+                objectFit: 'contain',
+                border: '1px solid #d9d9d9',
+                borderRadius: 4
+              }}
+            />
           </div>
         )}
       </Modal>
