@@ -371,6 +371,38 @@ const RichTextEditor = ({
           clear: both;
         }
 
+        /* Block elements should clear floats to prevent awkward wrapping */
+        .rich-text-editor h1,
+        .rich-text-editor h2,
+        .rich-text-editor h3,
+        .rich-text-editor h4,
+        .rich-text-editor h5,
+        .rich-text-editor h6 {
+          clear: both;
+        }
+
+        .rich-text-editor ul,
+        .rich-text-editor ol {
+          clear: both;
+        }
+
+        .rich-text-editor pre {
+          clear: both;
+        }
+
+        .rich-text-editor table {
+          clear: both;
+        }
+
+        .rich-text-editor hr {
+          clear: both;
+        }
+
+        /* Ensure multiple highlight boxes stack vertically */
+        .rich-text-editor .highlight-box {
+          clear: both;
+        }
+
         /* Mobile: Stack all floats */
         @media (max-width: 768px) {
           .rich-text-editor .highlight-float-left,
