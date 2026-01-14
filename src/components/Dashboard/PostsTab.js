@@ -2719,6 +2719,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode }) => {
                         content: `Failed to generate ${suggestion.title} with ${serviceDisplayName}: ${error.message}`, 
                         key: 'visual-gen' 
                       });
+                      return null; // Return null so component knows generation failed
                     }
                   }}
                 />

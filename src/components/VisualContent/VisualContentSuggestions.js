@@ -10,7 +10,8 @@ import {
   Tooltip,
   Modal,
   Alert,
-  Badge
+  Badge,
+  message
 } from 'antd';
 import { 
   PictureOutlined, 
@@ -141,6 +142,59 @@ const VisualContentSuggestions = ({
           style={{ marginBottom: 16 }}
         />
 
+        {/* Generate All Button */}
+        {onGenerateVisual && validSuggestions.length > 0 && (
+          <div style={{ marginBottom: 16, textAlign: 'center' }}>
+            <Button 
+              type="primary"
+              size="large"
+              icon={<PictureOutlined />}
+              onClick={async () => {
+                if (!onGenerateVisual) return;
+                
+                message.loading({ 
+                  content: `Generating all ${validSuggestions.length} visuals...`, 
+                  key: 'bulk-visual-gen', 
+                  duration: 0 
+                });
+                
+                let successCount = 0;
+                for (const suggestion of validSuggestions) {
+                  try {
+                    const result = await onGenerateVisual({
+                      ...suggestion,
+                      id: `${suggestion.id}-bulk`
+                    });
+                    if (result && result.imageUrl) {
+                      setGeneratedImages(prev => ({
+                        ...prev,
+                        [`${suggestion.id}-bulk`]: result.imageUrl
+                      }));
+                      successCount++;
+                    }
+                  } catch (error) {
+                    console.error('Bulk generation error:', error);
+                  }
+                }
+                
+                message.success({
+                  content: `Generated ${successCount}/${validSuggestions.length} visuals successfully!`,
+                  key: 'bulk-visual-gen'
+                });
+              }}
+              style={{
+                background: 'linear-gradient(90deg, #1890ff 0%, #722ed1 100%)',
+                borderColor: '#1890ff',
+                fontSize: '16px',
+                height: '48px',
+                padding: '0 32px'
+              }}
+            >
+              Generate All {validSuggestions.length} Visuals
+            </Button>
+          </div>
+        )}
+
         <List
           dataSource={validSuggestions}
           renderItem={(suggestion) => (
@@ -222,12 +276,12 @@ const VisualContentSuggestions = ({
                     </div>
                     
                     {/* Show Generated Image */}
-                    {generatedImages[suggestion.id] && (
+                    {(generatedImages[suggestion.id] || generatedImages[`${suggestion.id}-bulk`]) && (
                       <div style={{ marginTop: 12 }}>
                         <Text strong style={{ fontSize: 12 }}>Generated Image:</Text>
                         <div style={{ marginTop: 4 }}>
                           <img 
-                            src={generatedImages[suggestion.id]} 
+                            src={generatedImages[suggestion.id] || generatedImages[`${suggestion.id}-bulk`]} 
                             alt={suggestion.title}
                             style={{ 
                               maxWidth: '200px', 
