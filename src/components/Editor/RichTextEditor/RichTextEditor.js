@@ -105,6 +105,34 @@ const RichTextEditor = ({
         class: 'rich-text-editor',
         'data-placeholder': placeholder,
       },
+      // Handle drop events for highlight boxes
+      handleDrop: (view, event, slice, moved) => {
+        // Check if it's a highlight box being moved
+        const highlightData = event.dataTransfer?.getData('application/x-tiptap-highlight');
+
+        if (highlightData) {
+          event.preventDefault();
+
+          try {
+            const nodeData = JSON.parse(highlightData);
+            const pos = view.posAtCoords({ left: event.clientX, top: event.clientY });
+
+            if (pos) {
+              // Insert the highlight box at drop position
+              const node = view.state.schema.nodes.highlightBox.create(nodeData.attrs);
+              const transaction = view.state.tr.insert(pos.pos, node);
+              view.dispatch(transaction);
+
+              return true; // Indicate we handled the drop
+            }
+          } catch (e) {
+            console.error('Error handling highlight box drop:', e);
+          }
+        }
+
+        // Let TipTap handle other drops
+        return false;
+      },
     },
   });
 
@@ -432,6 +460,17 @@ const RichTextEditor = ({
 
         .rich-text-editor .highlight-box:hover {
           box-shadow: 0 0 0 2px rgba(114, 46, 209, 0.2);
+        }
+
+        /* Dragging state feedback */
+        .rich-text-editor .highlight-box[dragging="true"] {
+          opacity: 0.5;
+          box-shadow: 0 0 10px rgba(114, 46, 209, 0.4);
+        }
+
+        /* Drop zone indicator */
+        .rich-text-editor .ProseMirror.drop-target {
+          background: rgba(114, 46, 209, 0.05);
         }
 
         /* Mobile: Stack all floats */

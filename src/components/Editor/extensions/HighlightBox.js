@@ -21,6 +21,8 @@ const fontSizes = {
 
 // React component to render the highlight box
 const HighlightBoxComponent = ({ node, deleteNode, updateAttributes }) => {
+  const [isDragging, setIsDragging] = React.useState(false);
+
   const {
     type,
     content,
@@ -54,6 +56,48 @@ const HighlightBoxComponent = ({ node, deleteNode, updateAttributes }) => {
     } else {
       updateAttributes({ width: '100%', layout: 'block' });
     }
+  };
+
+  // Drag start handler - serialize node data
+  const handleDragStart = (e) => {
+    setIsDragging(true);
+
+    // Allow move operation
+    e.dataTransfer.effectAllowed = "move";
+
+    // Serialize complete node data
+    const nodeData = {
+      type: 'highlightBox',
+      attrs: node.attrs,
+    };
+
+    e.dataTransfer.setData('application/x-tiptap-highlight', JSON.stringify(nodeData));
+    e.dataTransfer.setData('text/plain', content); // Fallback for text
+
+    // Visual feedback - ghost image
+    if (e.dataTransfer.setDragImage) {
+      const target = e.currentTarget;
+      e.dataTransfer.setDragImage(target, target.offsetWidth / 2, 20);
+    }
+  };
+
+  // Drag end handler - delete original if moved
+  const handleDragEnd = (e) => {
+    setIsDragging(false);
+
+    // If drop effect was "move" (not "copy"), delete original node
+    if (e.dataTransfer.dropEffect === "move") {
+      // Give a small delay to ensure drop completed
+      setTimeout(() => {
+        deleteNode();
+      }, 50);
+    }
+  };
+
+  // Prevent default drag over to allow drop
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
   };
 
   // Default styles for each type
@@ -169,11 +213,40 @@ const HighlightBoxComponent = ({ node, deleteNode, updateAttributes }) => {
   return (
     <NodeViewWrapper>
       <div
-        style={getLayoutStyles()}
+        style={{
+          ...getLayoutStyles(),
+          opacity: isDragging ? 0.5 : 1,
+          transition: 'opacity 0.2s',
+        }}
         contentEditable={false}
         className={`highlight-box highlight-${layout}`}
+        draggable="true"
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+        onDragOver={handleDragOver}
         data-drag-handle
       >
+        {/* Visual drag indicator */}
+        {!isDragging && (
+          <div
+            style={{
+              position: 'absolute',
+              top: '8px',
+              left: '8px',
+              cursor: 'grab',
+              padding: '4px',
+              background: 'rgba(114, 46, 209, 0.1)',
+              borderRadius: '4px',
+              fontSize: '12px',
+              opacity: 0,
+              transition: 'opacity 0.2s',
+            }}
+            className="drag-indicator"
+          >
+            ⋮⋮
+          </div>
+        )}
+
         {/* Control Buttons Bar */}
         <div
           style={{
@@ -271,6 +344,9 @@ const HighlightBoxComponent = ({ node, deleteNode, updateAttributes }) => {
       {/* Add CSS for hover effect */}
       <style jsx>{`
         .highlight-box:hover .highlight-controls {
+          opacity: 1 !important;
+        }
+        .highlight-box:hover .drag-indicator {
           opacity: 1 !important;
         }
       `}</style>
@@ -389,9 +465,7 @@ export const HighlightBox = Node.create({
   },
 
   addNodeView() {
-    return ReactNodeViewRenderer(HighlightBoxComponent, {
-      draggable: true,
-    });
+    return ReactNodeViewRenderer(HighlightBoxComponent);
   },
 
   addCommands() {
