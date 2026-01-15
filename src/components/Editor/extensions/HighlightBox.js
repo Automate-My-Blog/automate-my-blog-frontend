@@ -80,6 +80,11 @@ const HighlightBoxComponent = ({ node, deleteNode, updateAttributes, getPos }) =
     e.dataTransfer.setData('application/x-tiptap-highlight', JSON.stringify(nodeData));
     e.dataTransfer.setData('text/plain', content); // Fallback for text
 
+    // Dispatch custom event with node data for preview
+    window.dispatchEvent(new CustomEvent('highlight-drag-start', {
+      detail: nodeData
+    }));
+
     // Visual feedback - ghost image
     if (e.dataTransfer.setDragImage) {
       const target = e.currentTarget;
@@ -91,6 +96,9 @@ const HighlightBoxComponent = ({ node, deleteNode, updateAttributes, getPos }) =
   const handleDragEnd = (e) => {
     // Remove global drag flag
     document.body.removeAttribute('data-highlight-dragging');
+
+    // Dispatch drag end event
+    window.dispatchEvent(new CustomEvent('highlight-drag-end'));
 
     // Reset dragging state after a delay to allow drop to complete first
     setTimeout(() => {

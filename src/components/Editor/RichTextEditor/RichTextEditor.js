@@ -44,6 +44,11 @@ const RichTextEditor = ({
   const isInternalUpdate = React.useRef(false);
   const lastExternalContent = React.useRef(content || '');
 
+  // Drag preview state and refs
+  const [dragPreview, setDragPreview] = React.useState(null);
+  const dragPreviewRef = React.useRef(null);
+  const draggingNodeData = React.useRef(null);
+
   // Memoize markdown to HTML conversion to prevent infinite loops
   const htmlContent = useMemo(() => {
     if (!content) return '';
@@ -126,33 +131,91 @@ const RichTextEditor = ({
       // Handle DOM events for drag zone feedback
       handleDOMEvents: {
         dragover: (view, event) => {
-          // Check if this is a highlight box drag using global flag
           try {
-            if (document.body.hasAttribute('data-highlight-dragging')) {
+            if (document.body.hasAttribute('data-highlight-dragging') && draggingNodeData.current) {
               const editorRect = view.dom.getBoundingClientRect();
               const relativeX = event.clientX - editorRect.left;
               const horizontalPercent = (relativeX / editorRect.width) * 100;
 
-              // Determine zone
+              // Determine zone and layout
               let zone = 'center';
+              let layout = 'block';
+              let width = '100%';
+
               if (horizontalPercent < 33) {
                 zone = 'left';
+                layout = 'float-left';
+                width = '50%';
               } else if (horizontalPercent > 67) {
                 zone = 'right';
+                layout = 'float-right';
+                width = '50%';
               }
 
-              // Update editor data attribute for CSS styling using requestAnimationFrame
-              // This prevents conflicts with React's rendering cycle
-              requestAnimationFrame(() => {
-                if (view.dom && view.dom.setAttribute) {
-                  view.dom.setAttribute('data-drag-zone', zone);
-                }
-              });
+              // Get drop position for precise Y placement
+              const dropPos = view.posAtCoords({ left: event.clientX, top: event.clientY });
+
+              if (dropPos) {
+                const dropCoords = view.coordsAtPos(dropPos.pos);
+                const dropY = dropCoords.top - editorRect.top;
+
+                // Extract node data
+                const nodeData = draggingNodeData.current;
+                const attrs = nodeData.attrs;
+
+                // Font size mapping
+                const fontSizes = {
+                  small: '14px',
+                  medium: '16px',
+                  large: '24px',
+                  xlarge: '48px',
+                  xxlarge: '72px'
+                };
+
+                // Default styles
+                const defaultStyles = {
+                  statistic: { backgroundColor: '#e6f7ff', borderColor: '#1890ff', color: '#0050b3', defaultIcon: '📊' },
+                  pullquote: { backgroundColor: '#f6ffed', borderColor: '#52c41a', color: '#389e0d', defaultIcon: '💬' },
+                  takeaway: { backgroundColor: '#fff7e6', borderColor: '#fa8c16', color: '#d46b08', defaultIcon: '💡' },
+                  process: { backgroundColor: '#f9f0ff', borderColor: '#722ed1', color: '#531dab', defaultIcon: '🔄' },
+                  warning: { backgroundColor: '#fff1f0', borderColor: '#ff4d4f', color: '#cf1322', defaultIcon: '⚠️' },
+                  tip: { backgroundColor: '#e6f7ff', borderColor: '#1890ff', color: '#0050b3', defaultIcon: '💡' },
+                  definition: { backgroundColor: '#f0f5ff', borderColor: '#2f54eb', color: '#1d39c4', defaultIcon: '📖' },
+                  comparison: { backgroundColor: '#e6fffb', borderColor: '#13c2c2', color: '#006d75', defaultIcon: '⚖️' },
+                };
+
+                const typeStyle = defaultStyles[attrs.type] || defaultStyles.takeaway;
+
+                // Build preview data
+                const previewData = {
+                  top: Math.max(0, dropY - 20),  // Slight offset above cursor
+                  layout: layout,
+                  width: width,
+                  editorWidth: editorRect.width,
+                  backgroundColor: attrs.customBg || typeStyle.backgroundColor,
+                  borderColor: attrs.customBorder || typeStyle.borderColor,
+                  textColor: typeStyle.color,
+                  fontSize: fontSizes[attrs.fontSize] || fontSizes.medium,
+                  icon: attrs.icon || typeStyle.defaultIcon,
+                  contentPreview: attrs.content ?
+                    attrs.content.replace(/<[^>]*>/g, '').substring(0, 50) + '...' :
+                    'Preview content...',
+                };
+
+                requestAnimationFrame(() => {
+                  if (view.dom && view.dom.setAttribute) {
+                    view.dom.setAttribute('data-drag-zone', zone);
+                  }
+
+                  // Update preview state
+                  setDragPreview(previewData);
+                });
+              }
             }
           } catch (e) {
             console.error('Error in dragover handler:', e);
           }
-          return false; // Don't prevent default, let TipTap handle
+          return false;
         },
         dragleave: (view, event) => {
           // Clear zone indicator when leaving editor
@@ -170,6 +233,9 @@ const RichTextEditor = ({
                   view.dom.removeAttribute('data-drag-zone');
                 }
               });
+
+              // Clear preview when leaving editor
+              setDragPreview(null);
             }
           } catch (e) {
             console.error('Error in dragleave handler:', e);
@@ -185,6 +251,9 @@ const RichTextEditor = ({
                 view.dom.removeAttribute('data-drag-zone');
               }
             });
+
+            // Clear preview on drop
+            setDragPreview(null);
           } catch (e) {
             console.error('Error in drop handler:', e);
           }
@@ -317,6 +386,26 @@ const RichTextEditor = ({
     }
   }, [content, htmlContent, editor]);
 
+  // Listen for custom drag start/end events to capture node data for preview
+  React.useEffect(() => {
+    const handleHighlightDragStart = (e) => {
+      draggingNodeData.current = e.detail;  // Store node data
+    };
+
+    const handleHighlightDragEnd = () => {
+      draggingNodeData.current = null;      // Clear on drag end
+      setDragPreview(null);                 // Clear preview
+    };
+
+    window.addEventListener('highlight-drag-start', handleHighlightDragStart);
+    window.addEventListener('highlight-drag-end', handleHighlightDragEnd);
+
+    return () => {
+      window.removeEventListener('highlight-drag-start', handleHighlightDragStart);
+      window.removeEventListener('highlight-drag-end', handleHighlightDragEnd);
+    };
+  }, []);
+
   // Calculate inline toolbar position based on text selection
   const updateInlineToolbarPosition = useCallback((editorInstance) => {
     const currentEditor = editorInstance || editor;
@@ -385,7 +474,69 @@ const RichTextEditor = ({
           position={inlineToolbarPosition}
         />
       )}
-      
+
+      {/* Drag preview indicator */}
+      {dragPreview && (
+        <div
+          ref={dragPreviewRef}
+          style={{
+            position: 'absolute',
+            top: `${dragPreview.top}px`,
+            left: dragPreview.layout === 'float-left' ? '0' :
+                  dragPreview.layout === 'float-right' ? `${dragPreview.editorWidth * 0.5}px` :
+                  '0',
+            width: dragPreview.width === '100%' ? '100%' : '50%',
+            padding: '16px 20px',
+            margin: '8px 0',
+            borderRadius: '8px',
+            backgroundColor: dragPreview.backgroundColor,
+            borderLeft: `4px solid ${dragPreview.borderColor}`,
+            opacity: 0.7,
+            pointerEvents: 'none',
+            zIndex: 1000,
+            transition: 'top 0.05s ease-out, left 0.1s ease-out',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+          }}
+        >
+          <div style={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: '12px',
+          }}>
+            <span style={{ fontSize: '24px', lineHeight: 1 }}>{dragPreview.icon}</span>
+            <div style={{ flex: 1 }}>
+              <div style={{
+                fontSize: dragPreview.fontSize,
+                lineHeight: '1.6',
+                color: dragPreview.textColor,
+                fontWeight: '500',
+              }}>
+                {dragPreview.contentPreview}
+              </div>
+            </div>
+          </div>
+
+          {/* Layout indicator label */}
+          <div style={{
+            position: 'absolute',
+            top: '-24px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            padding: '4px 8px',
+            background: 'rgba(114, 46, 209, 0.9)',
+            color: 'white',
+            borderRadius: '4px',
+            fontSize: '11px',
+            fontWeight: '600',
+            whiteSpace: 'nowrap',
+          }}>
+            {dragPreview.layout === 'float-left' ? 'Float Left (50%)' :
+             dragPreview.layout === 'float-right' ? 'Float Right (50%)' :
+             'Full Width (100%)'}
+          </div>
+        </div>
+      )}
+
       <style jsx>{`
         .rich-text-editor {
           position: relative;
@@ -632,101 +783,6 @@ const RichTextEditor = ({
         /* Drop zone indicator */
         .rich-text-editor .ProseMirror.drop-target {
           background: rgba(114, 46, 209, 0.05);
-        }
-
-        /* Drag zone visual feedback */
-        .rich-text-editor[data-drag-zone] {
-          position: relative;
-        }
-
-        /* Left zone indicator (0-33%) */
-        .rich-text-editor[data-drag-zone="left"]::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 33%;
-          height: 100%;
-          background: linear-gradient(to right, rgba(114, 46, 209, 0.15), rgba(114, 46, 209, 0.05));
-          pointer-events: none;
-          z-index: 1;
-          border-right: 2px dashed rgba(114, 46, 209, 0.3);
-        }
-
-        /* Center zone indicator (33-67%) */
-        .rich-text-editor[data-drag-zone="center"]::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 33%;
-          width: 34%;
-          height: 100%;
-          background: rgba(114, 46, 209, 0.1);
-          pointer-events: none;
-          z-index: 1;
-          border-left: 2px dashed rgba(114, 46, 209, 0.3);
-          border-right: 2px dashed rgba(114, 46, 209, 0.3);
-        }
-
-        /* Right zone indicator (67-100%) */
-        .rich-text-editor[data-drag-zone="right"]::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          right: 0;
-          width: 33%;
-          height: 100%;
-          background: linear-gradient(to left, rgba(114, 46, 209, 0.15), rgba(114, 46, 209, 0.05));
-          pointer-events: none;
-          z-index: 1;
-          border-left: 2px dashed rgba(114, 46, 209, 0.3);
-        }
-
-        /* Add labels to zones for clarity */
-        .rich-text-editor[data-drag-zone="left"]::after {
-          content: 'Float Left (50%)';
-          position: absolute;
-          top: 10px;
-          left: 10px;
-          padding: 6px 12px;
-          background: rgba(114, 46, 209, 0.9);
-          color: white;
-          border-radius: 4px;
-          font-size: 12px;
-          font-weight: 600;
-          pointer-events: none;
-          z-index: 2;
-        }
-
-        .rich-text-editor[data-drag-zone="center"]::after {
-          content: 'Full Width (100%)';
-          position: absolute;
-          top: 10px;
-          left: 50%;
-          transform: translateX(-50%);
-          padding: 6px 12px;
-          background: rgba(114, 46, 209, 0.9);
-          color: white;
-          border-radius: 4px;
-          font-size: 12px;
-          font-weight: 600;
-          pointer-events: none;
-          z-index: 2;
-        }
-
-        .rich-text-editor[data-drag-zone="right"]::after {
-          content: 'Float Right (50%)';
-          position: absolute;
-          top: 10px;
-          right: 10px;
-          padding: 6px 12px;
-          background: rgba(114, 46, 209, 0.9);
-          color: white;
-          border-radius: 4px;
-          font-size: 12px;
-          font-weight: 600;
-          pointer-events: none;
-          z-index: 2;
         }
 
         /* Mobile: Stack all floats */
