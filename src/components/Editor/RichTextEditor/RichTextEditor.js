@@ -48,6 +48,7 @@ const RichTextEditor = ({
   const [dragPreview, setDragPreview] = React.useState(null);
   const dragPreviewRef = React.useRef(null);
   const draggingNodeData = React.useRef(null);
+  const previewUpdateScheduled = React.useRef(false);
 
   // Memoize markdown to HTML conversion to prevent infinite loops
   const htmlContent = useMemo(() => {
@@ -202,14 +203,21 @@ const RichTextEditor = ({
                     'Preview content...',
                 };
 
-                requestAnimationFrame(() => {
-                  if (view.dom && view.dom.setAttribute) {
-                    view.dom.setAttribute('data-drag-zone', zone);
-                  }
+                // Only schedule one update at a time to prevent React Fiber conflicts
+                if (!previewUpdateScheduled.current) {
+                  previewUpdateScheduled.current = true;
 
-                  // Update preview state
-                  setDragPreview(previewData);
-                });
+                  requestAnimationFrame(() => {
+                    previewUpdateScheduled.current = false;
+
+                    if (view.dom && view.dom.setAttribute) {
+                      view.dom.setAttribute('data-drag-zone', zone);
+                    }
+
+                    // Update preview state
+                    setDragPreview(previewData);
+                  });
+                }
               }
             }
           } catch (e) {
@@ -227,15 +235,15 @@ const RichTextEditor = ({
               event.clientY < editorRect.top ||
               event.clientY > editorRect.bottom
             ) {
-              // Clear from editor element using requestAnimationFrame
+              // Clear preview and zone indicator when leaving editor
+              previewUpdateScheduled.current = false;
+
               requestAnimationFrame(() => {
                 if (view.dom && view.dom.removeAttribute) {
                   view.dom.removeAttribute('data-drag-zone');
                 }
+                setDragPreview(null);
               });
-
-              // Clear preview when leaving editor
-              setDragPreview(null);
             }
           } catch (e) {
             console.error('Error in dragleave handler:', e);
@@ -243,17 +251,16 @@ const RichTextEditor = ({
           return false;
         },
         drop: (view, event) => {
-          // Clear zone indicator on drop
+          // Clear zone indicator and preview on drop
           try {
-            // Clear from editor element using requestAnimationFrame
+            previewUpdateScheduled.current = false;
+
             requestAnimationFrame(() => {
               if (view.dom && view.dom.removeAttribute) {
                 view.dom.removeAttribute('data-drag-zone');
               }
+              setDragPreview(null);
             });
-
-            // Clear preview on drop
-            setDragPreview(null);
           } catch (e) {
             console.error('Error in drop handler:', e);
           }
