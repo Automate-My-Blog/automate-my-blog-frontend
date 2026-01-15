@@ -40,6 +40,10 @@ const RichTextEditor = ({
   // Track last emitted content to prevent loops
   const lastEmittedContent = React.useRef(content || '');
 
+  // Track update source to prevent cursor resets
+  const isInternalUpdate = React.useRef(false);
+  const lastExternalContent = React.useRef(content || '');
+
   // Memoize markdown to HTML conversion to prevent infinite loops
   const htmlContent = useMemo(() => {
     if (!content) return '';
@@ -91,6 +95,9 @@ const RichTextEditor = ({
     content: htmlContent,
     editable: editable,
     onUpdate: ({ editor }) => {
+      // Mark this as an internal update (from user typing)
+      isInternalUpdate.current = true;
+
       const html = editor.getHTML();
       const markdown = htmlToMarkdown(html);
 
@@ -99,6 +106,11 @@ const RichTextEditor = ({
         lastEmittedContent.current = markdown;
         onChange(markdown);
       }
+
+      // Reset flag after update propagates
+      setTimeout(() => {
+        isInternalUpdate.current = false;
+      }, 0);
     },
     onSelectionUpdate: ({ editor }) => {
       // Update inline toolbar position when selection changes
@@ -130,7 +142,11 @@ const RichTextEditor = ({
               }
 
               // Update editor data attribute for CSS styling
-              view.dom.setAttribute('data-drag-zone', zone);
+              // Set attribute on .ProseMirror element, not outer wrapper
+              const proseMirrorElement = view.dom.querySelector('.ProseMirror');
+              if (proseMirrorElement) {
+                proseMirrorElement.setAttribute('data-drag-zone', zone);
+              }
             }
           } catch (e) {
             console.error('Error in dragover handler:', e);
@@ -147,7 +163,11 @@ const RichTextEditor = ({
               event.clientY < editorRect.top ||
               event.clientY > editorRect.bottom
             ) {
-              view.dom.removeAttribute('data-drag-zone');
+              // Clear from .ProseMirror element
+              const proseMirrorElement = view.dom.querySelector('.ProseMirror');
+              if (proseMirrorElement) {
+                proseMirrorElement.removeAttribute('data-drag-zone');
+              }
             }
           } catch (e) {
             console.error('Error in dragleave handler:', e);
@@ -157,7 +177,11 @@ const RichTextEditor = ({
         drop: (view, event) => {
           // Clear zone indicator on drop
           try {
-            view.dom.removeAttribute('data-drag-zone');
+            // Clear from .ProseMirror element
+            const proseMirrorElement = view.dom.querySelector('.ProseMirror');
+            if (proseMirrorElement) {
+              proseMirrorElement.removeAttribute('data-drag-zone');
+            }
           } catch (e) {
             console.error('Error in drop handler:', e);
           }
@@ -179,7 +203,18 @@ const RichTextEditor = ({
             if (dropPos && nodeData.sourcePos !== null && nodeData.sourcePos !== undefined) {
               const { state } = view;
               const sourcePos = nodeData.sourcePos;
-              const targetPos = dropPos.pos;
+              let targetPos = dropPos.pos;
+
+              // Validate drop position is at block boundary to prevent text splitting
+              const $pos = state.doc.resolve(targetPos);
+
+              // Check if we're inside a text block
+              if ($pos.parent.isTextblock && $pos.parent.textContent.length > 0) {
+                // If in middle of text, move to end of current block
+                if ($pos.parentOffset > 0 && $pos.parentOffset < $pos.parent.textContent.length) {
+                  targetPos = $pos.end();  // Move to end of paragraph
+                }
+              }
 
               // Get the original node from document
               const sourceNode = state.doc.nodeAt(sourcePos);
@@ -269,14 +304,15 @@ const RichTextEditor = ({
   // Update editor content when content prop changes
   React.useEffect(() => {
     if (editor && content !== undefined && htmlContent) {
-      const currentHtml = editor.getHTML();
-      
-      // Only update if content has actually changed to avoid cursor issues
-      if (htmlContent !== currentHtml) {
+      // Only update if:
+      // 1. Content changed externally (not from user typing)
+      // 2. Content is actually different
+      if (!isInternalUpdate.current && content !== lastExternalContent.current) {
+        lastExternalContent.current = content;
         editor.commands.setContent(htmlContent);
       }
     }
-  }, [htmlContent, editor]);
+  }, [content, htmlContent, editor]);
 
   // Calculate inline toolbar position based on text selection
   const updateInlineToolbarPosition = useCallback((editorInstance) => {
