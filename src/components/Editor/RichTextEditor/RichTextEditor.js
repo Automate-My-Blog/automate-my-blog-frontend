@@ -12,12 +12,80 @@ import { TableRow } from '@tiptap/extension-table-row';
 import { TableCell } from '@tiptap/extension-table-cell';
 import { TableHeader } from '@tiptap/extension-table-header';
 import { Placeholder } from '@tiptap/extension-placeholder';
+import { Extension } from '@tiptap/core';
+import { Decoration, DecorationSet } from '@tiptap/pm/view';
+import { Plugin, PluginKey } from '@tiptap/pm/state';
 
 import { colors, spacing, borderRadius, typography } from '../../DesignSystem/tokens';
 import InlineToolbar from '../InlineToolbar/InlineToolbar';
 import { KeyboardShortcuts } from '../extensions/KeyboardShortcuts';
 import { HighlightBox } from '../extensions/HighlightBox';
 import { markdownToHtml, htmlToMarkdown } from '../../../utils/markdownToHtml';
+
+/**
+ * Plugin key for drag reflow decorations
+ */
+const dragReflowPluginKey = new PluginKey('dragReflow');
+
+/**
+ * Create ProseMirror plugin for managing drag reflow decorations
+ * This plugin adds invisible spacer elements at the drop position to cause text reflow
+ */
+const createDragReflowPlugin = () => {
+  return new Plugin({
+    key: dragReflowPluginKey,
+    state: {
+      init() {
+        return DecorationSet.empty;
+      },
+      apply(tr, decorationSet) {
+        // Get decoration data from transaction metadata
+        const meta = tr.getMeta(dragReflowPluginKey);
+
+        if (meta === null || meta === undefined) {
+          // No metadata, keep existing decorations
+          return decorationSet.map(tr.mapping, tr.doc);
+        }
+
+        if (meta.clear) {
+          // Clear decorations
+          return DecorationSet.empty;
+        }
+
+        if (meta.pos !== undefined && meta.layout) {
+          // Create new decoration at drop position
+          const { pos, layout, width, height } = meta;
+
+          // Create a widget decoration that adds visual space
+          const decoration = Decoration.widget(pos, () => {
+            const spacer = document.createElement('div');
+            spacer.className = 'drag-reflow-spacer';
+            spacer.style.cssText = `
+              float: ${layout === 'float-left' ? 'left' : layout === 'float-right' ? 'right' : 'none'};
+              width: ${width};
+              height: ${height}px;
+              margin: 16px ${layout === 'float-left' ? '16px' : '0'} 16px ${layout === 'float-right' ? '16px' : '0'};
+              pointer-events: none;
+              visibility: hidden;
+            `;
+            return spacer;
+          }, {
+            side: -1, // Place before position
+          });
+
+          return DecorationSet.create(tr.doc, [decoration]);
+        }
+
+        return decorationSet;
+      },
+    },
+    props: {
+      decorations(state) {
+        return this.getState(state);
+      },
+    },
+  });
+};
 
 /**
  * Modern WYSIWYG Rich Text Editor using TipTap
@@ -97,6 +165,13 @@ const RichTextEditor = ({
       }),
       KeyboardShortcuts,
       HighlightBox,
+      // Drag reflow extension for text reflow during drag operations
+      Extension.create({
+        name: 'dragReflow',
+        addProseMirrorPlugins() {
+          return [createDragReflowPlugin()];
+        },
+      }),
     ],
     content: htmlContent,
     editable: editable,
@@ -203,6 +278,17 @@ const RichTextEditor = ({
                     'Preview content...',
                 };
 
+                // Calculate approximate height of preview box for spacing
+                const baseHeight = 60; // Base height for small content
+                const fontSizeMultiplier = {
+                  small: 1,
+                  medium: 1.2,
+                  large: 1.8,
+                  xlarge: 2.5,
+                  xxlarge: 3.5,
+                };
+                const estimatedHeight = baseHeight * (fontSizeMultiplier[attrs.fontSize] || 1);
+
                 // Only schedule one update at a time to prevent React Fiber conflicts
                 if (!previewUpdateScheduled.current) {
                   previewUpdateScheduled.current = true;
@@ -216,6 +302,15 @@ const RichTextEditor = ({
 
                     // Update preview state
                     setDragPreview(previewData);
+
+                    // Dispatch decoration metadata to create spacer for text reflow
+                    const tr = view.state.tr.setMeta(dragReflowPluginKey, {
+                      pos: dropPos.pos,
+                      layout: layout,
+                      width: width,
+                      height: estimatedHeight,
+                    });
+                    view.dispatch(tr);
                   });
                 }
               }
@@ -243,6 +338,10 @@ const RichTextEditor = ({
                   view.dom.removeAttribute('data-drag-zone');
                 }
                 setDragPreview(null);
+
+                // Clear decoration for text reflow
+                const tr = view.state.tr.setMeta(dragReflowPluginKey, { clear: true });
+                view.dispatch(tr);
               });
             }
           } catch (e) {
@@ -260,6 +359,10 @@ const RichTextEditor = ({
                 view.dom.removeAttribute('data-drag-zone');
               }
               setDragPreview(null);
+
+              // Clear decoration for text reflow
+              const tr = view.state.tr.setMeta(dragReflowPluginKey, { clear: true });
+              view.dispatch(tr);
             });
           } catch (e) {
             console.error('Error in drop handler:', e);
