@@ -105,6 +105,59 @@ const RichTextEditor = ({
         class: 'rich-text-editor',
         'data-placeholder': placeholder,
       },
+      // Handle DOM events for drag zone feedback
+      handleDOMEvents: {
+        dragover: (view, event) => {
+          // Check if this is a highlight box drag using global flag
+          try {
+            if (document.body.hasAttribute('data-highlight-dragging')) {
+              const editorRect = view.dom.getBoundingClientRect();
+              const relativeX = event.clientX - editorRect.left;
+              const horizontalPercent = (relativeX / editorRect.width) * 100;
+
+              // Determine zone
+              let zone = 'center';
+              if (horizontalPercent < 33) {
+                zone = 'left';
+              } else if (horizontalPercent > 67) {
+                zone = 'right';
+              }
+
+              // Update editor data attribute for CSS styling
+              view.dom.setAttribute('data-drag-zone', zone);
+            }
+          } catch (e) {
+            console.error('Error in dragover handler:', e);
+          }
+          return false; // Don't prevent default, let TipTap handle
+        },
+        dragleave: (view, event) => {
+          // Clear zone indicator when leaving editor
+          try {
+            const editorRect = view.dom.getBoundingClientRect();
+            if (
+              event.clientX < editorRect.left ||
+              event.clientX > editorRect.right ||
+              event.clientY < editorRect.top ||
+              event.clientY > editorRect.bottom
+            ) {
+              view.dom.removeAttribute('data-drag-zone');
+            }
+          } catch (e) {
+            console.error('Error in dragleave handler:', e);
+          }
+          return false;
+        },
+        drop: (view, event) => {
+          // Clear zone indicator on drop
+          try {
+            view.dom.removeAttribute('data-drag-zone');
+          } catch (e) {
+            console.error('Error in drop handler:', e);
+          }
+          return false; // Let handleDrop handle it
+        },
+      },
       // Handle drop events for highlight boxes
       handleDrop: (view, event, slice, moved) => {
         // Check if it's a highlight box being moved
@@ -534,6 +587,101 @@ const RichTextEditor = ({
         /* Drop zone indicator */
         .rich-text-editor .ProseMirror.drop-target {
           background: rgba(114, 46, 209, 0.05);
+        }
+
+        /* Drag zone visual feedback */
+        .rich-text-editor .ProseMirror[data-drag-zone] {
+          position: relative;
+        }
+
+        /* Left zone indicator (0-33%) */
+        .rich-text-editor .ProseMirror[data-drag-zone="left"]::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 33%;
+          height: 100%;
+          background: linear-gradient(to right, rgba(114, 46, 209, 0.15), rgba(114, 46, 209, 0.05));
+          pointer-events: none;
+          z-index: 1;
+          border-right: 2px dashed rgba(114, 46, 209, 0.3);
+        }
+
+        /* Center zone indicator (33-67%) */
+        .rich-text-editor .ProseMirror[data-drag-zone="center"]::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 33%;
+          width: 34%;
+          height: 100%;
+          background: rgba(114, 46, 209, 0.1);
+          pointer-events: none;
+          z-index: 1;
+          border-left: 2px dashed rgba(114, 46, 209, 0.3);
+          border-right: 2px dashed rgba(114, 46, 209, 0.3);
+        }
+
+        /* Right zone indicator (67-100%) */
+        .rich-text-editor .ProseMirror[data-drag-zone="right"]::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          right: 0;
+          width: 33%;
+          height: 100%;
+          background: linear-gradient(to left, rgba(114, 46, 209, 0.15), rgba(114, 46, 209, 0.05));
+          pointer-events: none;
+          z-index: 1;
+          border-left: 2px dashed rgba(114, 46, 209, 0.3);
+        }
+
+        /* Add labels to zones for clarity */
+        .rich-text-editor .ProseMirror[data-drag-zone="left"]::after {
+          content: 'Float Left (50%)';
+          position: absolute;
+          top: 10px;
+          left: 10px;
+          padding: 6px 12px;
+          background: rgba(114, 46, 209, 0.9);
+          color: white;
+          border-radius: 4px;
+          font-size: 12px;
+          font-weight: 600;
+          pointer-events: none;
+          z-index: 2;
+        }
+
+        .rich-text-editor .ProseMirror[data-drag-zone="center"]::after {
+          content: 'Full Width (100%)';
+          position: absolute;
+          top: 10px;
+          left: 50%;
+          transform: translateX(-50%);
+          padding: 6px 12px;
+          background: rgba(114, 46, 209, 0.9);
+          color: white;
+          border-radius: 4px;
+          font-size: 12px;
+          font-weight: 600;
+          pointer-events: none;
+          z-index: 2;
+        }
+
+        .rich-text-editor .ProseMirror[data-drag-zone="right"]::after {
+          content: 'Float Right (50%)';
+          position: absolute;
+          top: 10px;
+          right: 10px;
+          padding: 6px 12px;
+          background: rgba(114, 46, 209, 0.9);
+          color: white;
+          border-radius: 4px;
+          font-size: 12px;
+          font-weight: 600;
+          pointer-events: none;
+          z-index: 2;
         }
 
         /* Mobile: Stack all floats */

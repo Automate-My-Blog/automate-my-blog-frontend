@@ -20,8 +20,9 @@ const fontSizes = {
 };
 
 // React component to render the highlight box
-const HighlightBoxComponent = ({ node, deleteNode, updateAttributes }) => {
+const HighlightBoxComponent = ({ node, deleteNode, updateAttributes, getPos }) => {
   const [isDragging, setIsDragging] = React.useState(false);
+  const deleteScheduledRef = React.useRef(false);
 
   const {
     type,
@@ -61,14 +62,19 @@ const HighlightBoxComponent = ({ node, deleteNode, updateAttributes }) => {
   // Drag start handler - serialize node data
   const handleDragStart = (e) => {
     setIsDragging(true);
+    deleteScheduledRef.current = false;
+
+    // Add global flag for drag detection
+    document.body.setAttribute('data-highlight-dragging', 'true');
 
     // Allow move operation
     e.dataTransfer.effectAllowed = "move";
 
-    // Serialize complete node data
+    // Serialize complete node data including position for deletion
     const nodeData = {
       type: 'highlightBox',
       attrs: node.attrs,
+      sourcePos: typeof getPos === 'function' ? getPos() : null,
     };
 
     e.dataTransfer.setData('application/x-tiptap-highlight', JSON.stringify(nodeData));
@@ -81,23 +87,15 @@ const HighlightBoxComponent = ({ node, deleteNode, updateAttributes }) => {
     }
   };
 
-  // Drag end handler - delete original if moved
+  // Drag end handler
   const handleDragEnd = (e) => {
-    setIsDragging(false);
+    // Remove global drag flag
+    document.body.removeAttribute('data-highlight-dragging');
 
-    // If drop effect was "move" (not "copy"), delete original node
-    if (e.dataTransfer.dropEffect === "move") {
-      // Give a small delay to ensure drop completed
-      setTimeout(() => {
-        deleteNode();
-      }, 50);
-    }
-  };
-
-  // Prevent default drag over to allow drop
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
+    // Reset dragging state after a delay to allow drop to complete first
+    setTimeout(() => {
+      setIsDragging(false);
+    }, 100);
   };
 
   // Default styles for each type
@@ -223,7 +221,6 @@ const HighlightBoxComponent = ({ node, deleteNode, updateAttributes }) => {
         draggable="true"
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
-        onDragOver={handleDragOver}
         data-drag-handle
       >
         {/* Visual drag indicator */}
