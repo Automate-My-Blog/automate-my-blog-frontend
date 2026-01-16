@@ -34,6 +34,12 @@ export const analysisAPI = {
                                response.analysis.scenarios[0].businessValue &&
                                response.analysis.scenarios[0].targetSegment;
 
+        console.log('🎯 [CTA DEBUG] Frontend: Received API response with CTAs:', {
+          hasCTAs: !!response.ctas,
+          ctaCount: response.ctaCount || 0,
+          hasOrganizationId: !!response.analysis.organizationId
+        });
+
         return {
           success: true,
           analysis: {
@@ -64,13 +70,18 @@ export const analysisAPI = {
             customerProblems: response.analysis.customerProblems || [],
             customerLanguage: response.analysis.customerLanguage || [],
             keywords: response.analysis.keywords || [],
-            contentIdeas: response.analysis.contentIdeas || []
+            contentIdeas: response.analysis.contentIdeas || [],
+            organizationId: response.analysis.organizationId  // ← CRITICAL: Pass organizationId for CTA fetching
           },
           webSearchInsights: {
             brandResearch: response.analysis.brandColors ? 'Found actual brand guidelines' : null,
             keywordResearch: hasEnhancedData ? 'Current market keyword analysis completed' : null,
             researchQuality: hasEnhancedData ? 'enhanced' : 'basic'
-          }
+          },
+          // ← CRITICAL: Pass CTAs from backend response
+          ctas: response.ctas || [],
+          ctaCount: response.ctaCount || 0,
+          hasSufficientCTAs: response.hasSufficientCTAs || false
         };
       } else {
         throw new Error('Analysis failed: Invalid response');
