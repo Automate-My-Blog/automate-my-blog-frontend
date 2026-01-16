@@ -77,17 +77,61 @@ const TopicSelectionStepV2 = (props) => {
   useEffect(() => {
     const fetchCTAs = async () => {
       const orgId = analysis?.organizationId;
-      if (!orgId) return;
+      console.log('🎨 [CTA DEBUG] Frontend: Starting CTA fetch:', {
+        hasAnalysis: !!analysis,
+        organizationId: orgId,
+        analysisKeys: analysis ? Object.keys(analysis) : []
+      });
+
+      console.log('🚩 [CHECKPOINT 2] Topic Card CTA Fetch:', {
+        hasAnalysis: !!analysis,
+        hasOrganizationId: !!orgId,
+        organizationId: orgId || 'MISSING',
+        willFetchCTAs: !!orgId,
+        nextStep: orgId ? 'Fetch CTAs from API' : 'ERROR: No org ID - CTAs will not load'
+      });
+
+      if (!orgId) {
+        console.warn('⚠️ [CTA DEBUG] Frontend: No organizationId found in analysis - skipping CTA fetch:', {
+          analysis
+        });
+        return;
+      }
 
       setCtasLoading(true);
       try {
+        console.log('📡 [CTA DEBUG] Frontend: Calling getOrganizationCTAs API:', { organizationId: orgId });
+
         const response = await api.getOrganizationCTAs(orgId);
+
+        console.log('✅ [CTA DEBUG] Frontend: CTA API response received:', {
+          organizationId: orgId,
+          ctaCount: response.ctas?.length || 0,
+          hasSufficientCTAs: response.has_sufficient_ctas,
+          ctas: response.ctas?.map(c => ({ text: c.text, type: c.type }))
+        });
+
         setOrganizationCTAs(response.ctas || []);
         setHasSufficientCTAs(response.has_sufficient_ctas || false);
+
+        console.log('🎨 [CTA DEBUG] Frontend: CTA state updated:', {
+          organizationCTAs: response.ctas || [],
+          ctaCount: response.ctas?.length || 0,
+          hasSufficientCTAs: response.has_sufficient_ctas || false
+        });
       } catch (error) {
         console.error('Failed to fetch CTAs:', error);
+        console.error('🚨 [CTA DEBUG] Frontend: Failed to fetch CTAs:', {
+          organizationId: orgId,
+          error: error.message,
+          errorDetails: error
+        });
         // Silently fail - CTAs are optional
       } finally {
+        console.log('🎨 [CTA DEBUG] Frontend: CTA fetch complete:', {
+          loading: false,
+          organizationId: orgId
+        });
         setCtasLoading(false);
       }
     };
@@ -288,6 +332,14 @@ const TopicSelectionStepV2 = (props) => {
   const renderTopicCard = (topic) => {
     const isSelected = selectedTopic === topic.id;
     const isGenerating = isLoading && selectedTopic === topic.id;
+
+    // Log CTA rendering state
+    console.log('🎨 [CTA DEBUG] Frontend: Rendering CTA section:', {
+      ctasLoading,
+      organizationCTAsCount: organizationCTAs.length,
+      hasSufficientCTAs,
+      organizationCTAs: organizationCTAs.map(c => ({ text: c.text, type: c.type }))
+    });
 
     return (
       <Col key={topic.id} xs={24} md={12} lg={12}>
