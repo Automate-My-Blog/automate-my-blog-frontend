@@ -237,15 +237,21 @@ const WebsiteAnalysisStepStandalone = ({
       if (result.success) {
         // Clear any existing cached analysis to prevent flashing
         autoBlogAPI.clearCachedAnalysis();
-        
+
         // Update state with analysis results
         setAnalysisResults && setAnalysisResults(result.analysis);
         setWebSearchInsights && setWebSearchInsights(result.webSearchInsights);
         setAnalysisCompleted && setAnalysisCompleted(true);
         setWebsiteUrl && setWebsiteUrl(validation.formattedUrl);
-        
+
         message.success('Website analysis completed successfully!');
-        
+
+        console.log('🎯 [CTA DEBUG] WebsiteAnalysisStepStandalone: API result contains CTAs:', {
+          hasCTAs: !!result.ctas,
+          ctaCount: result.ctaCount,
+          ctas: result.ctas
+        });
+
         // Update sticky header with business name after analysis completes
         updateStickyWorkflowStep && updateStickyWorkflowStep('websiteAnalysis', {
           websiteUrl: validation.formattedUrl,
@@ -253,14 +259,17 @@ const WebsiteAnalysisStepStandalone = ({
           businessType: result.analysis?.businessType || result.analysis?.industry || '',
           ...result.analysis
         });
-        
-        // Notify parent component
+
+        // Notify parent component with CTAs included
         onAnalysisComplete && onAnalysisComplete({
           analysis: result.analysis,
           webSearchInsights: result.webSearchInsights,
-          websiteUrl: validation.formattedUrl
+          websiteUrl: validation.formattedUrl,
+          ctas: result.ctas || [],
+          ctaCount: result.ctaCount || 0,
+          hasSufficientCTAs: result.hasSufficientCTAs || false
         });
-        
+
         return true;
       } else {
         // Handle error with fallback

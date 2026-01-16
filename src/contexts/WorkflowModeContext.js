@@ -174,7 +174,10 @@ export const WorkflowModeProvider = ({ children }) => {
         keywordResearch: null,
         researchQuality: 'basic' // 'basic', 'enhanced', 'premium'
       },
-      analysisCompleted: false
+      analysisCompleted: false,
+      ctas: [],
+      ctaCount: 0,
+      hasSufficientCTAs: false
     },
     audience: {
       customerStrategy: null,
@@ -259,7 +262,20 @@ export const WorkflowModeProvider = ({ children }) => {
       }
     }));
   }, []);
-  
+
+  // Update CTA data
+  const updateCTAData = useCallback((ctaData) => {
+    setStepResults(prev => ({
+      ...prev,
+      home: {
+        ...prev.home,
+        ctas: ctaData.ctas || [],
+        ctaCount: ctaData.ctaCount || 0,
+        hasSufficientCTAs: ctaData.hasSufficientCTAs || false
+      }
+    }));
+  }, []);
+
   // Update web search insights
   const updateWebSearchInsights = useCallback((insightsData) => {
     setStepResults(prev => ({
@@ -1301,6 +1317,7 @@ export const WorkflowModeProvider = ({ children }) => {
     // =============================================================================
     advanceStep,
     updateWebsiteAnalysis,
+    updateCTAData,
     updateWebSearchInsights,
     updateAnalysisCompleted,
     updateTrendingTopics,

@@ -18,14 +18,15 @@ const { Title, Text, Paragraph } = Typography;
 const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMode, showSaveProjectButton = false, onSaveProject, isNewRegistration = false, projectJustSaved = false, onCreateNewPost }) => {
   const { user } = useAuth();
   const tabMode = useTabMode('dashboard');
-  const { 
-    websiteUrl, 
-    setWebsiteUrl, 
-    isLoading, 
+  const {
+    websiteUrl,
+    setWebsiteUrl,
+    isLoading,
     setIsLoading,
     currentStep,
     stepResults,
     updateWebsiteAnalysis,
+    updateCTAData,
     updateWebSearchInsights,
     updateAnalysisCompleted,
     requireAuth,
@@ -175,7 +176,21 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
     updateWebsiteAnalysis(data.analysis);
     updateWebSearchInsights(data.webSearchInsights || { researchQuality: 'basic' });
     updateAnalysisCompleted(true);
-    
+
+    // Update CTA data if present
+    if (data.ctas || data.ctaCount !== undefined) {
+      console.log('🎯 [CTA DEBUG] Dashboard: Storing CTA data:', {
+        ctaCount: data.ctaCount,
+        hasSufficientCTAs: data.hasSufficientCTAs,
+        ctas: data.ctas
+      });
+      updateCTAData({
+        ctas: data.ctas || [],
+        ctaCount: data.ctaCount || 0,
+        hasSufficientCTAs: data.hasSufficientCTAs || false
+      });
+    }
+
     // Update progressive sticky header with analysis results
     updateStickyWorkflowStep('websiteAnalysis', {
       websiteUrl: websiteUrl,
@@ -183,7 +198,7 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
       businessType: data.analysis?.businessType || data.analysis?.industry || '',
       ...data.analysis
     });
-    
+
     // Note: Auto-save is now handled by useEffect below to ensure proper state propagation
   };
   
