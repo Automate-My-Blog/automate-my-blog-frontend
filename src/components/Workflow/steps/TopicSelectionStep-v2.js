@@ -4,9 +4,11 @@ import {
   DatabaseOutlined,
   BulbOutlined,
   EditOutlined,
-  LockOutlined
+  LockOutlined,
+  PlusOutlined
 } from '@ant-design/icons';
 import { ComponentHelpers } from '../interfaces/WorkflowComponentInterface';
+import ManualCTAInputModal from '../../Modals/ManualCTAInputModal';
 import api from '../../../services/api';
 
 const { Title, Text, Paragraph } = Typography;
@@ -72,6 +74,10 @@ const TopicSelectionStepV2 = (props) => {
   const [organizationCTAs, setOrganizationCTAs] = useState([]);
   const [ctasLoading, setCtasLoading] = useState(false);
   const [hasSufficientCTAs, setHasSufficientCTAs] = useState(false);
+
+  // Manual CTA modal state
+  const [showManualCTAModal, setShowManualCTAModal] = useState(false);
+  const [manualCTAPromptShown, setManualCTAPromptShown] = useState(false);
 
   // Fetch CTAs when organization ID is available
   useEffect(() => {
@@ -139,6 +145,25 @@ const TopicSelectionStepV2 = (props) => {
     fetchCTAs();
   }, [analysis?.organizationId]);
 
+  // Auto-trigger modal if insufficient CTAs after data loads
+  useEffect(() => {
+    if (analysis?.organizationId && !manualCTAPromptShown) {
+      // Check CTA sufficiency after short delay to allow data to load
+      const timer = setTimeout(() => {
+        if (organizationCTAs.length < 3 && !ctasLoading) {
+          console.log('⚠️ Insufficient CTAs detected after audience selection, prompting for manual entry:', {
+            ctaCount: organizationCTAs.length,
+            hasSufficientCTAs
+          });
+          setManualCTAPromptShown(true);
+          setShowManualCTAModal(true);
+        }
+      }, 1000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [analysis?.organizationId, organizationCTAs.length, ctasLoading, manualCTAPromptShown, hasSufficientCTAs]);
+
   // Check if web search enhancement is still in progress
   const hasWebSearchData = analysis.scenarios && analysis.scenarios.length > 0 && 
     analysis.scenarios[0].businessValue && analysis.scenarios[0].targetSegment;
@@ -193,6 +218,54 @@ const TopicSelectionStepV2 = (props) => {
       // Premium feature: show more topic ideas
       message.info('Additional topic ideas available with premium access');
     }
+  };
+
+  /**
+   * Handle manual CTA submission from modal
+   */
+  const handleManualCTAsSubmit = async (ctas) => {
+    try {
+      const orgId = analysis?.organizationId;
+      if (!orgId) {
+        message.error('Organization ID not found');
+        return;
+      }
+
+      // Submit CTAs to backend
+      const response = await api.addManualCTAs(orgId, ctas);
+
+      if (response.success) {
+        message.success(`Successfully added ${response.ctas_added} CTAs`);
+
+        // Refresh CTA list
+        const updatedCTAs = await api.getOrganizationCTAs(orgId);
+        setOrganizationCTAs(updatedCTAs.ctas || []);
+        setHasSufficientCTAs(updatedCTAs.has_sufficient_ctas || false);
+
+        // Update parent component if callback exists
+        if (onAnalysisComplete) {
+          onAnalysisComplete({
+            analysis,
+            ctas: updatedCTAs.ctas,
+            ctaCount: updatedCTAs.count,
+            hasSufficientCTAs: updatedCTAs.has_sufficient_ctas
+          });
+        }
+
+        setShowManualCTAModal(false);
+      }
+    } catch (error) {
+      console.error('Failed to add manual CTAs:', error);
+      message.error('Failed to add CTAs. Please try again.');
+    }
+  };
+
+  /**
+   * Handle user choosing to skip manual CTA entry
+   */
+  const handleSkipManualCTAs = () => {
+    message.info('Continuing without additional CTAs');
+    setShowManualCTAModal(false);
   };
 
   // =============================================================================
@@ -609,32 +682,51 @@ const TopicSelectionStepV2 = (props) => {
 
       {/* Strategic CTAs */}
       <div style={{ marginBottom: '12px' }}>
-        <Text strong style={{ color: analysis.brandColors.primary, fontSize: '13px', display: 'block', marginBottom: '4px' }}>
-          🚀 Conversion Elements
-        </Text>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+          <Text strong style={{ color: analysis.brandColors.primary, fontSize: '13px' }}>
+            🚀 Conversion Elements
+          </Text>
+          {!hasSufficientCTAs && (
+            <Button
+              size="small"
+              type="link"
+              icon={<PlusOutlined />}
+              onClick={() => setShowManualCTAModal(true)}
+              style={{ fontSize: '12px', padding: 0 }}
+            >
+              Add More
+            </Button>
+          )}
+        </div>
+
         {ctasLoading ? (
           <Text style={{ fontSize: '12px', color: '#999', fontStyle: 'italic' }}>
             Loading CTAs...
           </Text>
         ) : organizationCTAs.length > 0 ? (
-          <div style={{ fontSize: '12px', color: '#666' }}>
-            {organizationCTAs.map((cta, index) => (
-              <div key={cta.id || index} style={{ marginBottom: '2px' }}>
-                • {cta.text}
-              </div>
-            ))}
+          <div>
+            <div style={{ fontSize: '12px', color: '#666' }}>
+              {organizationCTAs.map((cta, index) => (
+                <div key={cta.id || index} style={{ marginBottom: '2px' }}>
+                  • {cta.text}
+                </div>
+              ))}
+            </div>
+            {!hasSufficientCTAs && organizationCTAs.length < 3 && (
+              <Text style={{ fontSize: '11px', color: '#ff4d4f', marginTop: '4px', display: 'block' }}>
+                ⚠️ {3 - organizationCTAs.length} more CTA{3 - organizationCTAs.length !== 1 ? 's' : ''} recommended
+              </Text>
+            )}
           </div>
-        ) : hasSufficientCTAs === false ? (
-          <Text style={{ fontSize: '12px', color: '#ff4d4f' }}>
-            ⚠️ No CTAs configured yet
-          </Text>
         ) : (
-          <Text style={{ fontSize: '12px', color: '#666' }}>
-            {analysis.websiteGoals
-              ? `Strategic CTAs driving toward: ${analysis.websiteGoals.toLowerCase()}`
-              : `CTAs aligned with your primary business objectives and customer journey`
-            }
-          </Text>
+          <div>
+            <Text style={{ fontSize: '12px', color: '#ff4d4f', display: 'block', marginBottom: '4px' }}>
+              ⚠️ No CTAs configured yet
+            </Text>
+            <Text style={{ fontSize: '11px', color: '#999' }}>
+              CTAs will be added automatically when modal appears
+            </Text>
+          </div>
         )}
       </div>
 
@@ -895,13 +987,24 @@ const TopicSelectionStepV2 = (props) => {
         )}
       </Card>
 
+      {/* Manual CTA Input Modal */}
+      <ManualCTAInputModal
+        visible={showManualCTAModal}
+        onCancel={() => setShowManualCTAModal(false)}
+        onSubmit={handleManualCTAsSubmit}
+        onSkip={handleSkipManualCTAs}
+        existingCTAs={organizationCTAs}
+        minCTAs={3}
+        websiteName={analysis?.businessName || 'your website'}
+      />
+
       {/* CSS animations */}
       <style jsx>{`
         @keyframes pulse {
           0%, 100% { opacity: 1; }
           50% { opacity: 0.5; }
         }
-        
+
         @keyframes progress {
           0% { transform: translateX(-100%); }
           100% { transform: translateX(400%); }

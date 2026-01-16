@@ -1,13 +1,14 @@
 import React from 'react';
 import { Card, Button, Row, Col, Typography, Input, Form, Space, Tag, Spin } from 'antd';
-import { 
-  GlobalOutlined, 
-  ScanOutlined, 
-  SearchOutlined, 
-  DatabaseOutlined, 
+import {
+  GlobalOutlined,
+  ScanOutlined,
+  SearchOutlined,
+  DatabaseOutlined,
   SettingOutlined,
   LoginOutlined,
-  UserAddOutlined
+  UserAddOutlined,
+  LinkOutlined
 } from '@ant-design/icons';
 import { ComponentHelpers } from '../interfaces/WorkflowComponentInterface';
 
@@ -803,18 +804,33 @@ const WebsiteAnalysisStepV2 = (props) => {
                       border: `1px solid ${defaultColors.accent}30`,
                       height: '100%'
                     }}>
+                      {/* Small type/placement tags at top */}
                       <div style={{ marginBottom: '8px' }}>
-                        <Tag color={cta.type === 'contact_link' ? 'blue' : 'green'} style={{ marginBottom: '4px' }}>
+                        <Tag size="small" color="default" style={{ fontSize: '11px' }}>
                           {cta.type.replace('_', ' ')}
                         </Tag>
-                        <Tag color="default">{cta.placement}</Tag>
+                        <Tag size="small" color="default" style={{ fontSize: '11px' }}>
+                          {cta.placement}
+                        </Tag>
                       </div>
-                      <Text strong style={{ fontSize: responsive.fontSize.text, display: 'block', marginBottom: '4px' }}>
+
+                      {/* Prominent CTA text */}
+                      <Text strong style={{ fontSize: '16px', display: 'block', marginBottom: '6px' }}>
                         {cta.text}
                       </Text>
-                      <Text style={{ fontSize: responsive.fontSize.small, color: '#666', wordBreak: 'break-all' }}>
-                        {cta.href}
-                      </Text>
+
+                      {/* Link display with icon */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <LinkOutlined style={{ color: defaultColors.primary, fontSize: '12px' }} />
+                        <a
+                          href={cta.href.startsWith('http') ? cta.href : `https://${cta.href}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ fontSize: '14px', color: defaultColors.primary, wordBreak: 'break-all' }}
+                        >
+                          {cta.href.length > 50 ? cta.href.substring(0, 50) + '...' : cta.href}
+                        </a>
+                      </div>
                     </div>
                   </Col>
                 ))}
