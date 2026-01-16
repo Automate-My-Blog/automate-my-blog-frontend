@@ -28,13 +28,13 @@ import HTMLPreview from '../HTMLPreview/HTMLPreview';
 import TypographySettings from '../TypographySettings/TypographySettings';
 import FormattingToolbar from '../FormattingToolbar/FormattingToolbar';
 import ExportModal from '../ExportModal/ExportModal';
+import HighlightedContentSuggestions from '../HighlightedContent/HighlightedContentSuggestions';
 
 // New Enhanced Components
 import EditorLayout, { EditorPane, PreviewPane } from '../Editor/Layout/EditorLayout';
 import EditorToolbar from '../Editor/Toolbar/EditorToolbar';
 import RichTextEditor from '../Editor/RichTextEditor/RichTextEditor';
 import SEOAnalysis from '../SEOAnalysis/SEOAnalysis';
-import { VisualContentSuggestions } from '../VisualContent';
 
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
@@ -2646,82 +2646,12 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode }) => {
               </div>
             )}
 
-            {/* Visual Content Suggestions Panel - Only shown when enhanced generation provides suggestions */}
-            {enhancedMetadata?.visualSuggestions && enhancedMetadata.visualSuggestions.length > 0 && (
+            {/* Highlighted Content Suggestions - New user-facing feature */}
+            {editingContent && editingContent.length >= 100 && (
               <div style={{ marginBottom: '20px' }}>
-                <VisualContentSuggestions
-                  visualSuggestions={enhancedMetadata.visualSuggestions}
-                  onGenerateVisual={async (suggestion) => {
-                    const serviceName = suggestion.testService || suggestion.recommendedService || suggestion.selectedService;
-                    const serviceDisplayName = {
-                      'quickchart': 'QuickChart (Free)',
-                      'stable_diffusion': 'Replicate',
-                      'dalle': 'DALL-E'
-                    }[serviceName] || serviceName;
-                    
-                    console.log('🎨 Generate visual requested:', {
-                      contentType: suggestion.contentType,
-                      service: serviceName,
-                      testService: !!suggestion.testService
-                    });
-                    
-                    try {
-                      message.loading({ content: `Generating ${suggestion.title} with ${serviceDisplayName}...`, key: 'visual-gen', duration: 0 });
-                      
-                      // Call visual generation API
-                      const response = await api.makeRequest('/api/v1/visual-content/generate', {
-                        method: 'POST',
-                        body: JSON.stringify({
-                          contentType: suggestion.contentType,
-                          prompt: suggestion.prompt,
-                          organizationId: organizationId,
-                          postId: currentDraft?.id,
-                          servicePreference: serviceName,
-                          options: {
-                            width: 1024,
-                            height: 1024,
-                            quality: 'standard'
-                          }
-                        })
-                      });
-                      
-                      if (response.success) {
-                        // Show generated image information
-                        if (response.data?.imageUrl) {
-                          console.log('🎨 Generated image:', {
-                            id: response.data.id,
-                            url: response.data.imageUrl,
-                            service: response.data.serviceUsed,
-                            cost: response.data.cost
-                          });
-                          
-                          // Show success notification 
-                          message.success({
-                            content: `${suggestion.title} generated with ${serviceDisplayName}!`,
-                            key: 'visual-gen-success',
-                            duration: 4
-                          });
-                          
-                          // Return the result for inline display
-                          return response.data;
-                        } else {
-                          message.success({ 
-                            content: `${suggestion.title} generated with ${serviceDisplayName}!`, 
-                            key: 'visual-gen' 
-                          });
-                        }
-                      } else {
-                        throw new Error(response.error || 'Visual generation failed');
-                      }
-                    } catch (error) {
-                      console.error('Visual generation error:', error);
-                      message.error({ 
-                        content: `Failed to generate ${suggestion.title} with ${serviceDisplayName}: ${error.message}`, 
-                        key: 'visual-gen' 
-                      });
-                      return null; // Return null so component knows generation failed
-                    }
-                  }}
+                <HighlightedContentSuggestions
+                  editor={richTextEditor}
+                  style={{ marginTop: 0 }}
                 />
               </div>
             )}
@@ -2839,6 +2769,16 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode }) => {
                       businessGoals: 'Generate more customers through content'
                     }}
                     postId={currentDraft?.id || null}
+                  />
+                </div>
+              )}
+
+              {/* Highlighted Content Suggestions - Focus mode */}
+              {editingContent && editingContent.length >= 100 && (
+                <div style={{ marginBottom: '20px' }}>
+                  <HighlightedContentSuggestions
+                    editor={richTextEditor}
+                    style={{ marginTop: 0 }}
                   />
                 </div>
               )}

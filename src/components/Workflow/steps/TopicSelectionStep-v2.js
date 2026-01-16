@@ -1,12 +1,13 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, Button, Row, Col, Typography, Tag, Divider, Space, message } from 'antd';
-import { 
+import {
   DatabaseOutlined,
   BulbOutlined,
   EditOutlined,
-  LockOutlined 
+  LockOutlined
 } from '@ant-design/icons';
 import { ComponentHelpers } from '../interfaces/WorkflowComponentInterface';
+import api from '../../../services/api';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -66,6 +67,33 @@ const TopicSelectionStepV2 = (props) => {
   const brandColors = getBrandColors(stepResults);
   const analysis = stepResults?.websiteAnalysis || {};
   const availableTopics = stepResults?.trendingTopics || [];
+
+  // CTA state management
+  const [organizationCTAs, setOrganizationCTAs] = useState([]);
+  const [ctasLoading, setCtasLoading] = useState(false);
+  const [hasSufficientCTAs, setHasSufficientCTAs] = useState(false);
+
+  // Fetch CTAs when organization ID is available
+  useEffect(() => {
+    const fetchCTAs = async () => {
+      const orgId = analysis?.organizationId;
+      if (!orgId) return;
+
+      setCtasLoading(true);
+      try {
+        const response = await api.getOrganizationCTAs(orgId);
+        setOrganizationCTAs(response.ctas || []);
+        setHasSufficientCTAs(response.has_sufficient_ctas || false);
+      } catch (error) {
+        console.error('Failed to fetch CTAs:', error);
+        // Silently fail - CTAs are optional
+      } finally {
+        setCtasLoading(false);
+      }
+    };
+
+    fetchCTAs();
+  }, [analysis?.organizationId]);
 
   // Check if web search enhancement is still in progress
   const hasWebSearchData = analysis.scenarios && analysis.scenarios.length > 0 && 
@@ -532,12 +560,30 @@ const TopicSelectionStepV2 = (props) => {
         <Text strong style={{ color: analysis.brandColors.primary, fontSize: '13px', display: 'block', marginBottom: '4px' }}>
           🚀 Conversion Elements
         </Text>
-        <Text style={{ fontSize: '12px', color: '#666' }}>
-          {analysis.websiteGoals 
-            ? `Strategic CTAs driving toward: ${analysis.websiteGoals.toLowerCase()}`
-            : `CTAs aligned with your primary business objectives and customer journey`
-          }
-        </Text>
+        {ctasLoading ? (
+          <Text style={{ fontSize: '12px', color: '#999', fontStyle: 'italic' }}>
+            Loading CTAs...
+          </Text>
+        ) : organizationCTAs.length > 0 ? (
+          <div style={{ fontSize: '12px', color: '#666' }}>
+            {organizationCTAs.map((cta, index) => (
+              <div key={cta.id || index} style={{ marginBottom: '2px' }}>
+                • {cta.text}
+              </div>
+            ))}
+          </div>
+        ) : hasSufficientCTAs === false ? (
+          <Text style={{ fontSize: '12px', color: '#ff4d4f' }}>
+            ⚠️ No CTAs configured yet
+          </Text>
+        ) : (
+          <Text style={{ fontSize: '12px', color: '#666' }}>
+            {analysis.websiteGoals
+              ? `Strategic CTAs driving toward: ${analysis.websiteGoals.toLowerCase()}`
+              : `CTAs aligned with your primary business objectives and customer journey`
+            }
+          </Text>
+        )}
       </div>
 
       {/* Content Quality */}

@@ -3,11 +3,8 @@ import {
   Card, 
   Typography, 
   Button, 
-  List, 
   Tag, 
   Space, 
-  Image, 
-  Tooltip,
   Modal,
   Alert,
   Badge,
@@ -15,15 +12,11 @@ import {
 } from 'antd';
 import { 
   PictureOutlined, 
-  BarChartOutlined, 
-  EyeOutlined,
-  DownloadOutlined,
-  StarOutlined,
-  DollarOutlined,
-  ClockCircleOutlined
+  BarChartOutlined,
+  DollarOutlined
 } from '@ant-design/icons';
 
-const { Text, Title } = Typography;
+const { Text } = Typography;
 
 /**
  * Visual Content Suggestions Component
@@ -35,7 +28,6 @@ const VisualContentSuggestions = ({
   onPreviewVisual,
   style = {} 
 }) => {
-  const [previewModal, setPreviewModal] = useState({ visible: false, content: null });
   const [generating, setGenerating] = useState(null);
   const [generatedImages, setGeneratedImages] = useState({});
   const [zoomModal, setZoomModal] = useState({ visible: false, imageUrl: '', title: '', service: '' });
@@ -74,13 +66,6 @@ const VisualContentSuggestions = ({
     }
   };
 
-  const handlePreviewVisual = (suggestion) => {
-    if (onPreviewVisual) {
-      onPreviewVisual(suggestion);
-    } else {
-      setPreviewModal({ visible: true, content: suggestion });
-    }
-  };
 
   const getContentTypeIcon = (type) => {
     switch (type) {
@@ -153,71 +138,65 @@ const VisualContentSuggestions = ({
               onClick={async () => {
                 if (!onGenerateVisual) return;
                 
-                // Different services for different content types
-                const getServicesForType = (contentType) => {
-                  switch (contentType) {
-                    case 'hero_image':
-                      return ['stable_diffusion', 'dalle']; // No QuickChart for photos
-                    case 'infographic':
-                      return ['quickchart', 'stable_diffusion']; // Test both approaches
-                    case 'social_media':
-                      return ['stable_diffusion', 'dalle']; // No QuickChart for social
-                    default:
-                      return ['quickchart', 'stable_diffusion', 'dalle'];
-                  }
-                };
+                // For all highlight test cases, we want to test with 3 different styles
+                const highlightStyles = ['pullout-style', 'box-style', 'inline-style'];
                 
-                // Calculate total generations based on content types
+                // Calculate total generations - all test cases with all 3 styles
                 const allGenerations = [];
                 for (const suggestion of validSuggestions) {
-                  const services = getServicesForType(suggestion.contentType);
-                  for (const service of services) {
-                    allGenerations.push({ suggestion, service });
+                  for (const style of highlightStyles) {
+                    allGenerations.push({ suggestion, style });
                   }
                 }
                 const totalGenerations = allGenerations.length;
                 
                 message.loading({ 
-                  content: `Generating ${totalGenerations} test visuals...`, 
-                  key: 'bulk-visual-gen', 
+                  content: `Generating ${totalGenerations} highlight styles (${validSuggestions.length} test cases × 3 styles)...`, 
+                  key: 'bulk-highlight-gen', 
                   duration: 0 
                 });
                 
                 let successCount = 0;
                 
                 for (let i = 0; i < allGenerations.length; i++) {
-                  const { suggestion, service } = allGenerations[i];
+                  const { suggestion, style } = allGenerations[i];
                   const currentCount = i + 1;
                   
                   try {
                     // Update progress message
+                    const styleDisplayName = {
+                      'pullout-style': 'Pullout Style',
+                      'box-style': 'Box Style', 
+                      'inline-style': 'Inline Style'
+                    }[style] || style;
+                    
                     message.loading({ 
-                      content: `Generating ${currentCount}/${totalGenerations}: ${suggestion.title} with ${service}...`, 
-                      key: 'bulk-visual-gen', 
+                      content: `Rendering ${currentCount}/${totalGenerations}: ${suggestion.testType} with ${styleDisplayName}...`, 
+                      key: 'bulk-highlight-gen', 
                       duration: 0 
                     });
                     
                     const result = await onGenerateVisual({
                       ...suggestion,
-                      testService: service,
-                      id: `${suggestion.id}-${service}`
+                      testService: style,
+                      id: `${suggestion.id}-${style}`
                     });
                     
                     if (result && result.imageUrl) {
                       setGeneratedImages(prev => ({
                         ...prev,
-                        [`${suggestion.id}-${service}`]: result.imageUrl
+                        [`${suggestion.id}-${style}`]: result.imageUrl
                       }));
                       successCount++;
                     }
                   } catch (error) {
-                    console.error(`Bulk generation error for ${suggestion.title} with ${service}:`, error);
+                    console.error(`Bulk highlight rendering error for ${suggestion.testType} with ${style}:`, error);
                   }
                 }
                 
                 message.success({
-                  content: `Generated ${successCount}/${totalGenerations} visuals successfully!`,
-                  key: 'bulk-visual-gen',
+                  content: `Rendered ${successCount}/${totalGenerations} highlight styles successfully!`,
+                  key: 'bulk-highlight-gen',
                   duration: 8
                 });
               }}
@@ -229,147 +208,204 @@ const VisualContentSuggestions = ({
                 padding: '0 32px'
               }}
             >
-              Generate Test Visuals (Hero: 2, Infographic: 2, Social: 2)
+              Generate All {validSuggestions.length} Highlight Types (3 Styles Each)
             </Button>
           </div>
         )}
 
-        <List
-          dataSource={validSuggestions}
-          renderItem={(suggestion) => (
-            <List.Item
-              key={suggestion.id || `visual-${suggestion.contentType}-${Math.random()}`}
-              actions={[
-                <Tooltip title="Preview suggestion details">
-                  <Button 
-                    size="small" 
-                    icon={<EyeOutlined />}
-                    onClick={() => handlePreviewVisual(suggestion)}
-                  >
-                    Preview
-                  </Button>
-                </Tooltip>,
-                // Test buttons for different services
-                onGenerateVisual && (
-                  <Space size="small">
-                    <Button 
-                      size="small" 
-                      style={{ backgroundColor: '#52c41a', borderColor: '#52c41a', color: 'white' }}
-                      icon={<PictureOutlined />}
-                      loading={generating === `${suggestion.id}-quickchart`}
-                      onClick={() => handleGenerateVisual({...suggestion, testService: 'quickchart', id: `${suggestion.id}-quickchart`})}
-                    >
-                      QuickChart (Free)
-                    </Button>
-                    <Button 
-                      size="small" 
-                      style={{ backgroundColor: '#722ed1', borderColor: '#722ed1', color: 'white' }}
-                      icon={<PictureOutlined />}
-                      loading={generating === `${suggestion.id}-stable_diffusion`}
-                      onClick={() => handleGenerateVisual({...suggestion, testService: 'stable_diffusion', id: `${suggestion.id}-stable_diffusion`})}
-                    >
-                      Replicate ($)
-                    </Button>
-                    <Button 
-                      size="small" 
-                      style={{ backgroundColor: '#fa8c16', borderColor: '#fa8c16', color: 'white' }}
-                      icon={<PictureOutlined />}
-                      loading={generating === `${suggestion.id}-dalle`}
-                      onClick={() => handleGenerateVisual({...suggestion, testService: 'dalle', id: `${suggestion.id}-dalle`})}
-                    >
-                      DALL-E ($)
-                    </Button>
-                  </Space>
-                )
-              ].filter(Boolean)}
-            >
-              <List.Item.Meta
-                avatar={getContentTypeIcon(suggestion.contentType)}
-                title={
+        <div style={{ marginBottom: 16 }}>
+          <Text strong style={{ fontSize: 14 }}>Highlight Test Cases ({validSuggestions.length}):</Text>
+          <Text type="secondary" style={{ marginLeft: 8, fontSize: 12 }}>
+            Each test case shows detailed highlighting content and rendered examples across 3 different styling approaches
+          </Text>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {validSuggestions.map((suggestion, index) => (
+            <Card 
+              key={suggestion.id || `test-case-${index}`}
+              size="small"
+              style={{ 
+                borderLeft: '4px solid #1890ff',
+                marginBottom: 8
+              }}
+              title={
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <Space>
-                    <Text strong>{suggestion.title || 'Visual Content'}</Text>
-                    <Tag color="blue">{(suggestion.contentType || 'visual').replace('_', ' ')}</Tag>
-                    {suggestion.priority === 'high' && (
-                      <StarOutlined style={{ color: '#faad14' }} />
+                    <Text strong style={{ fontSize: 16 }}>{index + 1}. {suggestion.title}</Text>
+                    <Tag color="purple">{suggestion.testType}</Tag>
+                  </Space>
+                  <Space>
+                    {onGenerateVisual && (
+                      <>
+                        <Button 
+                          size="small" 
+                          style={{ backgroundColor: '#52c41a', borderColor: '#52c41a', color: 'white' }}
+                          icon={<PictureOutlined />}
+                          loading={generating === `${suggestion.id}-pullout-style`}
+                          onClick={() => handleGenerateVisual({...suggestion, testService: 'pullout-style', id: `${suggestion.id}-pullout-style`})}
+                        >
+                          Pullout Style
+                        </Button>
+                        <Button 
+                          size="small" 
+                          style={{ backgroundColor: '#722ed1', borderColor: '#722ed1', color: 'white' }}
+                          icon={<PictureOutlined />}
+                          loading={generating === `${suggestion.id}-box-style`}
+                          onClick={() => handleGenerateVisual({...suggestion, testService: 'box-style', id: `${suggestion.id}-box-style`})}
+                        >
+                          Box Style
+                        </Button>
+                        <Button 
+                          size="small" 
+                          style={{ backgroundColor: '#fa8c16', borderColor: '#fa8c16', color: 'white' }}
+                          icon={<PictureOutlined />}
+                          loading={generating === `${suggestion.id}-inline-style`}
+                          onClick={() => handleGenerateVisual({...suggestion, testService: 'inline-style', id: `${suggestion.id}-inline-style`})}
+                        >
+                          Inline Style
+                        </Button>
+                      </>
                     )}
                   </Space>
-                }
-                description={
-                  <div>
-                    <Text style={{ fontSize: 12 }}>{suggestion.description || 'Visual content suggestion'}</Text>
-                    
-                    {/* Show AI Prompt */}
-                    {suggestion.prompt && (
-                      <div style={{ marginTop: 8, padding: 8, background: '#f5f5f5', borderRadius: 4, fontSize: 11 }}>
-                        <Text strong>AI Prompt: </Text>
-                        <Text style={{ fontFamily: 'monospace' }}>{suggestion.prompt}</Text>
-                      </div>
-                    )}
-                    
-                    <div style={{ marginTop: 4 }}>
-                      {getServiceBadge(suggestion.recommendedService || 'unknown', suggestion.estimatedCost || 0)}
-                      <Text type="secondary" style={{ fontSize: 11, marginLeft: 8 }}>
-                        <ClockCircleOutlined style={{ marginRight: 2 }} />
-                        {suggestion.estimatedTime || '1-2 min'}
+                </div>
+              }
+            >
+              {/* Test Prompt Section */}
+              <div style={{ marginBottom: 12 }}>
+                <Text strong style={{ fontSize: 13, color: '#1890ff' }}>Test Prompt:</Text>
+                <div style={{ 
+                  marginTop: 4, 
+                  padding: 12, 
+                  background: '#f8f9fa', 
+                  borderRadius: 6, 
+                  fontSize: 12,
+                  fontFamily: 'monospace',
+                  lineHeight: '1.4',
+                  border: '1px solid #e1e5e9'
+                }}>
+                  {suggestion.prompt}
+                </div>
+              </div>
+
+              {/* Expected Features */}
+              {suggestion.expectedFeatures && (
+                <div style={{ marginBottom: 12 }}>
+                  <Text strong style={{ fontSize: 12 }}>Expected Features: </Text>
+                  {suggestion.expectedFeatures.map((feature, idx) => (
+                    <Tag key={idx} size="small" style={{ marginBottom: 4 }}>
+                      {feature}
+                    </Tag>
+                  ))}
+                </div>
+              )}
+
+              {/* Generated Highlight Styles Section */}
+              {(() => {
+                const styles = ['pullout-style', 'box-style', 'inline-style'];
+                const availableImages = styles
+                  .map(style => ({
+                    style,
+                    url: generatedImages[`${suggestion.id}-${style}`]
+                  }))
+                  .filter(img => img.url);
+                
+                if (availableImages.length === 0) {
+                  return (
+                    <div style={{ 
+                      padding: 16, 
+                      textAlign: 'center', 
+                      background: '#fafafa', 
+                      borderRadius: 4,
+                      border: '1px dashed #d9d9d9' 
+                    }}>
+                      <Text type="secondary" style={{ fontSize: 12 }}>
+                        Click style buttons above to render highlight examples
                       </Text>
                     </div>
-                    
-                    {/* Show Generated Images */}
-                    {(() => {
-                      const services = ['quickchart', 'stable_diffusion', 'dalle'];
-                      const availableImages = services
-                        .map(service => ({
-                          service,
-                          url: generatedImages[`${suggestion.id}-${service}`] || generatedImages[suggestion.id] 
-                        }))
-                        .filter(img => img.url);
-                      
-                      if (availableImages.length === 0) return null;
-                      
-                      return (
-                        <div style={{ marginTop: 12 }}>
-                          <Text strong style={{ fontSize: 12 }}>Generated Images ({availableImages.length}):</Text>
-                          <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                            {availableImages.map(({ service, url }) => (
-                              <div key={service} style={{ textAlign: 'center' }}>
-                                <img 
-                                  src={url} 
-                                  alt={`${suggestion.title} - ${service}`}
-                                  style={{ 
-                                    width: '120px', 
-                                    height: '90px', 
-                                    objectFit: 'cover',
-                                    borderRadius: 4,
-                                    border: '1px solid #d9d9d9',
-                                    cursor: 'pointer'
-                                  }}
-                                  onClick={() => setZoomModal({
-                                    visible: true,
-                                    imageUrl: url,
-                                    title: suggestion.title,
-                                    service: service === 'quickchart' ? 'QuickChart' : 
-                                             service === 'stable_diffusion' ? 'Replicate' : 'DALL-E'
-                                  })}
-                                  onError={(e) => {
-                                    e.target.style.display = 'none';
-                                  }}
-                                />
-                                <div style={{ fontSize: 10, marginTop: 2, color: '#666' }}>
-                                  {service === 'quickchart' ? 'QuickChart' : 
-                                   service === 'stable_diffusion' ? 'Replicate' : 'DALL-E'}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      );
-                    })()}
-                  </div>
+                  );
                 }
-              />
-            </List.Item>
-          )}
-        />
+                
+                return (
+                  <div>
+                    <Text strong style={{ fontSize: 12, marginBottom: 8, display: 'block' }}>
+                      Generated Highlight Styles ({availableImages.length}/3 styles):
+                    </Text>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+                      {styles.map(style => {
+                        const imageData = availableImages.find(img => img.style === style);
+                        const styleName = {
+                          'pullout-style': 'Pullout Style',
+                          'box-style': 'Box Style',
+                          'inline-style': 'Inline Style'
+                        }[style] || style;
+                        
+                        return (
+                          <div key={style} style={{ 
+                            border: '1px solid #e1e5e9', 
+                            borderRadius: 8, 
+                            padding: 8, 
+                            textAlign: 'center',
+                            background: imageData ? '#fff' : '#f8f9fa'
+                          }}>
+                            <div style={{ 
+                              fontSize: 11, 
+                              fontWeight: 'bold', 
+                              marginBottom: 8,
+                              color: style === 'pullout-style' ? '#52c41a' : style === 'box-style' ? '#722ed1' : '#fa8c16'
+                            }}>
+                              {styleName}
+                            </div>
+                            
+                            {imageData ? (
+                              <img 
+                                src={imageData.url} 
+                                alt={`${suggestion.title} - ${styleName}`}
+                                style={{ 
+                                  width: '100%', 
+                                  maxWidth: '200px',
+                                  height: '150px', 
+                                  objectFit: 'cover',
+                                  borderRadius: 4,
+                                  border: '1px solid #d9d9d9',
+                                  cursor: 'pointer'
+                                }}
+                                onClick={() => setZoomModal({
+                                  visible: true,
+                                  imageUrl: imageData.url,
+                                  title: suggestion.title,
+                                  service: styleName
+                                })}
+                                onError={(e) => {
+                                  e.target.style.display = 'none';
+                                }}
+                              />
+                            ) : (
+                              <div style={{ 
+                                width: '100%', 
+                                maxWidth: '200px',
+                                height: '150px', 
+                                border: '1px dashed #d9d9d9',
+                                borderRadius: 4,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: '#999',
+                                fontSize: 11
+                              }}>
+                                Click button above
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
+            </Card>
+          ))}
+        </div>
 
         {/* Cost Summary */}
         <div style={{ marginTop: 16, padding: 12, background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 6 }}>
@@ -381,85 +417,6 @@ const VisualContentSuggestions = ({
         </div>
       </Card>
 
-      {/* Preview Modal */}
-      <Modal
-        title={
-          <Space>
-            {getContentTypeIcon(previewModal.content?.contentType)}
-            {previewModal.content?.title}
-          </Space>
-        }
-        visible={previewModal.visible}
-        onCancel={() => setPreviewModal({ visible: false, content: null })}
-        footer={[
-          <Button key="close" onClick={() => setPreviewModal({ visible: false, content: null })}>
-            Close
-          </Button>,
-          onGenerateVisual && previewModal.content && (
-            <Button 
-              key="generate"
-              type="primary" 
-              icon={<PictureOutlined />}
-              onClick={() => {
-                handleGenerateVisual(previewModal.content);
-                setPreviewModal({ visible: false, content: null });
-              }}
-            >
-              Generate This Visual
-            </Button>
-          )
-        ].filter(Boolean)}
-      >
-        {previewModal.content && (
-          <div>
-            <div style={{ marginBottom: 16 }}>
-              <Text strong>Description:</Text>
-              <div style={{ marginTop: 4 }}>
-                {previewModal.content.description}
-              </div>
-            </div>
-
-            <div style={{ marginBottom: 16 }}>
-              <Text strong>AI Prompt:</Text>
-              <div style={{ 
-                marginTop: 4, 
-                padding: 8, 
-                background: '#f5f5f5', 
-                borderRadius: 4,
-                fontFamily: 'monospace',
-                fontSize: 12
-              }}>
-                {previewModal.content.prompt}
-              </div>
-            </div>
-
-            <div style={{ marginBottom: 16 }}>
-              <Text strong>Service & Cost:</Text>
-              <div style={{ marginTop: 4 }}>
-                {getServiceBadge(previewModal.content.recommendedService, previewModal.content.estimatedCost)}
-              </div>
-            </div>
-
-            {previewModal.content.placement && (
-              <div style={{ marginBottom: 16 }}>
-                <Text strong>Suggested Placement:</Text>
-                <div style={{ marginTop: 4 }}>
-                  <Tag>{previewModal.content.placement}</Tag>
-                </div>
-              </div>
-            )}
-
-            {previewModal.content.altText && (
-              <div>
-                <Text strong>Alt Text:</Text>
-                <div style={{ marginTop: 4, fontSize: 12, fontStyle: 'italic' }}>
-                  "{previewModal.content.altText}"
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </Modal>
 
       {/* Zoom Modal */}
       <Modal

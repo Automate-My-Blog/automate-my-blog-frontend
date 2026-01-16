@@ -23,6 +23,9 @@ const fontSizes = {
 const HighlightBoxComponent = ({ node, deleteNode, updateAttributes, getPos }) => {
   const [isDragging, setIsDragging] = React.useState(false);
   const deleteScheduledRef = React.useRef(false);
+  const boxRef = React.useRef(null);                    // Ref for DOM measurement
+  const [minHeight, setMinHeight] = React.useState(null); // Dynamic min-height
+  const transparentCanvasRef = React.useRef(null);      // Pre-created transparent canvas for drag ghost
 
   const {
     type,
@@ -37,6 +40,70 @@ const HighlightBoxComponent = ({ node, deleteNode, updateAttributes, getPos }) =
     iconName,
     align
   } = node.attrs;
+
+  // Create transparent canvas for drag ghost ONCE on mount
+  React.useEffect(() => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1;
+    canvas.height = 1;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, 1, 1);  // Fully transparent
+
+    transparentCanvasRef.current = canvas;  // Store in ref (NOT in DOM)
+
+    return () => {
+      transparentCanvasRef.current = null;
+    };
+  }, []);
+
+  // Dynamically match height of adjacent wrapped content for float layouts
+  React.useEffect(() => {
+    if ((layout === 'float-left' || layout === 'float-right') && boxRef.current) {
+      const measureAdjacentContent = () => {
+        const boxElement = boxRef.current;
+        if (!boxElement) return;
+
+        const boxRect = boxElement.getBoundingClientRect();
+
+        // Find next sibling elements that wrap with this float
+        let nextSibling = boxElement.nextElementSibling;
+        let wrappedElements = [];
+
+        // Collect elements until we pass the box bottom
+        while (nextSibling) {
+          const siblingRect = nextSibling.getBoundingClientRect();
+          if (siblingRect.top >= boxRect.bottom) break;
+          wrappedElements.push(nextSibling);
+          nextSibling = nextSibling.nextElementSibling;
+        }
+
+        // Calculate total height of wrapped content
+        if (wrappedElements.length > 0) {
+          const firstRect = wrappedElements[0].getBoundingClientRect();
+          const lastRect = wrappedElements[wrappedElements.length - 1].getBoundingClientRect();
+          const wrappedHeight = lastRect.bottom - firstRect.top;
+
+          // Set min-height to match (accounting for padding/margin)
+          const paddingMargin = 20;
+          setMinHeight(Math.max(wrappedHeight - paddingMargin, 0));
+        } else {
+          setMinHeight(null);
+        }
+      };
+
+      // Measure on mount and layout changes
+      const timer = setTimeout(measureAdjacentContent, 100); // Delay for DOM settling
+
+      // Re-measure on window resize
+      window.addEventListener('resize', measureAdjacentContent);
+      return () => {
+        clearTimeout(timer);
+        window.removeEventListener('resize', measureAdjacentContent);
+      };
+    } else {
+      setMinHeight(null);
+    }
+  }, [layout, content]);
 
   // Handler to toggle float direction
   const handleToggleFloat = () => {
@@ -85,10 +152,13 @@ const HighlightBoxComponent = ({ node, deleteNode, updateAttributes, getPos }) =
       detail: nodeData
     }));
 
-    // Visual feedback - ghost image
-    if (e.dataTransfer.setDragImage) {
-      const target = e.currentTarget;
-      e.dataTransfer.setDragImage(target, target.offsetWidth / 2, 20);
+    // Hide the browser's default drag ghost
+    if (transparentCanvasRef.current) {
+      try {
+        e.dataTransfer.setDragImage(transparentCanvasRef.current, 0, 0);
+      } catch (error) {
+        console.warn('setDragImage failed:', error);
+      }
     }
   };
 
@@ -182,13 +252,17 @@ const HighlightBoxComponent = ({ node, deleteNode, updateAttributes, getPos }) =
   // Layout styles
   const getLayoutStyles = () => {
     const base = {
-      padding: '16px 20px',
-      margin: '16px 0',
-      borderRadius: '8px',
+      padding: '8px 16px',     // Reduce for tighter fit
+      margin: '4px 0',         // Reduce for tighter fit
+      borderRadius: '4px',     // Sharper corners
       backgroundColor,
       borderLeft: `4px solid ${borderColor}`,
       position: 'relative',
       fontFamily: 'inherit',
+      // Apply dynamic min-height for float layouts
+      ...(minHeight && (layout === 'float-left' || layout === 'float-right') && {
+        minHeight: `${minHeight}px`
+      }),
     };
 
     switch (layout) {
@@ -219,9 +293,10 @@ const HighlightBoxComponent = ({ node, deleteNode, updateAttributes, getPos }) =
   return (
     <NodeViewWrapper>
       <div
+        ref={boxRef}
         style={{
           ...getLayoutStyles(),
-          opacity: isDragging ? 0.5 : 1,
+          opacity: isDragging ? 0 : 1,  // Completely hide during drag - user only sees preview
           transition: 'opacity 0.2s',
         }}
         contentEditable={false}

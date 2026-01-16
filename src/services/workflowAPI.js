@@ -250,6 +250,7 @@ export const contentAPI = {
               content: enhancedResult.content,
               ...enhancedResult.enhancedMetadata
             },
+            visualSuggestions: enhancedResult.visualSuggestions || [],
             enhancedMetadata: enhancedResult.enhancedMetadata,
             seoAnalysis: enhancedResult.seoAnalysis,
             contentQuality: enhancedResult.contentQuality,

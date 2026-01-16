@@ -2812,17 +2812,17 @@ Please provide analysis in this JSON format:
    */
   async triggerComprehensiveAnalysis(websiteUrl) {
     console.log(`🔍 Triggering comprehensive content discovery for: ${websiteUrl}`);
-    
+
     try {
       const response = await this.makeRequest('api/v1/analysis/discover-content', {
         method: 'POST',
-        body: JSON.stringify({ 
-          websiteUrl, 
-          forceRefresh: true 
+        body: JSON.stringify({
+          websiteUrl,
+          forceRefresh: true
         }),
         headers: { 'Content-Type': 'application/json' }
       });
-      
+
       if (response.success) {
         console.log('✅ Comprehensive content discovery triggered:', response);
         return response;
@@ -2832,6 +2832,64 @@ Please provide analysis in this JSON format:
       }
     } catch (error) {
       console.error('❌ Comprehensive content discovery request failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get CTAs for an organization
+   * Returns top CTAs ranked by conversion potential for use in topic preview and content generation
+   */
+  async getOrganizationCTAs(organizationId) {
+    console.log(`📊 Fetching CTAs for organization: ${organizationId}`);
+
+    try {
+      const response = await this.makeRequest(`api/v1/organizations/${organizationId}/ctas`, {
+        method: 'GET',
+      });
+
+      if (response.success) {
+        console.log('✅ Retrieved organization CTAs:', {
+          count: response.count,
+          has_sufficient_ctas: response.has_sufficient_ctas
+        });
+        return response;
+      } else {
+        console.error('❌ Failed to get organization CTAs:', response);
+        throw new Error(response.error || 'Failed to retrieve CTAs');
+      }
+    } catch (error) {
+      console.error('❌ Get organization CTAs request failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Manually add CTAs for an organization
+   * Used when website scraping didn't find enough CTAs
+   */
+  async addManualCTAs(organizationId, ctas) {
+    console.log(`✏️ Adding manual CTAs for organization: ${organizationId}`, { count: ctas.length });
+
+    try {
+      const response = await this.makeRequest(`api/v1/organizations/${organizationId}/ctas/manual`, {
+        method: 'POST',
+        body: JSON.stringify({ ctas }),
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      if (response.success) {
+        console.log('✅ Manual CTAs added successfully:', {
+          ctas_added: response.ctas_added,
+          has_sufficient_ctas: response.has_sufficient_ctas
+        });
+        return response;
+      } else {
+        console.error('❌ Failed to add manual CTAs:', response);
+        throw new Error(response.error || 'Failed to add manual CTAs');
+      }
+    } catch (error) {
+      console.error('❌ Add manual CTAs request failed:', error);
       throw error;
     }
   }

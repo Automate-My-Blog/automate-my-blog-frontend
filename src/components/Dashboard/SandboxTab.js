@@ -9,12 +9,15 @@ import {
   GlobalOutlined,
   SettingOutlined,
   CalendarOutlined,
-  UnorderedListOutlined
+  UnorderedListOutlined,
+  PictureOutlined
 } from '@ant-design/icons';
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay } from 'date-fns';
 import { enUS } from 'date-fns/locale';
 import { useAuth } from '../../contexts/AuthContext';
+import { VisualContentSuggestions } from '../VisualContent';
+import api from '../../services/api';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 
 const { Title, Text } = Typography;
@@ -40,6 +43,150 @@ const defaultAutomationSettings = {
   successfulRuns: 0,
   failedRuns: 0
 };
+
+// Highlight test cases data
+const highlightTestCases = [
+  {
+    id: 'stat-highlight',
+    title: 'Statistic Highlight',
+    type: 'statistic',
+    content: '73% of marketers report increased ROI with automation',
+    citation: {
+      source: 'HubSpot Marketing Report 2024',
+      url: 'https://blog.hubspot.com/marketing/marketing-statistics',
+      verified: true
+    },
+    prompt: 'Create a large, visually prominent statistic display showing "73%" as the main number with "of marketers report increased ROI with automation" as supporting text. Include citation footer.',
+    expectedFeatures: ['Large percentage number', 'Supporting text', 'Citation link', 'Visual prominence'],
+    testType: 'Statistics - ROI Impact'
+  },
+  {
+    id: 'pullquote-highlight',
+    title: 'Pull Quote Highlight', 
+    type: 'pullquote',
+    content: 'Content marketing generates 3x more leads than traditional advertising while costing 62% less.',
+    citation: {
+      source: 'Content Marketing Institute Study',
+      url: 'https://contentmarketinginstitute.com/research/',
+      verified: true
+    },
+    prompt: 'Design a pull quote with right-alignment that allows text to wrap around it. Quote: "Content marketing generates 3x more leads than traditional advertising while costing 62% less." Include attribution and proper typography.',
+    expectedFeatures: ['Right-aligned layout', 'Text wrap capability', 'Quote styling', 'Attribution'],
+    testType: 'Pull Quotes - Expert Insight'
+  },
+  {
+    id: 'takeaway-highlight',
+    title: 'Key Takeaway Box',
+    type: 'takeaway', 
+    content: 'The bottom line: Email marketing remains the highest ROI digital channel, delivering $42 for every $1 spent.',
+    citation: {
+      source: 'Litmus Email Marketing ROI Report',
+      url: 'https://www.litmus.com/resources/state-of-email/',
+      verified: true
+    },
+    prompt: 'Create a highlighted takeaway box with "The bottom line:" prefix in bold, followed by the key insight about email marketing ROI. Use distinct background color and proper spacing.',
+    expectedFeatures: ['Highlighted background', 'Bold prefix', 'Key insight emphasis', 'Professional spacing'],
+    testType: 'Takeaways - Bottom Line'
+  },
+  {
+    id: 'process-highlight',
+    title: 'Process Step Highlight',
+    type: 'process',
+    content: 'Step 3: Set up automated email sequences with 48-hour response triggers to capture leads while they\'re hot.',
+    citation: {
+      source: 'Marketing Automation Best Practices Guide',
+      url: 'https://www.marketo.com/best-practices/',
+      verified: true
+    },
+    prompt: 'Design a process step callout with numbered icon, step description, and actionable details. Include timing specifics and business rationale.',
+    expectedFeatures: ['Numbered step icon', 'Action-oriented text', 'Timing details', 'Business context'],
+    testType: 'Process Steps - Implementation'
+  },
+  {
+    id: 'definition-highlight',
+    title: 'Definition Callout',
+    type: 'definition',
+    content: 'Marketing Qualified Lead (MQL): A prospect who has engaged with your brand and meets specific criteria indicating sales readiness.',
+    citation: {
+      source: 'SalesForce Marketing Glossary',
+      url: 'https://www.salesforce.com/resources/articles/marketing-qualified-leads/',
+      verified: true
+    },
+    prompt: 'Create a definition box for "Marketing Qualified Lead" with term in bold, clear explanation, and professional styling that distinguishes it from body text.',
+    expectedFeatures: ['Bold term title', 'Clear definition', 'Distinguished styling', 'Professional appearance'],
+    testType: 'Definitions - Industry Terms'
+  },
+  {
+    id: 'casestudy-highlight',
+    title: 'Case Study Result',
+    type: 'casestudy',
+    content: 'Before: 2.3% email open rate, 0.8% click-through rate. After: 18.7% open rate (+713%), 4.2% click-through (+425%)',
+    citation: {
+      source: 'Campaign Monitor Case Study',
+      url: 'https://www.campaignmonitor.com/case-studies/',
+      verified: true
+    },
+    prompt: 'Design a before/after comparison showing email performance metrics with percentage improvements highlighted. Use color coding for positive changes.',
+    expectedFeatures: ['Before/after layout', 'Metric comparison', 'Percentage improvements', 'Color-coded results'],
+    testType: 'Case Studies - Performance Results'
+  },
+  {
+    id: 'research-highlight',
+    title: 'Research Finding',
+    type: 'research',
+    content: 'Study reveals: Companies using advanced analytics are 5x more likely to make faster decisions than their competitors.',
+    citation: {
+      source: 'McKinsey Analytics Research',
+      url: 'https://www.mckinsey.com/capabilities/quantumblack/our-insights',
+      verified: true
+    },
+    prompt: 'Create a research finding callout with "Study reveals:" prefix and compelling statistic. Include credible source attribution and professional academic styling.',
+    expectedFeatures: ['Research prefix', 'Statistical finding', 'Source credibility', 'Academic styling'],
+    testType: 'Research Findings - Industry Studies'
+  },
+  {
+    id: 'warning-highlight',
+    title: 'Warning/Tip Box',
+    type: 'warning',
+    content: 'Critical: Never buy email lists! This practice can result in spam penalties, damaged sender reputation, and legal compliance issues.',
+    citation: {
+      source: 'CAN-SPAM Act Guidelines',
+      url: 'https://www.ftc.gov/business-guidance/resources/can-spam-act-compliance-guide-business',
+      verified: true
+    },
+    prompt: 'Design a warning callout with "Critical:" prefix, important advice about email list practices, and attention-grabbing styling without being alarming.',
+    expectedFeatures: ['Warning indicator', 'Critical prefix', 'Important advice', 'Attention-grabbing design'],
+    testType: 'Warnings - Critical Advice'
+  },
+  {
+    id: 'comparison-highlight',
+    title: 'Comparison Table',
+    type: 'comparison',
+    content: 'Email vs Social: Email delivers 4,200% ROI while social media averages 95% ROI for customer acquisition.',
+    citation: {
+      source: 'Digital Marketing ROI Comparison Study',
+      url: 'https://www.optinmonster.com/email-marketing-statistics/',
+      verified: true
+    },
+    prompt: 'Create a comparison highlight showing email marketing vs social media ROI with clear numerical contrast and channel-specific insights.',
+    expectedFeatures: ['Channel comparison', 'ROI numbers', 'Clear contrast', 'Performance insights'],
+    testType: 'Comparisons - Channel Performance'
+  },
+  {
+    id: 'cta-highlight',
+    title: 'Call-to-Action Block',
+    type: 'cta',
+    content: 'Ready to boost your email ROI? Download our free Email Marketing Optimization Checklist and start seeing results in 30 days.',
+    citation: {
+      source: 'Internal Resource',
+      url: 'https://example.com/email-checklist',
+      verified: true
+    },
+    prompt: 'Design a call-to-action block with compelling question, clear value proposition, and downloadable resource offer with timeline expectation.',
+    expectedFeatures: ['Compelling question', 'Value proposition', 'Resource offer', 'Timeline expectation'],
+    testType: 'CTAs - Resource Download'
+  }
+];
 
 const SandboxTab = () => {
   const { user, isSuperAdmin } = useAuth();
@@ -422,6 +569,145 @@ const SandboxTab = () => {
             </ul>
           </div>
         </div>
+      </Card>
+
+      {/* Visual Content Generation Testing Section */}
+      <Card
+        title={
+          <Space>
+            <PictureOutlined style={{ color: '#722ed1' }} />
+            Visual Content Generation Testing
+            <Tag color="orange">ADMIN ONLY</Tag>
+          </Space>
+        }
+        extra={
+          <Button 
+            type="link" 
+            size="small"
+            icon={<SettingOutlined />}
+            onClick={() => message.info('Visual generation settings would open here')}
+          >
+            API Settings
+          </Button>
+        }
+        style={{ marginBottom: '24px' }}
+      >
+        <Alert
+          message="🎨 Original Image Generation Testing"
+          description="This interface provides access to the original visual content generation system - QuickChart, Replicate, and DALL-E API testing for super admin evaluation and debugging."
+          type="warning"
+          showIcon
+          style={{ marginBottom: '24px' }}
+        />
+
+        {/* Original VisualContentSuggestions Component for Image Generation Testing */}
+        <VisualContentSuggestions
+          visualSuggestions={[
+            // Restore the original test cases for image generation
+            {
+              id: 'test-hero-image',
+              title: 'Hero Image Test',
+              contentType: 'hero_image',
+              prompt: 'Professional marketing team collaborating on digital strategy in modern office environment with laptops and charts',
+              recommendedService: 'stable_diffusion',
+              estimatedCost: 0.01,
+              estimatedTime: '30-60s',
+              priority: 'high',
+              placement: 'Top of blog post',
+              altText: 'Marketing team collaboration',
+              description: 'Test case: Hero Image Generation',
+              reasoning: 'Testing photorealistic image generation for blog headers'
+            },
+            {
+              id: 'test-social-media',
+              title: 'Social Media Card Test', 
+              contentType: 'social_media',
+              prompt: 'Eye-catching social media graphic about email marketing ROI with bold typography and engaging visual elements',
+              recommendedService: 'stable_diffusion',
+              estimatedCost: 0.01,
+              estimatedTime: '30-60s',
+              priority: 'high',
+              placement: 'Social sharing',
+              altText: 'Email marketing ROI graphic',
+              description: 'Test case: Social Media Graphics',
+              reasoning: 'Testing social media optimized graphics generation'
+            },
+            {
+              id: 'test-infographic',
+              title: 'Process Infographic Test',
+              contentType: 'infographic', 
+              prompt: 'Step-by-step infographic showing customer onboarding process with icons, arrows, and conversion metrics',
+              recommendedService: 'quickchart',
+              estimatedCost: 0.00,
+              estimatedTime: '5-10s',
+              priority: 'high',
+              placement: 'Middle of blog post',
+              altText: 'Customer onboarding process',
+              description: 'Test case: Process Infographics',
+              reasoning: 'Testing chart and infographic generation capabilities'
+            }
+          ]}
+          onGenerateVisual={async (suggestion) => {
+            const serviceName = suggestion.testService || suggestion.recommendedService || suggestion.selectedService;
+            const serviceDisplayName = {
+              'quickchart': 'QuickChart (Free)',
+              'stable_diffusion': 'Replicate',
+              'dalle': 'DALL-E'
+            }[serviceName] || serviceName;
+            
+            console.log('🎨 Generate visual requested:', {
+              contentType: suggestion.contentType,
+              service: serviceName,
+              testService: !!suggestion.testService
+            });
+            
+            try {
+              message.loading({ content: `Generating ${suggestion.title} with ${serviceDisplayName}...`, key: 'visual-gen', duration: 0 });
+              
+              // Call real visual generation API
+              const response = await api.makeRequest('/api/v1/visual-content/generate', {
+                method: 'POST',
+                body: JSON.stringify({
+                  contentType: suggestion.contentType,
+                  prompt: suggestion.prompt,
+                  organizationId: user?.organizationId || 'sandbox-test',
+                  postId: 'sandbox-test-post',
+                  servicePreference: serviceName,
+                  options: {
+                    width: 1024,
+                    height: 1024,
+                    quality: 'standard'
+                  }
+                }),
+                headers: {
+                  'Content-Type': 'application/json'
+                }
+              });
+              
+              if (response.success && response.data) {
+                console.log('✅ Visual generation successful:', response.data);
+                
+                message.success({
+                  content: `${suggestion.title} generated with ${serviceDisplayName}!`,
+                  key: 'visual-gen',
+                  duration: 4
+                });
+                
+                return response.data;
+              } else {
+                throw new Error(response.error || 'Visual generation failed');
+              }
+            } catch (error) {
+              console.error('Visual generation error:', error);
+              message.error({ 
+                content: `Failed to generate ${suggestion.title} with ${serviceDisplayName}: ${error.message}`, 
+                key: 'visual-gen' 
+              });
+              return null;
+            }
+          }}
+          style={{ marginTop: '16px' }}
+        />
       </Card>
     </div>
   );

@@ -71,12 +71,14 @@ export class EnhancedContentAPI {
         return {
           success: true,
           content: content,
+          visualSuggestions: response.visualSuggestions || [],
           enhancedMetadata: response.enhancedMetadata || {
             seoAnalysis: response.seoAnalysis,
             contentQuality: response.contentQuality,
             strategicElements: response.strategicElements,
             improvementSuggestions: response.improvementSuggestions,
-            keywordOptimization: response.keywordOptimization
+            keywordOptimization: response.keywordOptimization,
+            visualSuggestions: response.visualSuggestions || []
           },
           seoAnalysis: response.seoAnalysis,
           contentQuality: response.contentQuality,

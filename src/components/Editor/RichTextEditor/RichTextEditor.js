@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
+import ReactDOM from 'react-dom';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { TextStyle } from '@tiptap/extension-text-style';
@@ -12,9 +13,6 @@ import { TableRow } from '@tiptap/extension-table-row';
 import { TableCell } from '@tiptap/extension-table-cell';
 import { TableHeader } from '@tiptap/extension-table-header';
 import { Placeholder } from '@tiptap/extension-placeholder';
-import { Extension } from '@tiptap/core';
-import { Decoration, DecorationSet } from '@tiptap/pm/view';
-import { Plugin, PluginKey } from '@tiptap/pm/state';
 
 import { colors, spacing, borderRadius, typography } from '../../DesignSystem/tokens';
 import InlineToolbar from '../InlineToolbar/InlineToolbar';
@@ -23,68 +21,237 @@ import { HighlightBox } from '../extensions/HighlightBox';
 import { markdownToHtml, htmlToMarkdown } from '../../../utils/markdownToHtml';
 
 /**
- * Plugin key for drag reflow decorations
+ * Validate drop position and determine if float mode should be forced
+ * Prevents text splitting and keeps headings with their first content block
+ * @param {EditorState} state - ProseMirror editor state
+ * @param {number} pos - Target position to validate
+ * @returns {{ pos: number, forceFloat: boolean, reason: string }}
  */
-const dragReflowPluginKey = new PluginKey('dragReflow');
+const validateDropPosition = (state, pos) => {
+  const $pos = state.doc.resolve(pos);
+
+  // EXISTING: Check if inside text block with content
+  if ($pos.parent.isTextblock && $pos.parent.textContent.length > 0) {
+    // If in middle of text, move to end of current block and force float
+    if ($pos.parentOffset > 0 && $pos.parentOffset < $pos.parent.textContent.length) {
+      return {
+        pos: $pos.end(),
+        forceFloat: true,  // Force float when dropping in middle of text
+        reason: 'mid-text-to-block-end'
+      };
+    }
+  }
+
+  // NEW: Check list BEFORE heading (lists are more restrictive)
+  const listCheck = checkIfInsideOrNearList(state, pos);
+  if (listCheck.isInsideOrNearList) {
+    return {
+      pos: pos,
+      forceFloat: true,
+      reason: `list-boundary-${listCheck.listType}`
+    };
+  }
+
+  // NEW: Check if between heading and its first content block
+  const headingContentCheck = checkHeadingContentBoundary(state, pos);
+  if (headingContentCheck.isBetweenHeadingAndContent) {
+    return {
+      pos: pos,
+      forceFloat: true,
+      reason: 'heading-content-boundary'
+    };
+  }
+
+  return {
+    pos: pos,
+    forceFloat: false,
+    reason: 'valid-position'
+  };
+};
 
 /**
- * Create ProseMirror plugin for managing drag reflow decorations
- * This plugin adds invisible spacer elements at the drop position to cause text reflow
+ * Check if position is between a heading and its first following content block
+ * @param {EditorState} state - ProseMirror editor state
+ * @param {number} pos - Position to check
+ * @returns {{ isBetweenHeadingAndContent: boolean, headingLevel: number | null }}
  */
-const createDragReflowPlugin = () => {
-  return new Plugin({
-    key: dragReflowPluginKey,
-    state: {
-      init() {
-        return DecorationSet.empty;
-      },
-      apply(tr, decorationSet) {
-        // Get decoration data from transaction metadata
-        const meta = tr.getMeta(dragReflowPluginKey);
+const checkHeadingContentBoundary = (state, pos) => {
+  const $pos = state.doc.resolve(pos);
 
-        if (meta === null || meta === undefined) {
-          // No metadata, keep existing decorations
-          return decorationSet.map(tr.mapping, tr.doc);
-        }
+  // Check if we're at the end of a heading (cursor right after heading text)
+  const isAtEndOfHeading = $pos.parent.type.name === 'heading' &&
+                           $pos.parentOffset === $pos.parent.textContent.length;
 
-        if (meta.clear) {
-          // Clear decorations
-          return DecorationSet.empty;
-        }
+  // If inside a textblock but NOT at the end of a heading, not at boundary
+  if ($pos.parent.isTextblock && !isAtEndOfHeading) {
+    return { isBetweenHeadingAndContent: false, headingLevel: null };
+  }
 
-        if (meta.pos !== undefined && meta.layout) {
-          // Create new decoration at drop position
-          const { pos, layout, width, height } = meta;
+  // If we're at the end of a heading, check what comes next
+  if (isAtEndOfHeading) {
+    // Move to the position after the heading
+    const afterHeadingPos = $pos.after();
 
-          // Create a widget decoration that adds visual space
-          const decoration = Decoration.widget(pos, () => {
-            const spacer = document.createElement('div');
-            spacer.className = 'drag-reflow-spacer';
-            spacer.style.cssText = `
-              float: ${layout === 'float-left' ? 'left' : layout === 'float-right' ? 'right' : 'none'};
-              width: ${width};
-              height: ${height}px;
-              margin: 16px ${layout === 'float-left' ? '16px' : '0'} 16px ${layout === 'float-right' ? '16px' : '0'};
-              pointer-events: none;
-              visibility: hidden;
-            `;
-            return spacer;
-          }, {
-            side: -1, // Place before position
-          });
+    // Find next block node after the heading
+    let nextBlock = null;
+    state.doc.nodesBetween(afterHeadingPos, state.doc.content.size, (node, nodePos) => {
+      if (!nextBlock && node.isBlock && nodePos >= afterHeadingPos) {
+        nextBlock = node;
+        return false; // Stop iteration
+      }
+    });
 
-          return DecorationSet.create(tr.doc, [decoration]);
-        }
+    // Check if next block exists and is NOT another heading
+    if (nextBlock && nextBlock.type.name !== 'heading') {
+      return {
+        isBetweenHeadingAndContent: true,
+        headingLevel: $pos.parent.attrs?.level || null
+      };
+    }
 
-        return decorationSet;
-      },
-    },
-    props: {
-      decorations(state) {
-        return this.getState(state);
-      },
-    },
+    return { isBetweenHeadingAndContent: false, headingLevel: null };
+  }
+
+  // Find previous block node
+  let prevBlock = null;
+  let prevBlockPos = null;
+  state.doc.nodesBetween(0, $pos.pos, (node, nodePos) => {
+    if (node.isBlock && nodePos < $pos.pos) {
+      prevBlock = node;
+      prevBlockPos = nodePos;
+    }
   });
+
+  // Check if previous block is a heading
+  if (!prevBlock || prevBlock.type.name !== 'heading') {
+    return { isBetweenHeadingAndContent: false, headingLevel: null };
+  }
+
+  // Find next block node
+  let nextBlock = null;
+  let foundNext = false;
+  state.doc.nodesBetween($pos.pos, state.doc.content.size, (node, nodePos) => {
+    if (!foundNext && node.isBlock && nodePos >= $pos.pos) {
+      nextBlock = node;
+      foundNext = true;
+      return false; // Stop iteration
+    }
+  });
+
+  // Check if next block exists and is NOT another heading
+  if (!nextBlock || nextBlock.type.name === 'heading') {
+    return { isBetweenHeadingAndContent: false, headingLevel: null };
+  }
+
+  // Position is between heading and content!
+  return {
+    isBetweenHeadingAndContent: true,
+    headingLevel: prevBlock.attrs?.level || null
+  };
+};
+
+/**
+ * Check if position is inside or immediately adjacent to a list
+ * @param {EditorState} state - ProseMirror editor state
+ * @param {number} pos - Position to check
+ * @returns {{ isInsideOrNearList: boolean, listType: string | null }}
+ */
+const checkIfInsideOrNearList = (state, pos) => {
+  const $pos = state.doc.resolve(pos);
+
+  // CASE 1: Inside listItem
+  if ($pos.parent.type.name === 'listItem') {
+    return { isInsideOrNearList: true, listType: 'listItem' };
+  }
+
+  // CASE 2: Check parent chain for bulletList or orderedList
+  for (let depth = $pos.depth; depth > 0; depth--) {
+    const node = $pos.node(depth);
+    if (node.type.name === 'bulletList' || node.type.name === 'orderedList') {
+      return { isInsideOrNearList: true, listType: node.type.name };
+    }
+  }
+
+  // CASE 3: Check if immediately AFTER a list
+  let prevBlock = null;
+  state.doc.nodesBetween(0, $pos.pos, (node, nodePos) => {
+    if (node.isBlock && nodePos < $pos.pos) {
+      prevBlock = node;
+    }
+  });
+
+  if (prevBlock && (prevBlock.type.name === 'bulletList' ||
+                    prevBlock.type.name === 'orderedList' ||
+                    prevBlock.type.name === 'listItem')) {
+    return { isInsideOrNearList: true, listType: prevBlock.type.name };
+  }
+
+  // CASE 4: Check if immediately BEFORE a list
+  let nextBlock = null;
+  let foundNext = false;
+  state.doc.nodesBetween($pos.pos, state.doc.content.size, (node, nodePos) => {
+    if (!foundNext && node.isBlock && nodePos >= $pos.pos) {
+      nextBlock = node;
+      foundNext = true;
+      return false;
+    }
+  });
+
+  if (nextBlock && (nextBlock.type.name === 'bulletList' ||
+                    nextBlock.type.name === 'orderedList' ||
+                    nextBlock.type.name === 'listItem')) {
+    return { isInsideOrNearList: true, listType: nextBlock.type.name };
+  }
+
+  return { isInsideOrNearList: false, listType: null };
+};
+
+/**
+ * Apply CSS rules to create text flow effect during drag
+ */
+const applyTextFlowCSS = (layout, width, estimatedHeight, textFlowStyleRef) => {
+  if (!textFlowStyleRef.current) return;
+
+  let floatRule = '';
+  let widthValue = '';
+
+  if (layout === 'float-left') {
+    floatRule = 'float: left; margin-right: 16px; margin-left: 0;';
+    widthValue = width || '50%';
+  } else if (layout === 'float-right') {
+    floatRule = 'float: right; margin-left: 16px; margin-right: 0;';
+    widthValue = width || '50%';
+  } else {
+    floatRule = 'display: block;';
+    widthValue = width || '100%';
+  }
+
+  const css = `
+    .ProseMirror[data-text-flow-active="true"]::before {
+      content: "";
+      ${floatRule}
+      width: ${widthValue};
+      height: ${estimatedHeight}px;
+      margin-top: 8px;
+      margin-bottom: 8px;
+      pointer-events: none;
+      clear: both;
+    }
+  `;
+
+  textFlowStyleRef.current.textContent = css;
+};
+
+/**
+ * Remove text flow CSS rules
+ */
+const clearTextFlowCSS = (view, textFlowStyleRef) => {
+  if (textFlowStyleRef.current) {
+    textFlowStyleRef.current.textContent = '';
+  }
+  if (view && view.dom && view.dom.removeAttribute) {
+    view.dom.removeAttribute('data-text-flow-active');
+  }
 };
 
 /**
@@ -117,6 +284,55 @@ const RichTextEditor = ({
   const dragPreviewRef = React.useRef(null);
   const draggingNodeData = React.useRef(null);
   const previewUpdateScheduled = React.useRef(false);
+  const isMountedRef = React.useRef(true);
+
+  // NEW: Ref for dynamic text flow CSS
+  const textFlowStyleRef = React.useRef(null);
+
+  // Create a portal container for the drag preview (outside React tree to avoid Fiber conflicts)
+  const portalContainerRef = React.useRef(null);
+
+  React.useEffect(() => {
+    // Create portal container on mount
+    const container = document.createElement('div');
+    container.id = 'drag-preview-portal';
+    container.style.position = 'absolute';
+    container.style.top = '0';
+    container.style.left = '0';
+    container.style.width = '100%';
+    container.style.height = '100%';
+    container.style.pointerEvents = 'none';
+    container.style.zIndex = '1000';
+    document.body.appendChild(container);
+    portalContainerRef.current = container;
+
+    // NEW: Create style element for text flow CSS
+    const styleEl = document.createElement('style');
+    styleEl.id = 'drag-text-flow-rules';
+    document.head.appendChild(styleEl);
+    textFlowStyleRef.current = styleEl;
+
+    return () => {
+      // Clean up portal container on unmount
+      if (portalContainerRef.current && document.body.contains(portalContainerRef.current)) {
+        document.body.removeChild(portalContainerRef.current);
+      }
+      // NEW: Clean up style element
+      if (textFlowStyleRef.current && textFlowStyleRef.current.parentNode) {
+        textFlowStyleRef.current.parentNode.removeChild(textFlowStyleRef.current);
+      }
+    };
+  }, []);
+
+  // Track mount/unmount state
+  React.useEffect(() => {
+    isMountedRef.current = true;
+
+    return () => {
+      isMountedRef.current = false;
+      previewUpdateScheduled.current = false;
+    };
+  }, []);
 
   // Memoize markdown to HTML conversion to prevent infinite loops
   const htmlContent = useMemo(() => {
@@ -165,13 +381,6 @@ const RichTextEditor = ({
       }),
       KeyboardShortcuts,
       HighlightBox,
-      // Drag reflow extension for text reflow during drag operations
-      Extension.create({
-        name: 'dragReflow',
-        addProseMirrorPlugins() {
-          return [createDragReflowPlugin()];
-        },
-      }),
     ],
     content: htmlContent,
     editable: editable,
@@ -209,110 +418,153 @@ const RichTextEditor = ({
         dragover: (view, event) => {
           try {
             if (document.body.hasAttribute('data-highlight-dragging') && draggingNodeData.current) {
-              const editorRect = view.dom.getBoundingClientRect();
-              const relativeX = event.clientX - editorRect.left;
-              const horizontalPercent = (relativeX / editorRect.width) * 100;
+              // Only schedule one update at a time to prevent React Fiber conflicts
+              // Move ALL expensive operations inside the throttled section
+              if (!previewUpdateScheduled.current) {
+                previewUpdateScheduled.current = true;
 
-              // Determine zone and layout
-              let zone = 'center';
-              let layout = 'block';
-              let width = '100%';
+                requestAnimationFrame(() => {
+                  previewUpdateScheduled.current = false;
 
-              if (horizontalPercent < 33) {
-                zone = 'left';
-                layout = 'float-left';
-                width = '50%';
-              } else if (horizontalPercent > 67) {
-                zone = 'right';
-                layout = 'float-right';
-                width = '50%';
-              }
+                  try {
+                    const editorRect = view.dom.getBoundingClientRect();
 
-              // Get drop position for precise Y placement
-              const dropPos = view.posAtCoords({ left: event.clientX, top: event.clientY });
+                    // Get drop position for precise Y placement
+                    const dropPos = view.posAtCoords({ left: event.clientX, top: event.clientY });
 
-              if (dropPos) {
-                const dropCoords = view.coordsAtPos(dropPos.pos);
-                const dropY = dropCoords.top - editorRect.top;
+                    if (dropPos) {
+                      // Validate position and check for forced float mode
+                      const validation = validateDropPosition(view.state, dropPos.pos);
+                      const validatedPos = validation.pos;
 
-                // Extract node data
-                const nodeData = draggingNodeData.current;
-                const attrs = nodeData.attrs;
+                      // Check if highlightBox node can actually be inserted at this position
+                      const $pos = view.state.doc.resolve(validatedPos);
+                      const highlightBoxType = view.state.schema.nodes.highlightBox;
 
-                // Font size mapping
-                const fontSizes = {
-                  small: '14px',
-                  medium: '16px',
-                  large: '24px',
-                  xlarge: '48px',
-                  xxlarge: '72px'
-                };
+                      if (!highlightBoxType || !$pos.parent.canReplaceWith($pos.index(), $pos.index(), highlightBoxType)) {
+                        // Can't insert highlightBox here, don't show preview
+                        return;
+                      }
 
-                // Default styles
-                const defaultStyles = {
-                  statistic: { backgroundColor: '#e6f7ff', borderColor: '#1890ff', color: '#0050b3', defaultIcon: '📊' },
-                  pullquote: { backgroundColor: '#f6ffed', borderColor: '#52c41a', color: '#389e0d', defaultIcon: '💬' },
-                  takeaway: { backgroundColor: '#fff7e6', borderColor: '#fa8c16', color: '#d46b08', defaultIcon: '💡' },
-                  process: { backgroundColor: '#f9f0ff', borderColor: '#722ed1', color: '#531dab', defaultIcon: '🔄' },
-                  warning: { backgroundColor: '#fff1f0', borderColor: '#ff4d4f', color: '#cf1322', defaultIcon: '⚠️' },
-                  tip: { backgroundColor: '#e6f7ff', borderColor: '#1890ff', color: '#0050b3', defaultIcon: '💡' },
-                  definition: { backgroundColor: '#f0f5ff', borderColor: '#2f54eb', color: '#1d39c4', defaultIcon: '📖' },
-                  comparison: { backgroundColor: '#e6fffb', borderColor: '#13c2c2', color: '#006d75', defaultIcon: '⚖️' },
-                };
+                      // Calculate horizontal position percentage
+                      const relativeX = event.clientX - editorRect.left;
+                      const horizontalPercent = (relativeX / editorRect.width) * 100;
 
-                const typeStyle = defaultStyles[attrs.type] || defaultStyles.takeaway;
+                      // Determine zone and layout
+                      let zone = 'center';
+                      let layout = 'block';
+                      let width = '100%';
 
-                // Build preview data
-                const previewData = {
-                  top: Math.max(0, dropY - 20),  // Slight offset above cursor
-                  layout: layout,
-                  width: width,
-                  editorWidth: editorRect.width,
-                  backgroundColor: attrs.customBg || typeStyle.backgroundColor,
-                  borderColor: attrs.customBorder || typeStyle.borderColor,
-                  textColor: typeStyle.color,
-                  fontSize: fontSizes[attrs.fontSize] || fontSizes.medium,
-                  icon: attrs.icon || typeStyle.defaultIcon,
-                  contentPreview: attrs.content ?
-                    attrs.content.replace(/<[^>]*>/g, '').substring(0, 50) + '...' :
-                    'Preview content...',
-                };
+                      // Check if float mode is forced (e.g., dropping between heading and content)
+                      if (validation.forceFloat) {
+                        // Force float layout - use cursor position to determine left vs right
+                        if (horizontalPercent < 50) {
+                          zone = 'left';
+                          layout = 'float-left';
+                          width = '50%';
+                        } else {
+                          zone = 'right';
+                          layout = 'float-right';
+                          width = '50%';
+                        }
+                      } else {
+                        // Normal zone detection (existing logic)
+                        if (horizontalPercent < 33) {
+                          zone = 'left';
+                          layout = 'float-left';
+                          width = '50%';
+                        } else if (horizontalPercent > 67) {
+                          zone = 'right';
+                          layout = 'float-right';
+                          width = '50%';
+                        }
+                      }
 
-                // Calculate approximate height of preview box for spacing
-                const baseHeight = 60; // Base height for small content
-                const fontSizeMultiplier = {
-                  small: 1,
-                  medium: 1.2,
-                  large: 1.8,
-                  xlarge: 2.5,
-                  xxlarge: 3.5,
-                };
-                const estimatedHeight = baseHeight * (fontSizeMultiplier[attrs.fontSize] || 1);
+                      // Calculate Y coordinate from validated position
+                      const dropCoords = view.coordsAtPos(validatedPos);
+                      const dropY = dropCoords.top - editorRect.top;
 
-                // Only schedule one update at a time to prevent React Fiber conflicts
-                if (!previewUpdateScheduled.current) {
-                  previewUpdateScheduled.current = true;
+                      // Extract node data
+                      const nodeData = draggingNodeData.current;
+                      const attrs = nodeData.attrs;
 
-                  requestAnimationFrame(() => {
-                    previewUpdateScheduled.current = false;
+                      // Font size mapping
+                      const fontSizes = {
+                        small: '14px',
+                        medium: '16px',
+                        large: '24px',
+                        xlarge: '48px',
+                        xxlarge: '72px'
+                      };
 
-                    if (view.dom && view.dom.setAttribute) {
-                      view.dom.setAttribute('data-drag-zone', zone);
+                      // Default styles
+                      const defaultStyles = {
+                        statistic: { backgroundColor: '#e6f7ff', borderColor: '#1890ff', color: '#0050b3', defaultIcon: '📊' },
+                        pullquote: { backgroundColor: '#f6ffed', borderColor: '#52c41a', color: '#389e0d', defaultIcon: '💬' },
+                        takeaway: { backgroundColor: '#fff7e6', borderColor: '#fa8c16', color: '#d46b08', defaultIcon: '💡' },
+                        process: { backgroundColor: '#f9f0ff', borderColor: '#722ed1', color: '#531dab', defaultIcon: '🔄' },
+                        warning: { backgroundColor: '#fff1f0', borderColor: '#ff4d4f', color: '#cf1322', defaultIcon: '⚠️' },
+                        tip: { backgroundColor: '#e6f7ff', borderColor: '#1890ff', color: '#0050b3', defaultIcon: '💡' },
+                        definition: { backgroundColor: '#f0f5ff', borderColor: '#2f54eb', color: '#1d39c4', defaultIcon: '📖' },
+                        comparison: { backgroundColor: '#e6fffb', borderColor: '#13c2c2', color: '#006d75', defaultIcon: '⚖️' },
+                      };
+
+                      const typeStyle = defaultStyles[attrs.type] || defaultStyles.takeaway;
+
+                      // Build preview data (with absolute positioning for portal)
+                      const previewData = {
+                        top: editorRect.top + Math.max(0, dropY - 20),  // Absolute position relative to viewport
+                        left: editorRect.left,  // Editor's left position
+                        layout: layout,
+                        width: width,
+                        editorWidth: editorRect.width,
+                        backgroundColor: attrs.customBg || typeStyle.backgroundColor,
+                        borderColor: attrs.customBorder || typeStyle.borderColor,
+                        textColor: typeStyle.color,
+                        fontSize: fontSizes[attrs.fontSize] || fontSizes.medium,
+                        icon: attrs.icon || typeStyle.defaultIcon,
+                        contentPreview: attrs.content ?
+                          attrs.content.replace(/<[^>]*>/g, '').substring(0, 50) + '...' :
+                          'Preview content...',
+                      };
+
+                      // Calculate approximate height of preview box for spacing
+                      const baseHeight = 60; // Base height for small content
+                      const fontSizeMultiplier = {
+                        small: 1,
+                        medium: 1.2,
+                        large: 1.8,
+                        xlarge: 2.5,
+                        xxlarge: 3.5,
+                      };
+                      const estimatedHeight = baseHeight * (fontSizeMultiplier[attrs.fontSize] || 1);
+
+                      if (view.dom && view.dom.setAttribute) {
+                        view.dom.setAttribute('data-drag-zone', zone);
+                      }
+
+                      // Update preview state only if component is still mounted
+                      if (isMountedRef.current) {
+                        setDragPreview(previewData);
+
+                        // NEW: Apply CSS to cause text reflow
+                        applyTextFlowCSS(layout, width, estimatedHeight, textFlowStyleRef);
+
+                        // Set data attribute to activate CSS rule
+                        if (view.dom && view.dom.setAttribute) {
+                          view.dom.setAttribute('data-text-flow-active', 'true');
+                        }
+                      }
+
+                      // NOTE: Decorations disabled to prevent React Fiber conflicts
+                      // The decoration system was creating/destroying DOM nodes that
+                      // conflicted with React's event delegation system
+                      // The preview component provides sufficient visual feedback
                     }
-
-                    // Update preview state
-                    setDragPreview(previewData);
-
-                    // Dispatch decoration metadata to create spacer for text reflow
-                    const tr = view.state.tr.setMeta(dragReflowPluginKey, {
-                      pos: dropPos.pos,
-                      layout: layout,
-                      width: width,
-                      height: estimatedHeight,
-                    });
-                    view.dispatch(tr);
-                  });
-                }
+                  } catch (innerError) {
+                    console.error('Error in dragover RAF callback:', innerError);
+                  }
+                });
               }
             }
           } catch (e) {
@@ -337,11 +589,11 @@ const RichTextEditor = ({
                 if (view.dom && view.dom.removeAttribute) {
                   view.dom.removeAttribute('data-drag-zone');
                 }
-                setDragPreview(null);
-
-                // Clear decoration for text reflow
-                const tr = view.state.tr.setMeta(dragReflowPluginKey, { clear: true });
-                view.dispatch(tr);
+                if (isMountedRef.current) {
+                  setDragPreview(null);
+                }
+                // NEW: Clear text flow CSS
+                clearTextFlowCSS(view, textFlowStyleRef);
               });
             }
           } catch (e) {
@@ -358,11 +610,11 @@ const RichTextEditor = ({
               if (view.dom && view.dom.removeAttribute) {
                 view.dom.removeAttribute('data-drag-zone');
               }
-              setDragPreview(null);
-
-              // Clear decoration for text reflow
-              const tr = view.state.tr.setMeta(dragReflowPluginKey, { clear: true });
-              view.dispatch(tr);
+              if (isMountedRef.current) {
+                setDragPreview(null);
+              }
+              // NEW: Clear text flow CSS
+              clearTextFlowCSS(view, textFlowStyleRef);
             });
           } catch (e) {
             console.error('Error in drop handler:', e);
@@ -387,16 +639,12 @@ const RichTextEditor = ({
               const sourcePos = nodeData.sourcePos;
               let targetPos = dropPos.pos;
 
-              // Validate drop position is at block boundary to prevent text splitting
-              const $pos = state.doc.resolve(targetPos);
-
-              // Check if we're inside a text block
-              if ($pos.parent.isTextblock && $pos.parent.textContent.length > 0) {
-                // If in middle of text, move to end of current block
-                if ($pos.parentOffset > 0 && $pos.parentOffset < $pos.parent.textContent.length) {
-                  targetPos = $pos.end();  // Move to end of paragraph
-                }
-              }
+              // Validate drop position and check for forced float mode
+              const validation = validateDropPosition(state, targetPos);
+              targetPos = validation.pos;
+              // Note: Layout is recalculated independently based on drop position
+              // Both dragover (preview) and drop (actual) use identical zone detection logic
+              // to ensure "what you see is what you get"
 
               // Get the original node from document
               const sourceNode = state.doc.nodeAt(sourcePos);
@@ -411,13 +659,22 @@ const RichTextEditor = ({
               const relativeX = event.clientX - editorRect.left;
               const horizontalPercent = (relativeX / editorWidth) * 100;
 
-              // Determine layout based on horizontal position
-              let layout = nodeData.attrs.layout;
-              let width = nodeData.attrs.width;
+              // Initialize to defaults (matching dragover behavior)
+              let layout = 'block';
+              let width = '100%';
 
-              // Only auto-adjust if dropping at edges (not when near current position)
-              const distanceFromSource = Math.abs(targetPos - sourcePos);
-              if (distanceFromSource > 50) {  // Only adjust if moving significantly
+              // ALWAYS check forced float FIRST, regardless of movement distance
+              if (validation.forceFloat) {
+                // Force float layout - use cursor position to determine left vs right
+                if (horizontalPercent < 50) {
+                  layout = 'float-left';
+                  width = '50%';
+                } else {
+                  layout = 'float-right';
+                  width = '50%';
+                }
+              } else {
+                // Normal zone detection (same logic as dragover)
                 if (horizontalPercent < 33) {
                   // Left third of editor → float-left
                   layout = 'float-left';
@@ -426,11 +683,8 @@ const RichTextEditor = ({
                   // Right third of editor → float-right
                   layout = 'float-right';
                   width = '50%';
-                } else {
-                  // Center third → block (full width)
-                  layout = 'block';
-                  width = '100%';
                 }
+                // else: stays as default 'block' / '100%'
               }
 
               // Update node attributes with new layout
@@ -504,7 +758,13 @@ const RichTextEditor = ({
 
     const handleHighlightDragEnd = () => {
       draggingNodeData.current = null;      // Clear on drag end
-      setDragPreview(null);                 // Clear preview
+      if (isMountedRef.current) {
+        setDragPreview(null);                 // Clear preview
+      }
+      // NEW: Clear text flow CSS
+      if (textFlowStyleRef.current) {
+        textFlowStyleRef.current.textContent = '';
+      }
     };
 
     window.addEventListener('highlight-drag-start', handleHighlightDragStart);
@@ -585,23 +845,23 @@ const RichTextEditor = ({
         />
       )}
 
-      {/* Drag preview indicator */}
-      {dragPreview && (
+      {/* Drag preview indicator - rendered via Portal to avoid React Fiber conflicts */}
+      {dragPreview && portalContainerRef.current && ReactDOM.createPortal(
         <div
           ref={dragPreviewRef}
           style={{
-            position: 'absolute',
+            position: 'fixed',  // Fixed positioning since portal is outside editor
             top: `${dragPreview.top}px`,
-            left: dragPreview.layout === 'float-left' ? '0' :
-                  dragPreview.layout === 'float-right' ? `${dragPreview.editorWidth * 0.5}px` :
-                  '0',
-            width: dragPreview.width === '100%' ? '100%' : '50%',
+            left: dragPreview.layout === 'float-left' ? `${dragPreview.left}px` :
+                  dragPreview.layout === 'float-right' ? `${dragPreview.left + (dragPreview.editorWidth * 0.5)}px` :
+                  `${dragPreview.left}px`,
+            width: dragPreview.width === '100%' ? `${dragPreview.editorWidth}px` : `${dragPreview.editorWidth * 0.5}px`,
             padding: '16px 20px',
             margin: '8px 0',
             borderRadius: '8px',
             backgroundColor: dragPreview.backgroundColor,
             borderLeft: `4px solid ${dragPreview.borderColor}`,
-            opacity: 0.7,
+            opacity: 0.85,
             pointerEvents: 'none',
             zIndex: 1000,
             transition: 'top 0.05s ease-out, left 0.1s ease-out',
@@ -644,7 +904,8 @@ const RichTextEditor = ({
              dragPreview.layout === 'float-right' ? 'Float Right (50%)' :
              'Full Width (100%)'}
           </div>
-        </div>
+        </div>,
+        portalContainerRef.current
       )}
 
       <style jsx>{`
