@@ -31,7 +31,7 @@ export const useTabMode = (tabKey) => {
   // Get workflow step info for this tab
   const workflowStep = useMemo(() => {
     return WORKFLOW_STEPS.find(step => step.tab === tabKey);
-  }, [tabKey]);
+  }, [tabKey, WORKFLOW_STEPS]);
   
   // Get data for this tab's workflow step
   const tabWorkflowData = useMemo(() => {
@@ -97,11 +97,11 @@ export const useTabMode = (tabKey) => {
         enterWorkflowMode(stepIndex);
       }
     },
-    
+
     exitToFocusMode: () => {
       exitWorkflowMode();
     },
-    
+
     // Workflow navigation
     continueToNextStep: (data) => {
       if (workflowStep && data) {
@@ -109,23 +109,23 @@ export const useTabMode = (tabKey) => {
       }
       navigateToNextStep();
     },
-    
+
     goToPreviousStep: () => {
       navigateToPreviousStep();
     },
-    
+
     // Direct tab navigation (exits workflow)
     navigateToTab: (targetTab) => {
       navigateToTab(targetTab);
     },
-    
+
     // Save step data without advancing
     saveStepData: (data) => {
       if (workflowStep) {
         addProgressiveHeader(workflowStep.key, data);
       }
     }
-  }), [workflowStep, enterWorkflowMode, exitWorkflowMode, navigateToNextStep, navigateToPreviousStep, navigateToTab, addProgressiveHeader]);
+  }), [workflowStep, enterWorkflowMode, exitWorkflowMode, navigateToNextStep, navigateToPreviousStep, navigateToTab, addProgressiveHeader, WORKFLOW_STEPS]);
   
   return {
     // Mode information
