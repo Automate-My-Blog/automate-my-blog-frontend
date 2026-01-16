@@ -738,7 +738,6 @@ Please provide analysis in this JSON format:
     };
 
     keywords.forEach(keyword => {
-      const positions = [];
       const lowerContent = content.toLowerCase();
       const lowerKeyword = keyword.toLowerCase();
       
@@ -1247,17 +1246,6 @@ Please provide analysis in this JSON format:
     }
   }
 
-  async logout() {
-    try {
-      await this.makeRequest('/api/v1/auth/logout', {
-        method: 'POST',
-      });
-      return { success: true };
-    } catch (error) {
-      return { success: false, message: error.message };
-    }
-  }
-
   /**
    * Workflow persistence methods (Phase 1)
    * These methods provide silent background saving and resumption of workflow progress
@@ -1578,22 +1566,6 @@ Please provide analysis in this JSON format:
   }
 
   /**
-   * Get current user ID from stored token
-   */
-  getCurrentUserId() {
-    try {
-      const token = localStorage.getItem('accessToken');
-      if (!token) return null;
-      
-      // Decode JWT token to get user ID (simple decode, not verification)
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      return payload.userId || payload.sub;
-    } catch (error) {
-      return null;
-    }
-  }
-
-  /**
    * Admin API methods for user management and impersonation
    */
   
@@ -1838,7 +1810,6 @@ Please provide analysis in this JSON format:
    */
   async getRecentAnalysis() {
     const callId = `api-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`;
-    const startTime = Date.now();
     const userId = this.getCurrentUserId();
     
     // Only log cache misses for debugging
@@ -1874,13 +1845,11 @@ Please provide analysis in this JSON format:
     const makeAPIRequest = async () => {
       try {
         let response;
-        let statusCode = 'unknown';
-        
+
         try {
           response = await this.makeRequest('/api/v1/user/recent-analysis', {
             method: 'GET',
           });
-          statusCode = response.statusCode || 'unknown';
         } catch (error) {
           // Handle 404 as normal response (user has no cached analysis)
           if (error.message.includes('404') || error.message.includes('HTTP 404')) {
@@ -1889,7 +1858,6 @@ Please provide analysis in this JSON format:
               analysis: null,
               message: 'No cached analysis found'
             };
-            statusCode = '404';
           } else {
             // Re-throw other errors
             throw error;
@@ -2698,23 +2666,6 @@ Please provide analysis in this JSON format:
     } catch (error) {
       console.error('❌ Website analysis session adoption failed:', error);
       throw new Error(`Failed to adopt website analysis session: ${error.message}`);
-    }
-  }
-
-  /**
-   * Get the most recent website analysis data for authenticated user
-   */
-  async getRecentAnalysis() {
-    try {
-      console.log('🔍 Getting recent website analysis data...');
-      
-      const response = await this.makeRequest('/api/v1/analysis/recent');
-      
-      console.log('✅ Recent analysis retrieved:', response);
-      return response;
-    } catch (error) {
-      console.error('❌ Failed to get recent analysis:', error);
-      throw new Error(`Failed to get recent analysis: ${error.message}`);
     }
   }
 

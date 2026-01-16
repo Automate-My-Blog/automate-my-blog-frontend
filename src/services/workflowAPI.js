@@ -114,8 +114,8 @@ export const analysisAPI = {
     const normalizedUrl = url.trim().toLowerCase();
     
     // More flexible URL pattern that handles various cases
-    const urlPattern = /^(https?:\/\/)?([a-z0-9\-]+\.)*[a-z0-9\-]+\.[a-z]{2,}(\/.*)?$/i;
-    const hasValidDomain = /[a-z0-9\-]+\.[a-z]{2,}/i.test(normalizedUrl);
+    const urlPattern = /^(https?:\/\/)?([a-z0-9-]+\.)*[a-z0-9-]+\.[a-z]{2,}(\/.*)?$/i;
+    const hasValidDomain = /[a-z0-9-]+\.[a-z]{2,}/i.test(normalizedUrl);
     
     return {
       isValid: urlPattern.test(normalizedUrl) && hasValidDomain,
@@ -447,10 +447,12 @@ export const workflowConfig = {
   }
 };
 
-export default {
+const workflowAPI = {
   analysisAPI,
   topicAPI,
   contentAPI,
   exportUtils,
   workflowConfig
 };
+
+export default workflowAPI;

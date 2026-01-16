@@ -1,6 +1,6 @@
 // ADMIN ONLY - Super User Component for Analytics Overview
 // This component is only accessible to admin users and provides platform-wide analytics
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Card, 
   Statistic, 
@@ -26,7 +26,6 @@ import {
   ClockCircleOutlined,
   GlobalOutlined
 } from '@ant-design/icons';
-import { format, subDays } from 'date-fns';
 import dayjs from 'dayjs';
 import api from '../../services/api';
 
@@ -40,11 +39,7 @@ const AdminAnalyticsTab = () => {
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState('7d');
 
-  useEffect(() => {
-    loadAnalytics();
-  }, []);
-
-  const loadAnalytics = async () => {
+  const loadAnalytics = useCallback(async () => {
     setLoading(true);
     try {
       // Get real usage statistics from existing API
@@ -76,7 +71,11 @@ const AdminAnalyticsTab = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadAnalytics();
+  }, [loadAnalytics]);
 
   // DUMMY DATA - Mock analytics for missing backend features
   const getMockAnalytics = () => ({
@@ -156,7 +155,7 @@ const AdminAnalyticsTab = () => {
     }
   ];
 
-  if (!analytics) {
+  if (loading || !analytics) {
     return <div>Loading analytics...</div>;
   }
 

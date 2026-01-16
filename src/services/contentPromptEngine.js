@@ -200,28 +200,6 @@ export class ContentPromptEngine {
     };
   }
 
-  buildSecondaryKeywords(analysisData, strategy) {
-    const secondary = [];
-    if (analysisData.keywords) {
-      secondary.push(...analysisData.keywords.slice(3, 8));
-    }
-    if (strategy && strategy.relatedTerms) {
-      secondary.push(...strategy.relatedTerms);
-    }
-    return secondary;
-  }
-
-  buildSemanticKeywords(analysisData) {
-    const semantic = [];
-    if (analysisData.businessType) {
-      semantic.push(`${analysisData.businessType} solutions`, `${analysisData.businessType} strategy`);
-    }
-    if (analysisData.targetAudience) {
-      semantic.push(`${analysisData.targetAudience} challenges`);
-    }
-    return semantic;
-  }
-
   buildAdditionalInstructions(options = {}) {
     const instructions = [];
     

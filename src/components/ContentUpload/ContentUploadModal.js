@@ -26,7 +26,7 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import autoBlogAPI from '../../services/api';
 
-const { Title, Text, Paragraph } = Typography;
+const { Title, Paragraph } = Typography;
 const { TextArea } = Input;
 const { TabPane } = Tabs;
 

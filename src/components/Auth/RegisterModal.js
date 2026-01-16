@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Form, Input, Button, Alert, Space } from 'antd';
-import { UserOutlined, LockOutlined, MailOutlined, BankOutlined, LinkOutlined } from '@ant-design/icons';
+import { LockOutlined, MailOutlined, BankOutlined, LinkOutlined } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 
 const RegisterModal = ({ onClose, onSwitchToLogin, context = null, onSuccess = null }) => {

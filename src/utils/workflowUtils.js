@@ -287,8 +287,8 @@ export const urlUtils = {
     const normalizedUrl = url.trim().toLowerCase();
     
     // More flexible URL pattern that handles various cases
-    const urlPattern = /^(https?:\/\/)?([a-z0-9\-]+\.)*[a-z0-9\-]+\.[a-z]{2,}(\/.*)?$/i;
-    const hasValidDomain = /[a-z0-9\-]+\.[a-z]{2,}/i.test(normalizedUrl);
+    const urlPattern = /^(https?:\/\/)?([a-z0-9-]+\.)*[a-z0-9-]+\.[a-z]{2,}(\/.*)?$/i;
+    const hasValidDomain = /[a-z0-9-]+\.[a-z]{2,}/i.test(normalizedUrl);
     
     if (!urlPattern.test(normalizedUrl) || !hasValidDomain) {
       return {
@@ -422,7 +422,7 @@ export const contentUtils = {
 /**
  * Combined export object
  */
-export default {
+const workflowUtils = {
   strategyUtils,
   postUtils,
   fileUtils,
@@ -430,3 +430,5 @@ export default {
   progressUtils,
   contentUtils
 };
+
+export default workflowUtils;

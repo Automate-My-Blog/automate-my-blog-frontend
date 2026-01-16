@@ -1,6 +1,6 @@
 // ADMIN ONLY - Super User Component for Content Moderation
 // This component is only accessible to admin users and provides content oversight functionality
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Card, 
   Table, 
@@ -18,16 +18,13 @@ import {
   Descriptions,
   Badge,
   Progress,
-  Timeline,
   message
 } from 'antd';
-import { 
+import {
   FileTextOutlined,
-  SearchOutlined,
   ExclamationCircleOutlined,
   FlagOutlined,
   CheckCircleOutlined,
-  CloseCircleOutlined,
   EyeOutlined,
   DeleteOutlined
 } from '@ant-design/icons';
@@ -37,7 +34,6 @@ import api from '../../services/api';
 const { Title, Text, Paragraph } = Typography;
 const { Search } = Input;
 const { Option } = Select;
-const { TextArea } = Input;
 
 // ADMIN COMPONENT - Only for super users
 const AdminContentTab = () => {
@@ -47,11 +43,7 @@ const AdminContentTab = () => {
   const [showContentModal, setShowContentModal] = useState(false);
   const [filterStatus, setFilterStatus] = useState('all');
 
-  useEffect(() => {
-    loadContent();
-  }, []);
-
-  const loadContent = async () => {
+  const loadContent = useCallback(async () => {
     setLoading(true);
     try {
       // Get real posts from existing API
@@ -83,7 +75,11 @@ const AdminContentTab = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadContent();
+  }, [loadContent]);
 
   // DUMMY DATA - Fallback content for demonstration
   const getMockContent = () => [
