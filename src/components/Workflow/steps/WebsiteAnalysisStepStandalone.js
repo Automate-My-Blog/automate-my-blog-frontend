@@ -842,14 +842,14 @@ const WebsiteAnalysisStepStandalone = ({
                         border: `1px solid ${defaultColors.primary}10`
                       }}>
                         {/* Small type/placement tags at top */}
-                        <div style={{ marginBottom: '8px' }}>
-                          <Tag size="small" color="default" style={{ fontSize: '11px' }}>
+                        <div style={{ marginBottom: '8px', display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                          <Tag size="small" color="default" style={{ fontSize: '11px', margin: 0 }}>
                             {cta.type.replace('_', ' ')}
                           </Tag>
-                          <Tag size="small" color="default" style={{ fontSize: '11px' }}>
+                          <Tag size="small" color="default" style={{ fontSize: '11px', margin: 0 }}>
                             {cta.placement}
                           </Tag>
-                          <Tag color={cta.data_source === 'manual' ? 'blue' : 'green'} size="small" style={{ fontSize: '11px' }}>
+                          <Tag color={cta.data_source === 'manual' ? 'blue' : 'green'} size="small" style={{ fontSize: '11px', margin: 0 }}>
                             {cta.data_source === 'manual' ? 'Manual' : 'Scraped'}
                           </Tag>
                         </div>
