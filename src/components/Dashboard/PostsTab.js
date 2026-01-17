@@ -22,6 +22,7 @@ import { WorkflowGuidance } from '../Workflow/ModeToggle';
 import api from '../../services/api';
 import { topicAPI, contentAPI } from '../../services/workflowAPI';
 import SchedulingModal from '../Modals/SchedulingModal';
+import ManualCTAInputModal from '../Modals/ManualCTAInputModal';
 import { ComponentHelpers } from '../Workflow/interfaces/WorkflowComponentInterface';
 import MarkdownPreview from '../MarkdownPreview/MarkdownPreview';
 import HTMLPreview from '../HTMLPreview/HTMLPreview';
@@ -148,10 +149,17 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode }) => {
   // Enhanced metadata from content generation
   const [enhancedMetadata, setEnhancedMetadata] = useState(null);
   const [seoAnalysisVisible, setSeoAnalysisVisible] = useState(false);
-  
+
   // Organization data for enhanced generation
   const organizationId = user?.organizationId || user?.id; // Use user ID as fallback
   const organizationName = user?.organizationName || '';
+
+  // CTA state management
+  const [organizationCTAs, setOrganizationCTAs] = useState([]);
+  const [ctasLoading, setCtasLoading] = useState(false);
+  const [hasSufficientCTAs, setHasSufficientCTAs] = useState(false);
+  const [showManualCTAModal, setShowManualCTAModal] = useState(false);
+  const [manualCTAPromptShown, setManualCTAPromptShown] = useState(false);
   
   // UI helpers
   const responsive = ComponentHelpers.getResponsiveStyles();
@@ -207,6 +215,27 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode }) => {
       };
     }
   }, [contentGenerated, currentDraft, editingContent]);
+
+  // Fetch CTAs when organization ID is available
+  useEffect(() => {
+    const fetchCTAs = async () => {
+      if (!organizationId) return;
+
+      setCtasLoading(true);
+      try {
+        const response = await api.getOrganizationCTAs(organizationId);
+        setOrganizationCTAs(response.ctas || []);
+        setHasSufficientCTAs(response.has_sufficient_ctas || false);
+      } catch (error) {
+        console.error('Failed to fetch CTAs:', error);
+        // Silently fail - CTAs are optional
+      } finally {
+        setCtasLoading(false);
+      }
+    };
+
+    fetchCTAs();
+  }, [organizationId]);
 
   const loadPosts = async () => {
     setLoading(true);
@@ -886,6 +915,38 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode }) => {
     }
   };
 
+  // Handle manual CTA submission
+  const handleManualCTAsSubmit = async (ctas) => {
+    try {
+      if (!organizationId) {
+        message.error('Organization ID not found');
+        return;
+      }
+
+      const response = await api.addManualCTAs(organizationId, ctas);
+
+      if (response.success) {
+        message.success(`Successfully added ${response.ctas_added} CTAs`);
+
+        // Refresh CTA list
+        const updatedCTAs = await api.getOrganizationCTAs(organizationId);
+        setOrganizationCTAs(updatedCTAs.ctas || []);
+        setHasSufficientCTAs(updatedCTAs.has_sufficient_ctas || false);
+
+        setShowManualCTAModal(false);
+      }
+    } catch (error) {
+      console.error('Failed to add manual CTAs:', error);
+      message.error('Failed to add CTAs. Please try again.');
+    }
+  };
+
+  // Handle user choosing to skip manual CTA entry
+  const handleSkipManualCTAs = () => {
+    message.info('Continuing without additional CTAs');
+    setShowManualCTAModal(false);
+  };
+
   const getPostActions = (post) => {
     const actions = [
       {
@@ -1280,12 +1341,47 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode }) => {
 
                                   {/* Strategic CTAs */}
                                   <div style={{ marginBottom: '12px' }}>
-                                    <Text strong style={{ color: defaultColors.primary, fontSize: '13px', display: 'block', marginBottom: '4px' }}>
-                                      🚀 Conversion Elements
-                                    </Text>
-                                    <Text style={{ fontSize: '12px', color: '#666' }}>
-                                      Strategic CTAs aligned with your primary business objectives and customer journey
-                                    </Text>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                                      <Text strong style={{ color: defaultColors.primary, fontSize: '13px' }}>
+                                        🚀 Conversion Elements
+                                      </Text>
+                                      {!hasSufficientCTAs && (
+                                        <Button
+                                          size="small"
+                                          type="link"
+                                          icon={<PlusOutlined />}
+                                          onClick={() => setShowManualCTAModal(true)}
+                                          style={{ fontSize: '12px', padding: 0 }}
+                                        >
+                                          Add More
+                                        </Button>
+                                      )}
+                                    </div>
+
+                                    {ctasLoading ? (
+                                      <Text style={{ fontSize: '12px', color: '#999', fontStyle: 'italic' }}>
+                                        Loading CTAs...
+                                      </Text>
+                                    ) : organizationCTAs.length > 0 ? (
+                                      <div>
+                                        <div style={{ fontSize: '12px', color: '#666' }}>
+                                          {organizationCTAs.slice(0, 3).map((cta, index) => (
+                                            <div key={cta.id || index} style={{ marginBottom: '2px' }}>
+                                              • {cta.text}
+                                            </div>
+                                          ))}
+                                        </div>
+                                        {!hasSufficientCTAs && organizationCTAs.length < 3 && (
+                                          <Text style={{ fontSize: '11px', color: '#ff4d4f', marginTop: '4px', display: 'block' }}>
+                                            ⚠️ {3 - organizationCTAs.length} more CTA{3 - organizationCTAs.length !== 1 ? 's' : ''} recommended
+                                          </Text>
+                                        )}
+                                      </div>
+                                    ) : (
+                                      <Text style={{ fontSize: '12px', color: '#666' }}>
+                                        Strategic CTAs aligned with your primary business objectives and customer journey
+                                      </Text>
+                                    )}
                                   </div>
 
                                   {/* Content Quality */}
@@ -2298,12 +2394,47 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode }) => {
 
                                 {/* Strategic CTAs */}
                                 <div style={{ marginBottom: '12px' }}>
-                                  <Text strong style={{ color: defaultColors.primary, fontSize: '13px', display: 'block', marginBottom: '4px' }}>
-                                    🚀 Conversion Elements
-                                  </Text>
-                                  <Text style={{ fontSize: '12px', color: '#666' }}>
-                                    Strategic CTAs aligned with your primary business objectives and customer journey
-                                  </Text>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                                    <Text strong style={{ color: defaultColors.primary, fontSize: '13px' }}>
+                                      🚀 Conversion Elements
+                                    </Text>
+                                    {!hasSufficientCTAs && (
+                                      <Button
+                                        size="small"
+                                        type="link"
+                                        icon={<PlusOutlined />}
+                                        onClick={() => setShowManualCTAModal(true)}
+                                        style={{ fontSize: '12px', padding: 0 }}
+                                      >
+                                        Add More
+                                      </Button>
+                                    )}
+                                  </div>
+
+                                  {ctasLoading ? (
+                                    <Text style={{ fontSize: '12px', color: '#999', fontStyle: 'italic' }}>
+                                      Loading CTAs...
+                                    </Text>
+                                  ) : organizationCTAs.length > 0 ? (
+                                    <div>
+                                      <div style={{ fontSize: '12px', color: '#666' }}>
+                                        {organizationCTAs.slice(0, 3).map((cta, index) => (
+                                          <div key={cta.id || index} style={{ marginBottom: '2px' }}>
+                                            • {cta.text}
+                                          </div>
+                                        ))}
+                                      </div>
+                                      {!hasSufficientCTAs && organizationCTAs.length < 3 && (
+                                        <Text style={{ fontSize: '11px', color: '#ff4d4f', marginTop: '4px', display: 'block' }}>
+                                          ⚠️ {3 - organizationCTAs.length} more CTA{3 - organizationCTAs.length !== 1 ? 's' : ''} recommended
+                                        </Text>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <Text style={{ fontSize: '12px', color: '#666' }}>
+                                      Strategic CTAs aligned with your primary business objectives and customer journey
+                                    </Text>
+                                  )}
                                 </div>
 
                                 {/* Content Quality */}
@@ -2898,6 +3029,17 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode }) => {
           typography={typography}
         />
       )}
+
+      {/* Manual CTA Input Modal */}
+      <ManualCTAInputModal
+        visible={showManualCTAModal}
+        onCancel={() => setShowManualCTAModal(false)}
+        onSubmit={handleManualCTAsSubmit}
+        onSkip={handleSkipManualCTAs}
+        existingCTAs={organizationCTAs}
+        minCTAs={3}
+        websiteName={organizationName || 'your website'}
+      />
     </div>
   );
 };
