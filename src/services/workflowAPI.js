@@ -306,6 +306,13 @@ export const contentAPI = {
       // Step 2: Generate images if needed (after blog is saved)
       let content = response.blogPost?.content || response.content;
 
+      console.log('🔍 [IMAGE DEBUG] Checking image generation needs:', {
+        hasImageGeneration: !!response.imageGeneration,
+        needsImageGeneration: response.imageGeneration?.needsImageGeneration,
+        hasBlogPostId: !!response.imageGeneration?.blogPostId,
+        blogPostId: response.imageGeneration?.blogPostId
+      });
+
       if (response.imageGeneration?.needsImageGeneration && response.imageGeneration.blogPostId) {
         console.log('🎨 Standard generation: Triggering image generation for blog post...');
 
