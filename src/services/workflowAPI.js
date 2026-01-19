@@ -296,18 +296,45 @@ export const contentAPI = {
         `Focus on ${selectedStrategy.customerProblem}. Target customers who search for: ${selectedStrategy.customerLanguage?.join(', ') || 'relevant terms'}. Make this content align with the business goal: ${selectedStrategy.conversionPath}. ${webSearchInsights.researchQuality === 'enhanced' ? 'Enhanced with web research insights including competitive analysis and current market keywords.' : ''}` :
         `Make this engaging and actionable for the target audience. ${webSearchInsights.researchQuality === 'enhanced' ? 'Enhanced with web research insights including brand guidelines and keyword analysis.' : ''}`;
 
-      const blogPost = await autoBlogAPI.generateContent(
+      const response = await autoBlogAPI.generateContent(
         selectedTopic,
         analysisData,  // This maps to 'businessInfo' parameter in the API
         contextPrompt,
         tweets  // Pass tweets to standard generation
       );
-      
-      if (blogPost && blogPost.content) {
+
+      // Step 2: Generate images if needed (after blog is saved)
+      let content = response.blogPost?.content || response.content;
+
+      if (response.imageGeneration?.needsImageGeneration && response.imageGeneration.blogPostId) {
+        console.log('🎨 Standard generation: Triggering image generation for blog post...');
+
+        try {
+          const imageResult = await autoBlogAPI.generateImagesForBlog(
+            response.imageGeneration.blogPostId,
+            content,
+            response.imageGeneration.topic,
+            response.imageGeneration.organizationId
+          );
+
+          if (imageResult.success) {
+            console.log('✅ Images generated successfully, updating content');
+            content = imageResult.content; // Update with content containing actual images
+          } else {
+            console.warn('⚠️ Image generation failed, keeping placeholders:', imageResult.error);
+            // Continue with placeholder content
+          }
+        } catch (imageError) {
+          console.error('❌ Image generation error:', imageError.message);
+          // Continue with placeholder content
+        }
+      }
+
+      if (response.blogPost && content) {
         return {
           success: true,
-          content: blogPost.content,
-          blogPost: blogPost,
+          content: content,
+          blogPost: { ...response.blogPost, content },
           selectedTopic: selectedTopic
         };
       } else {
