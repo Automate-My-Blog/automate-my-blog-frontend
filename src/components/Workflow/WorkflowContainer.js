@@ -3,6 +3,7 @@ import { Card, Button, Row, Col, Typography, Radio, Spin, Progress, Input, messa
 import { SearchOutlined, BulbOutlined, EditOutlined, CheckOutlined, ReloadOutlined, GlobalOutlined, ScanOutlined, EyeOutlined, SettingOutlined, ApiOutlined, CloudUploadOutlined, CodeOutlined, DownOutlined, CloudDownloadOutlined, FileMarkdownOutlined, FileTextOutlined, DatabaseOutlined, FileZipOutlined, LockOutlined, LoginOutlined, UserAddOutlined } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import autoBlogAPI from '../../services/api';
+import workflowAPI from '../../services/workflowAPI';
 import ChangesSummary from '../ChangesSummary';
 import AuthModal from '../Auth/AuthModal';
 
@@ -340,7 +341,8 @@ const WorkflowContainer = ({ embedded = false }) => {
             customerProblems: response.analysis.customerProblems || [],
             customerLanguage: response.analysis.customerLanguage || [],
             keywords: response.analysis.keywords || [],
-            contentIdeas: response.analysis.contentIdeas || []
+            contentIdeas: response.analysis.contentIdeas || [],
+            organizationId: response.analysis.organizationId  // CRITICAL: Store for enhanced generation
           }
         }));
 
@@ -529,35 +531,66 @@ const WorkflowContainer = ({ embedded = false }) => {
         throw new Error('Selected topic not found');
       }
 
-      // Call real backend API to generate content with selected strategy context
-      const blogPost = await autoBlogAPI.generateContent(
-        selectedTopicData, 
+      // NEW: Use enhanced generation with images, tweets, SEO optimization, and all advanced features
+      console.log('🚀 Using ENHANCED generation with full feature set...');
+
+      const enhancementOptions = {
+        useEnhancedGeneration: true,
+        organizationId: stepResults.websiteAnalysis.organizationId,
+        organizationName: stepResults.websiteAnalysis.businessName,
+        targetSEOScore: 95,
+        includeVisuals: true,
+        goal: contentStrategy.goal,
+        voice: contentStrategy.voice,
+        template: contentStrategy.template,
+        length: contentStrategy.length
+      };
+
+      const result = await workflowAPI.contentAPI.generateContent(
+        selectedTopicData,
         stepResults.websiteAnalysis,
-        selectedCustomerStrategy ? 
-          `Focus on ${selectedCustomerStrategy.customerProblem}. Target customers who search for: ${selectedCustomerStrategy.customerLanguage?.join(', ') || 'relevant terms'}. Make this content align with the business goal: ${selectedCustomerStrategy.conversionPath}. ${webSearchInsights.researchQuality === 'enhanced' ? 'Enhanced with web research insights including competitive analysis and current market keywords.' : ''}` :
-          `Make this engaging and actionable for the target audience. ${webSearchInsights.researchQuality === 'enhanced' ? 'Enhanced with web research insights including brand guidelines and keyword analysis.' : ''}`
+        selectedCustomerStrategy,
+        webSearchInsights,
+        enhancementOptions
       );
-      
-      if (blogPost && blogPost.content) {
+
+      if (result.success && result.content) {
+        const blogPost = result.blogPost || { content: result.content };
+
+        console.log('✅ Enhanced generation complete:', {
+          hasContent: !!result.content,
+          hasImages: result.content.includes('![') && !result.content.includes('![IMAGE:'),
+          hasTweets: result.content.includes('<blockquote'),
+          contentLength: result.content.length,
+          hasMetadata: !!(result.seoAnalysis || result.contentQuality)
+        });
+
         // Store the complete blog post data for export later
         setStepResults(prev => ({
           ...prev,
-          finalContent: blogPost.content,
+          finalContent: result.content,
           selectedContent: selectedTopicData,
-          generatedBlogPost: blogPost // Store full blog post data
+          generatedBlogPost: blogPost, // Store full blog post data
+          enhancedMetadata: {
+            seoAnalysis: result.seoAnalysis,
+            contentQuality: result.contentQuality,
+            strategicElements: result.strategicElements,
+            visualSuggestions: result.visualSuggestions
+          }
         }));
-        
-        setGeneratedContent(blogPost.content);
-        
+
+        setGeneratedContent(result.content);
+
         // Complete blog generation and default to preview mode
         setTimeout(() => {
           setBlogGenerating(false);
           setIsLoading(false);
           setPreviewMode(true); // Default to preview mode
           setCurrentStep(4); // Move to editing step
+          message.success('Blog generated with enhanced features: images, tweets, and SEO optimization!');
         }, 1000);
       } else {
-        throw new Error('No content generated');
+        throw new Error(result.error || 'No content generated');
       }
 
     } catch (error) {
