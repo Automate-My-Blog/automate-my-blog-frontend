@@ -630,6 +630,18 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
               lineHeight: 1.3
             }}>
               {strategy.targetSegment?.demographics || 'Target Audience'}
+              {strategy.customerLanguage && strategy.customerLanguage.length > 0 && (
+                <>
+                  {' searching for '}
+                  <span style={{
+                    color: '#1890ff',
+                    fontStyle: 'italic',
+                    fontWeight: 500
+                  }}>
+                    "{strategy.customerLanguage[0]}"
+                  </span>
+                </>
+              )}
             </Title>
           </div>
 
