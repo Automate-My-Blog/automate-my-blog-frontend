@@ -343,7 +343,9 @@ class AutoBlogAPI {
         visualSuggestions: response.visualSuggestions || [],
         optimization: response.optimization,
         metadata: response.metadata || {},
-        generationTimeMs: response.generationTimeMs
+        generationTimeMs: response.generationTimeMs,
+        // CRITICAL: Include image generation metadata
+        imageGeneration: response.imageGeneration
       };
     } catch (error) {
       console.log('Enhanced endpoint not available, falling back to client-side enhancement');
