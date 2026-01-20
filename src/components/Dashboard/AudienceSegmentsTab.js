@@ -84,6 +84,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
           const persistentStrategies = response.audiences.map((audience, index) => ({
             id: audience.id, // Use actual database ID
             databaseId: audience.id, // Store for updates
+            pitch: audience.pitch || '', // OpenAI-generated agency pitch
             targetSegment: audience.target_segment || {
               demographics: '',
               psychographics: '',
@@ -200,6 +201,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
         // Transform OpenAI scenarios to component format
         const openAIStrategies = analysis.scenarios.map((scenario, index) => ({
           id: `openai-scenario-${index}`,
+          pitch: scenario.pitch || '', // OpenAI-generated agency pitch
           targetSegment: scenario.targetSegment || {
             demographics: scenario.customerProblem || '',
             psychographics: '',
@@ -230,6 +232,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
             const savedStrategies = await Promise.all(
               openAIStrategies.map(async (strategy) => {
                 const audienceData = {
+                  pitch: strategy.pitch, // OpenAI-generated agency pitch
                   target_segment: strategy.targetSegment,
                   customer_problem: strategy.customerProblem,
                   customer_language: strategy.customerLanguage,
@@ -336,6 +339,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
             const savedStrategies = await Promise.all(
               fallbackStrategies.map(async (strategy) => {
                 const audienceData = {
+                  pitch: strategy.pitch || '', // OpenAI-generated agency pitch (empty for fallback)
                   target_segment: strategy.targetSegment,
                   customer_problem: strategy.customerProblem,
                   customer_language: strategy.customerLanguage,
@@ -594,14 +598,34 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
               Strategy {index + 1}
             </Tag>
             {isSelected && (
-              <CheckOutlined style={{ 
-                float: 'right', 
-                color: defaultColors.primary, 
-                fontSize: '16px' 
+              <CheckOutlined style={{
+                float: 'right',
+                color: defaultColors.primary,
+                fontSize: '16px'
               }} />
             )}
           </div>
-          
+
+          {/* Agency Pitch - Primary selling point */}
+          {strategy.pitch && (
+            <div style={{
+              marginBottom: '16px',
+              padding: '12px',
+              backgroundColor: '#f0f5ff',
+              borderLeft: '3px solid #1890ff',
+              borderRadius: '4px'
+            }}>
+              <Text style={{
+                fontSize: '13px',
+                lineHeight: '1.5',
+                color: '#262626',
+                fontWeight: 500
+              }}>
+                {strategy.pitch}
+              </Text>
+            </div>
+          )}
+
           {/* Target Segment Section */}
           <div style={{ marginBottom: '16px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
