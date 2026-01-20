@@ -631,26 +631,12 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
             }}>
               {strategy.targetSegment?.demographics || 'Target Audience'}
               {(() => {
-                // Extract search term from Step 1 of the pitch for consistency
-                if (strategy.pitch) {
-                  const step1Match = strategy.pitch.match(/Step 1:.*?"([^"]+)"/);
-                  if (step1Match && step1Match[1]) {
-                    return (
-                      <>
-                        {' searching for '}
-                        <span style={{
-                          color: '#1890ff',
-                          fontStyle: 'italic',
-                          fontWeight: 500
-                        }}>
-                          "{step1Match[1]}"
-                        </span>
-                      </>
-                    );
-                  }
-                }
-                // Fallback to customerLanguage if pitch parsing fails
-                if (strategy.customerLanguage && strategy.customerLanguage.length > 0) {
+                // Use primary SEO keyword (first in array) for consistency across title, Step 1, and SEO section
+                const primaryKeyword = strategy.seoKeywords?.[0] ||
+                                      strategy.keywords?.[0]?.keyword ||
+                                      strategy.customerLanguage?.[0];
+
+                if (primaryKeyword) {
                   return (
                     <>
                       {' searching for '}
@@ -659,7 +645,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                         fontStyle: 'italic',
                         fontWeight: 500
                       }}>
-                        "{strategy.customerLanguage[0]}"
+                        "{primaryKeyword}"
                       </span>
                     </>
                   );
