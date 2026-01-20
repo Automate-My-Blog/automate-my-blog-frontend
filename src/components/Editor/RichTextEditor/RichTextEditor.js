@@ -18,6 +18,7 @@ import { colors, spacing, borderRadius, typography } from '../../DesignSystem/to
 import InlineToolbar from '../InlineToolbar/InlineToolbar';
 import { KeyboardShortcuts } from '../extensions/KeyboardShortcuts';
 import { HighlightBox } from '../extensions/HighlightBox';
+import { TweetCard } from '../extensions/TweetCard';
 import { markdownToHtml, htmlToMarkdown } from '../../../utils/markdownToHtml';
 
 /**
@@ -381,6 +382,7 @@ const RichTextEditor = ({
       }),
       KeyboardShortcuts,
       HighlightBox,
+      TweetCard,
     ],
     content: htmlContent,
     editable: editable,
