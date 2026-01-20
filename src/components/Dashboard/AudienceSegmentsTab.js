@@ -650,13 +650,27 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                 borderLeft: '3px solid #1890ff',
                 borderRadius: '4px'
               }}>
-                <Text style={{
-                  fontSize: '13px',
-                  lineHeight: '1.5',
-                  color: '#262626'
-                }}>
-                  {strategy.pitch}
-                </Text>
+                {/* Parse and format step-by-step pitch */}
+                {strategy.pitch.split(/\n/).map((line, index) => {
+                  const stepMatch = line.match(/^(Step \d+:)\s*(.+)$/);
+                  if (stepMatch) {
+                    return (
+                      <div key={index} style={{ marginBottom: index < strategy.pitch.split(/\n/).length - 1 ? '8px' : '0' }}>
+                        <Text strong style={{ fontSize: '13px', color: '#1890ff' }}>
+                          {stepMatch[1]}
+                        </Text>
+                        <Text style={{ fontSize: '13px', color: '#262626', marginLeft: '6px' }}>
+                          {stepMatch[2]}
+                        </Text>
+                      </div>
+                    );
+                  }
+                  return line ? (
+                    <Text key={index} style={{ fontSize: '13px', lineHeight: '1.5', color: '#262626', display: 'block' }}>
+                      {line}
+                    </Text>
+                  ) : null;
+                })}
               </div>
             </div>
           )}
