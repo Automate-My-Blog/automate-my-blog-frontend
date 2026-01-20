@@ -180,11 +180,11 @@ class AutoBlogAPI {
         headers,
         body: JSON.stringify({
           analysisData: {
-            businessType: analysisResponse.businessType,
-            businessName: analysisResponse.businessName,
-            targetAudience: analysisResponse.decisionMakers || analysisResponse.endUsers,
-            businessModel: analysisResponse.businessModel,
-            contentFocus: analysisResponse.contentFocus
+            businessType: analysisResponse.analysis.businessType,
+            businessName: analysisResponse.analysis.businessName,
+            targetAudience: analysisResponse.analysis.decisionMakers || analysisResponse.analysis.endUsers,
+            businessModel: analysisResponse.analysis.businessModel,
+            contentFocus: analysisResponse.analysis.contentFocus
           },
           webSearchData: analysisResponse.webSearchData || '',
           keywordData: analysisResponse.keywordData || ''
@@ -200,18 +200,37 @@ class AutoBlogAPI {
         body: JSON.stringify({
           scenarios: audiencesResponse.scenarios,
           businessContext: {
-            businessType: analysisResponse.businessType,
-            businessName: analysisResponse.businessName
+            businessType: analysisResponse.analysis.businessType,
+            businessName: analysisResponse.analysis.businessName
           }
         }),
       });
 
       console.log('✅ All 3 steps completed successfully');
 
-      // Combine results into final response
+      // Determine research quality based on webSearchStatus
+      const hasEnhancedResearch = analysisResponse.analysis.webSearchStatus?.enhancementComplete ||
+                                  (analysisResponse.analysis.webSearchStatus?.businessResearchSuccess &&
+                                   analysisResponse.analysis.webSearchStatus?.keywordResearchSuccess);
+
+      // Combine results into final response with proper structure
       return {
-        ...analysisResponse,
-        scenarios: pitchesResponse.scenarios
+        success: true,
+        url: analysisResponse.url,
+        scrapedAt: analysisResponse.scrapedAt,
+        analysis: {
+          ...analysisResponse.analysis,
+          scenarios: pitchesResponse.scenarios  // Add scenarios with pitches to analysis
+        },
+        metadata: analysisResponse.metadata,
+        ctas: analysisResponse.ctas,
+        ctaCount: analysisResponse.ctaCount,
+        hasSufficientCTAs: analysisResponse.hasSufficientCTAs,
+        webSearchInsights: {
+          brandResearch: hasEnhancedResearch ? 'Found actual brand guidelines' : null,
+          keywordResearch: hasEnhancedResearch ? 'Current market keyword analysis completed' : null,
+          researchQuality: hasEnhancedResearch ? 'enhanced' : 'basic'
+        }
       };
 
     } catch (error) {
