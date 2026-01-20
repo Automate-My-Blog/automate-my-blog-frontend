@@ -156,10 +156,19 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
       analysisCompleted: stepResults.home.analysisCompleted
     });
     
-    // Prevent duplicate strategy generation if strategies already exist
-    if (strategies.length > 0 || generatingStrategies) {
-      console.log('🚫 Skipping main generator - strategies exist or generating');
+    // Check if there's fresh analysis with scenarios
+    const hasFreshAnalysis = stepResults.home.websiteAnalysis?.scenarios?.length > 0;
+
+    // Allow fresh analysis to override persisted strategies
+    if (!hasFreshAnalysis && (strategies.length > 0 || generatingStrategies)) {
+      console.log('🚫 Skipping main generator - strategies exist or generating, and no fresh analysis');
       return;
+    }
+
+    // If we have fresh analysis but also have persisted strategies, clear them first
+    if (hasFreshAnalysis && strategies.length > 0) {
+      console.log('🔄 Fresh analysis detected - clearing old persisted strategies to load new ones with images');
+      setStrategies([]);
     }
     
     const hasAnalysisData = stepResults.home.websiteAnalysis && 
@@ -238,6 +247,12 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
           
           // Save generated strategies to database for persistence
           try {
+            console.log('💾 Saving strategies to database with images:', openAIStrategies.map(s => ({
+              demographics: s.targetSegment?.demographics,
+              hasImageUrl: !!s.imageUrl,
+              imageUrl: s.imageUrl
+            })));
+
             const savedStrategies = await Promise.all(
               openAIStrategies.map(async (strategy) => {
                 const audienceData = {
@@ -250,8 +265,19 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                   business_value: strategy.businessValue,
                   priority: strategy.businessValue?.priority || 1
                 };
-                
+
+                console.log('💾 Saving audience with image_url:', {
+                  demographics: strategy.targetSegment?.demographics,
+                  image_url: audienceData.image_url
+                });
+
                 const response = await autoBlogAPI.createAudience(audienceData);
+
+                console.log('✅ Saved audience response:', {
+                  id: response.audience?.id,
+                  has_image_url: !!response.audience?.image_url,
+                  image_url: response.audience?.image_url
+                });
                 
                 // Save keywords if they exist
                 if (strategy.seoKeywords && strategy.seoKeywords.length > 0) {
