@@ -209,12 +209,17 @@ class AutoBlogAPI {
 
       console.log('Step 4/4: Generating DALL-E images for audiences...');
 
-      // Step 4: Generate DALL-E images for each audience
+      // Step 4: Generate DALL-E images for each audience with brand voice context
       const imagesResponse = await this.makeRequest('/api/generate-audience-images', {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          scenarios: pitchesResponse.scenarios
+          scenarios: pitchesResponse.scenarios,
+          brandContext: {
+            brandVoice: analysisResponse.analysis.brandVoice,
+            businessType: analysisResponse.analysis.businessType,
+            businessName: analysisResponse.analysis.businessName
+          }
         }),
       });
 
