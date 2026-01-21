@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Tabs, Typography, Tag, Button, Row, Col, Input, message, Alert, Space, QRCode, Spin, Table, Statistic } from 'antd';
-import { UserOutlined, BankOutlined, CreditCardOutlined, StarOutlined, GiftOutlined, CopyOutlined, MailOutlined, ShareAltOutlined, TeamOutlined, SendOutlined, RobotOutlined } from '@ant-design/icons';
+import { UserOutlined, BankOutlined, CreditCardOutlined, StarOutlined, GiftOutlined, CopyOutlined, MailOutlined, ShareAltOutlined, TeamOutlined, SendOutlined } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import autoBlogAPI from '../../services/api';
-import ContentDiscoverySettings from './ContentDiscoverySettings';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -1421,12 +1420,6 @@ const SettingsTab = () => {
       label: 'Profile',
       icon: <UserOutlined />,
       children: <ProfileSettings />,
-    },
-    {
-      key: 'content-discovery',
-      label: 'Content Discovery',
-      icon: <RobotOutlined />,
-      children: <ContentDiscoverySettings />,
     },
     {
       key: 'subscriptions',

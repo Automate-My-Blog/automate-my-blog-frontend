@@ -17,6 +17,7 @@ import { format, parse, startOfWeek, getDay } from 'date-fns';
 import { enUS } from 'date-fns/locale';
 import { useAuth } from '../../contexts/AuthContext';
 import { VisualContentSuggestions } from '../VisualContent';
+import ContentDiscoverySettings from './ContentDiscoverySettings';
 import api from '../../services/api';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 
@@ -708,6 +709,28 @@ const SandboxTab = () => {
           }}
           style={{ marginTop: '16px' }}
         />
+      </Card>
+
+      {/* Content Discovery Settings Section */}
+      <Card
+        title={
+          <Space>
+            <RobotOutlined style={{ color: '#722ed1' }} />
+            Content Discovery Settings
+            <Tag color="purple">ADMIN ONLY</Tag>
+          </Space>
+        }
+        style={{ marginBottom: '24px' }}
+      >
+        <Alert
+          message="Experimental Feature"
+          description="Configure content discovery automation settings. This feature is currently in testing."
+          type="info"
+          showIcon
+          style={{ marginBottom: '24px' }}
+        />
+
+        <ContentDiscoverySettings />
       </Card>
     </div>
   );
