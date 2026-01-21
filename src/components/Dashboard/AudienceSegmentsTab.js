@@ -246,16 +246,20 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
           id: s.id,
           demographics: s.targetSegment?.demographics,
           hasImage: !!s.imageUrl,
-          imageUrl: s.imageUrl
+          imageUrl: s.imageUrl?.substring(0, 100) + '...'
         })));
+
+        console.log('📍 About to set strategies with count:', openAIStrategies.length);
 
         // Sort by business value priority
         openAIStrategies.sort((a, b) => (a.businessValue.priority || 999) - (b.businessValue.priority || 999));
         
         setTimeout(async () => {
+          console.log('✅ Setting strategies in state:', openAIStrategies.length);
           setStrategies(openAIStrategies);
           setGeneratingStrategies(false);
-          
+          console.log('✅ Strategies set in state');
+
           // Save generated strategies to database for persistence
           try {
             console.log('💾 Saving strategies to database with images:', openAIStrategies.map(s => ({
@@ -621,6 +625,13 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
 
   // Render enhanced strategy card with business intelligence
   const renderStrategyCard = (strategy, index) => {
+    console.log(`🎴 Rendering card ${index}:`, {
+      id: strategy.id,
+      demographics: strategy.targetSegment?.demographics,
+      hasImageUrl: !!strategy.imageUrl,
+      imageUrlPreview: strategy.imageUrl?.substring(0, 80) + '...'
+    });
+
     const isSelected = selectedStrategy?.index === index;
     const isOthersSelected = selectedStrategy && !isSelected;
 

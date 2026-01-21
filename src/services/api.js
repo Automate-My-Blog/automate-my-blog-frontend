@@ -223,8 +223,16 @@ class AutoBlogAPI {
       console.log('🖼️ Scenarios with images:', imagesResponse.scenarios?.map(s => ({
         demographics: s.targetSegment?.demographics,
         hasImage: !!s.imageUrl,
-        imageUrl: s.imageUrl
+        imageUrl: s.imageUrl?.substring(0, 100) + '...'
       })));
+
+      // Verify all scenarios have imageUrl
+      const scenariosWithoutImages = imagesResponse.scenarios?.filter(s => !s.imageUrl) || [];
+      if (scenariosWithoutImages.length > 0) {
+        console.error('⚠️ Some scenarios missing imageUrl:', scenariosWithoutImages.length);
+      } else {
+        console.log('✅ All scenarios have imageUrl');
+      }
 
       // Determine research quality based on webSearchStatus
       const hasEnhancedResearch = analysisResponse.analysis.webSearchStatus?.enhancementComplete ||
