@@ -165,37 +165,40 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
       return;
     }
 
-    // If we have fresh analysis but also have persisted strategies, clear them first
-    if (hasFreshAnalysis && strategies.length > 0) {
-      console.log('🔄 Fresh analysis detected - clearing old persisted strategies to load new ones with images');
-      setStrategies([]);
-    }
-    
-    const hasAnalysisData = stepResults.home.websiteAnalysis && 
-                           (stepResults.home.websiteAnalysis.targetAudience || 
+    const hasAnalysisData = stepResults.home.websiteAnalysis &&
+                           (stepResults.home.websiteAnalysis.targetAudience ||
                             stepResults.home.websiteAnalysis.businessName !== 'None');
-    
+
     console.log('🔍 Main Generator Condition Check:', {
       condition1: (tabMode.mode === 'workflow' || forceWorkflowMode) && stepResults.home.analysisCompleted && stepResults.home.websiteAnalysis,
       condition2: hasAnalysisData && tabMode.mode === 'focus' && !forceWorkflowMode,
       willExecute: ((tabMode.mode === 'workflow' || forceWorkflowMode) && stepResults.home.analysisCompleted && stepResults.home.websiteAnalysis) ||
                    (hasAnalysisData && tabMode.mode === 'focus' && !forceWorkflowMode)
     });
-    
+
     if (((tabMode.mode === 'workflow' || forceWorkflowMode) && stepResults.home.analysisCompleted && stepResults.home.websiteAnalysis) ||
         (hasAnalysisData && tabMode.mode === 'focus' && !forceWorkflowMode)) {
       const analysis = stepResults.home.websiteAnalysis;
-      
+
       // Create unique generation key based on analysis data
       const generationKey = `${analysis.businessName || 'unknown'}_${analysis.targetAudience || 'unknown'}_${analysis.contentFocus || 'unknown'}`;
       const sessionStorageKey = `audienceStrategiesGenerated_${generationKey}`;
-      
+
       // Check if strategies have already been generated for this analysis (session-level)
       const alreadyGenerated = sessionStorage.getItem(sessionStorageKey) === 'true';
       // Check if strategies have been generated in this module instance
       const alreadyGeneratedInModule = generatedStrategiesCache.has(generationKey);
-      
-      if (alreadyGenerated || alreadyGeneratedInModule) {
+
+      // If we have fresh analysis with scenarios, force reload even if cached
+      if (hasFreshAnalysis && (alreadyGenerated || alreadyGeneratedInModule)) {
+        console.log('🔄 Fresh analysis with scenarios detected - clearing cache and reloading');
+        sessionStorage.removeItem(sessionStorageKey);
+        generatedStrategiesCache.delete(generationKey);
+        if (strategies.length > 0) {
+          setStrategies([]);
+        }
+      } else if (alreadyGenerated || alreadyGeneratedInModule) {
+        console.log('🚫 Skipping - already generated and no fresh analysis');
         return;
       }
       
