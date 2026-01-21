@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Card, Button, Empty, Table, Tag, Dropdown, Space, Switch, Divider, Input, Select, Row, Col, Typography, message } from 'antd';
+import { Card, Button, Empty, Table, Tag, Dropdown, Space, Switch, Divider, Input, Select, Row, Col, Typography, message, Modal } from 'antd';
 import { 
   PlusOutlined, 
   ScheduleOutlined,
@@ -402,7 +402,55 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode }) => {
     if (!user) {
       return requireSignUp('Create your blog post', 'Get your first post');
     }
-    
+
+    // Check user quota before generation
+    try {
+      const credits = await api.getUserCredits();
+      const remainingPosts = credits.totalCredits - credits.usedCredits;
+
+      if (remainingPosts <= 0) {
+        Modal.warning({
+          title: 'Content Generation Limit Reached',
+          content: (
+            <div>
+              <p>You've used all {credits.totalCredits} of your available posts this period.</p>
+              <p style={{ fontWeight: 600, marginTop: '16px' }}>Options to continue:</p>
+              <ul style={{ marginTop: '8px' }}>
+                <li>Upgrade to Creator plan (4 posts/month) for $20/month</li>
+                <li>Upgrade to Professional plan (8 posts/month) for $50/month</li>
+                <li>Refer friends to earn bonus posts (1 post per referral)</li>
+              </ul>
+              <Button
+                type="primary"
+                onClick={() => {
+                  Modal.destroyAll();
+                  // Navigate to Settings → Subscriptions
+                  const settingsTab = document.querySelector('[data-node-key="settings"]');
+                  if (settingsTab) settingsTab.click();
+                }}
+                style={{ marginTop: '12px' }}
+              >
+                View Plans
+              </Button>
+            </div>
+          ),
+          okText: 'Got it',
+        });
+        return; // Stop generation
+      }
+
+      // Show warning when low on posts
+      if (remainingPosts <= 2) {
+        message.warning(
+          `You have ${remainingPosts} post${remainingPosts === 1 ? '' : 's'} remaining. Consider upgrading your plan.`,
+          6
+        );
+      }
+    } catch (error) {
+      console.warn('Could not check quota, proceeding with generation:', error);
+      // Allow generation to proceed if quota check fails (backend will enforce)
+    }
+
     const topic = availableTopics.find(t => t.id === topicId);
     if (!topic) return;
     

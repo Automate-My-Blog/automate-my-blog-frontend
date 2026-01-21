@@ -513,7 +513,49 @@ const WorkflowContainer = ({ embedded = false }) => {
     if (!demoMode && !requireAuth()) {
       return;
     }
-    
+
+    // Check user quota before generation
+    if (!demoMode) {
+      try {
+        const credits = await workflowAPI.getUserCredits();
+        const remainingPosts = credits.totalCredits - credits.usedCredits;
+
+        if (remainingPosts <= 0) {
+          message.error({
+            content: (
+              <div>
+                <div style={{ fontWeight: 600, marginBottom: '8px' }}>Content Generation Limit Reached</div>
+                <div style={{ marginBottom: '8px' }}>You've used all {credits.totalCredits} of your available posts.</div>
+                <div>
+                  <a href="#" onClick={(e) => {
+                    e.preventDefault();
+                    // Navigate to settings tab
+                    const settingsTab = document.querySelector('[data-node-key="settings"]');
+                    if (settingsTab) settingsTab.click();
+                  }} style={{ textDecoration: 'underline' }}>
+                    Upgrade your plan
+                  </a> to generate more content.
+                </div>
+              </div>
+            ),
+            duration: 8,
+          });
+          return; // Stop generation
+        }
+
+        // Show warning when low on posts
+        if (remainingPosts <= 2) {
+          message.warning(
+            `You have ${remainingPosts} post${remainingPosts === 1 ? '' : 's'} remaining. Consider upgrading your plan.`,
+            6
+          );
+        }
+      } catch (error) {
+        console.warn('Could not check quota, proceeding with generation:', error);
+        // Allow generation to proceed if quota check fails (backend will enforce)
+      }
+    }
+
     try {
       setSelectedTopic(topicId); // Set the selected topic for loading state
       setIsLoading(true);
