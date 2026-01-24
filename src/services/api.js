@@ -2197,6 +2197,24 @@ Please provide analysis in this JSON format:
   }
 
   /**
+   * Stripe Payment Integration
+   */
+  async createCheckoutSession(priceId, planType) {
+    try {
+      const response = await this.makeRequest('/api/v1/stripe/create-checkout-session', {
+        method: 'POST',
+        body: JSON.stringify({
+          priceId,
+          planType
+        }),
+      });
+      return response;
+    } catch (error) {
+      throw new Error(`Failed to create checkout session: ${error.message}`);
+    }
+  }
+
+  /**
    * Website Lead Management (Super Admin Only)
    */
   async getLeads(options = {}) {

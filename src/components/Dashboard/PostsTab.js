@@ -163,13 +163,20 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
   const [hasSufficientCTAs, setHasSufficientCTAs] = useState(false);
   const [showManualCTAModal, setShowManualCTAModal] = useState(false);
   const [manualCTAPromptShown, setManualCTAPromptShown] = useState(false);
-  
+
+  // User credits state (live from API)
+  const [userCredits, setUserCredits] = useState(null);
+  const [loadingCredits, setLoadingCredits] = useState(false);
+
   // UI helpers
   const responsive = ComponentHelpers.getResponsiveStyles();
   const defaultColors = ComponentHelpers.getDefaultColors();
 
   // Check if user can schedule (Creator, Professional, Enterprise)
   const canSchedule = user && user.plan && !['payasyougo', 'free'].includes(user.plan);
+
+  // Calculate remaining posts from live credits
+  const remainingPosts = userCredits ? userCredits.availableCredits : null;
   
 
   useEffect(() => {
@@ -218,6 +225,31 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
       };
     }
   }, [contentGenerated, currentDraft, editingContent]);
+
+  // Fetch user credits
+  useEffect(() => {
+    const fetchCredits = async () => {
+      if (!user) {
+        setUserCredits(null);
+        return;
+      }
+
+      setLoadingCredits(true);
+      try {
+        const credits = await api.getUserCredits();
+        setUserCredits(credits);
+        console.log('✅ Fetched user credits:', credits);
+      } catch (error) {
+        console.error('Failed to fetch credits:', error);
+        // Fallback to user.postsRemaining if API fails
+        setUserCredits(null);
+      } finally {
+        setLoadingCredits(false);
+      }
+    };
+
+    fetchCredits();
+  }, [user]);
 
   // Fetch CTAs when organization ID is available
   useEffect(() => {
@@ -1177,7 +1209,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                           {!tabMode.tabWorkflowData?.selectedCustomerStrategy
                             ? 'Select an audience first'
                             : user
-                              ? (user.postsRemaining > 0 ? 'Create blog post' : 'Buy more posts')
+                              ? (remainingPosts > 0 ? 'Generate post' : 'Buy more posts')
                               : 'Register to claim free post'
                           }
                         </Button>
@@ -2220,7 +2252,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                         {!selectedCustomerStrategy
                           ? 'Select an audience first'
                           : user
-                            ? (user.postsRemaining > 0 ? 'Create blog post' : 'Buy more posts')
+                            ? (remainingPosts > 0 ? 'Generate post' : 'Buy more posts')
                             : 'Register to claim free post'
                         }
                       </Button>
@@ -2358,7 +2390,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                                   type="primary"
                                   size="large"
                                   onClick={() => {
-                                    if (user && user.postsRemaining === 0) {
+                                    if (user && remainingPosts === 0) {
                                       // Navigate to settings tab for subscriptions
                                       window.dispatchEvent(new CustomEvent('navigateToTab', { detail: 'settings' }));
                                     } else {
@@ -2375,7 +2407,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                                 >
                                   {isGenerating ? 'Generating Content...' :
                                    user ?
-                                     (user.postsRemaining > 0 ? 'Create blog post' : 'Buy more posts') :
+                                     (remainingPosts > 0 ? 'Generate post' : 'Buy more posts') :
                                      'Register to claim free post'
                                   }
                                 </Button>
