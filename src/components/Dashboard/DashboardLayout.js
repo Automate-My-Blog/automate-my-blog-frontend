@@ -56,17 +56,18 @@ const DashboardLayout = ({
   const [activeTab, setActiveTab] = useState('dashboard');
   const [collapsed, setCollapsed] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
-  const { 
-    user: contextUser, 
-    logout, 
-    isAdmin, 
-    isSuperAdmin, 
+  const {
+    user: contextUser,
+    logout,
+    isAdmin,
+    isSuperAdmin,
     hasPermission,
     isImpersonating,
     impersonationData,
     endImpersonation,
     isNewRegistration,
-    clearNewRegistration
+    clearNewRegistration,
+    loading
   } = useAuth();
   
   // Use prop user if provided, otherwise fall back to context user
