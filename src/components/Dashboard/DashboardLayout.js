@@ -134,7 +134,20 @@ const DashboardLayout = ({
     } else {
       setUserCredits(null);
     }
-  }, [user]);
+  }, [user, refreshQuota]);
+
+  // Refresh credits when window regains focus (catches users returning from Stripe)
+  useEffect(() => {
+    const handleFocus = () => {
+      if (user) {
+        console.log('👀 Window focused - refreshing credits...');
+        refreshQuota();
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [user, refreshQuota]);
 
   // Track if payment redirect has been processed to prevent infinite loops
   const paymentProcessedRef = useRef(false);
