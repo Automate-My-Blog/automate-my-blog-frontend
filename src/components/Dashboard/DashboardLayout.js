@@ -920,7 +920,9 @@ const DashboardLayout = ({
                       color: '#8c8c8c',
                       fontWeight: 500
                     }}>
-                      post{remainingPosts === 1 ? '' : 's'} left
+                      {userCredits?.basePlan === 'Free' && remainingPosts === 1
+                        ? 'free post remaining'
+                        : `post${remainingPosts === 1 ? '' : 's'} left`}
                     </span>
                   </>
                 )}
