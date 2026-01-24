@@ -141,11 +141,26 @@ const DashboardLayout = ({
     const urlParams = new URLSearchParams(window.location.search);
     const paymentStatus = urlParams.get('payment');
 
+    if (paymentStatus) {
+      console.log('💳 Payment redirect detected:', {
+        status: paymentStatus,
+        hasUser: !!user,
+        hasAccessToken: !!localStorage.getItem('accessToken'),
+        hasRefreshToken: !!localStorage.getItem('refreshToken')
+      });
+    }
+
     if (paymentStatus === 'success') {
-      message.success('Payment successful! Your credits have been added.');
-      // Refresh credits after successful payment
       if (user) {
+        message.success('Payment successful! Your credits have been added.');
+        // Refresh credits after successful payment
         refreshQuota();
+      } else {
+        console.error('❌ Payment success but user is not logged in! Tokens:', {
+          accessToken: !!localStorage.getItem('accessToken'),
+          refreshToken: !!localStorage.getItem('refreshToken')
+        });
+        message.warning('Payment successful, but you were logged out. Please log in to see your credits.');
       }
       // Clean up URL
       window.history.replaceState({}, '', window.location.pathname);
@@ -154,7 +169,7 @@ const DashboardLayout = ({
       // Clean up URL
       window.history.replaceState({}, '', window.location.pathname);
     }
-  }, [user]); // Only run when user changes to avoid showing on every render
+  }, [user, refreshQuota]); // Run when user or refreshQuota changes
 
   // Check if user has seen Save Project button before and handle login/registration
   useEffect(() => {

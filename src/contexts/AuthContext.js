@@ -35,7 +35,19 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     checkAuthStatus();
-  }, []);
+
+    // Retry auth check if it failed due to network issues
+    // This helps recover from temporary connection problems after Stripe redirect
+    const retryAuthCheck = setTimeout(() => {
+      const hasToken = localStorage.getItem('accessToken');
+      if (hasToken && !user && !loading) {
+        console.log('🔄 Retrying auth check after initial failure');
+        checkAuthStatus();
+      }
+    }, 3000); // Retry after 3 seconds if still not authenticated
+
+    return () => clearTimeout(retryAuthCheck);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const checkAuthStatus = async () => {
     try {
@@ -116,9 +128,28 @@ export const AuthProvider = ({ children }) => {
         activeAuthRequests.delete(requestKey);
       }
     } catch (error) {
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-      sessionStorage.removeItem('auth_user_cache');
+      console.error('❌ Auth check failed:', {
+        error: error.message,
+        errorType: error.constructor.name,
+        hasToken: !!localStorage.getItem('accessToken')
+      });
+
+      // Only clear tokens if authentication is explicitly invalid (401/403)
+      // Don't clear on network errors, timeouts, or other temporary issues
+      const isAuthError = error.message?.includes('401') ||
+                         error.message?.includes('403') ||
+                         error.message?.includes('Unauthorized') ||
+                         error.message?.includes('Invalid token');
+
+      if (isAuthError) {
+        console.log('🔑 Invalid auth token - clearing stored credentials');
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        sessionStorage.removeItem('auth_user_cache');
+      } else {
+        console.log('⚠️ Auth check failed but keeping tokens for retry (likely network issue)');
+        // Keep tokens for potential retry - user can still be logged in
+      }
     } finally {
       setLoading(false);
     }
