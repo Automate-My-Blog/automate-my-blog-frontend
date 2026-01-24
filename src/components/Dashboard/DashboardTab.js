@@ -108,29 +108,32 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
 
   // Auto-save workflow state when analysis completes (proper state-based timing)
   useEffect(() => {
-    const hasValidAnalysisData = stepResults.home.websiteAnalysis?.businessName && 
+    const hasValidAnalysisData = stepResults.home.websiteAnalysis?.businessName &&
                                 stepResults.home.websiteAnalysis?.targetAudience &&
                                 stepResults.home.websiteAnalysis?.contentFocus;
-    
-    // Auto-save conditions check
-    
-    // Only auto-save if analysis is completed AND we have valid data AND user is logged in
-    if (stepResults.home.analysisCompleted && hasValidAnalysisData && user) {
+
+    // CRITICAL: Save for both logged-in AND logged-out users
+    // Logged-out users need their analysis saved so it can be restored after registration
+    if (stepResults.home.analysisCompleted && hasValidAnalysisData) {
       // Save with a small delay to ensure all React updates are complete
       setTimeout(() => {
+        console.log('💾 Auto-saving workflow state after analysis completion');
         const saved = saveWorkflowState();
-        
+
         // Verify what was actually saved
         const verification = localStorage.getItem('automate-my-blog-workflow-state');
         if (verification) {
           const parsedVerification = JSON.parse(verification);
-          // Verification successful
+          console.log('✅ Workflow state saved and verified:', {
+            hasWebsiteUrl: !!parsedVerification.stepResults?.home?.websiteAnalysis?.websiteUrl,
+            websiteUrl: parsedVerification.stepResults?.home?.websiteAnalysis?.websiteUrl
+          });
         } else {
-          console.error('No data found in localStorage after attempted save!');
+          console.error('❌ No data found in localStorage after attempted save!');
         }
       }, 200); // Slightly longer delay for state propagation
     }
-  }, [stepResults.home.analysisCompleted, stepResults.home.websiteAnalysis?.businessName, user, saveWorkflowState]);
+  }, [stepResults.home.analysisCompleted, stepResults.home.websiteAnalysis?.businessName, saveWorkflowState]);
 
 
   const handleCreateNewPost = () => {

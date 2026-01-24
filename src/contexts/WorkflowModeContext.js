@@ -516,62 +516,73 @@ export const WorkflowModeProvider = ({ children }) => {
   
   // Save current workflow state to localStorage (auth-aware)
   const saveWorkflowState = useCallback(() => {
-    
+
     // Validate that we have meaningful data to save
-    const hasValidAnalysisData = stepResults?.home?.websiteAnalysis?.businessName && 
+    const hasValidAnalysisData = stepResults?.home?.websiteAnalysis?.businessName &&
                                  stepResults?.home?.websiteAnalysis?.targetAudience &&
                                  stepResults?.home?.websiteAnalysis?.contentFocus;
-    
+
+    console.log('💾 saveWorkflowState called:', {
+      analysisCompleted,
+      hasValidAnalysisData,
+      websiteUrl,
+      websiteAnalysisUrl: stepResults?.home?.websiteAnalysis?.websiteUrl,
+      businessName: stepResults?.home?.websiteAnalysis?.businessName
+    });
+
     // Only save if we have valid analysis data when analysis is marked complete
     if (analysisCompleted && !hasValidAnalysisData) {
+      console.log('❌ Not saving - analysis marked complete but data invalid');
       return false;
     }
-    
+
     try {
       const workflowStateSnapshot = {
         // Authentication context
         userId: user?.id || null,
         isAuthenticated,
-        
+
         // Core workflow progression
         mode,
         currentWorkflowStep,
         currentStep,
         completedWorkflowSteps,
-        
+
         // Step data and results
         stepResults,
         progressiveHeaders,
-        
+
         // User inputs (may contain sensitive data)
         websiteUrl,
         selectedTopic,
         generatedContent,
-        
+
         // Workflow status
         analysisCompleted,
         strategyCompleted,
         strategySelectionCompleted,
-        
+
         // Business logic state
         selectedCustomerStrategy,
         contentStrategy,
         postState,
         selectedCMS,
-        
+
         // Research data
         webSearchInsights,
-        
+
         // UI state that should persist
         expandedSteps,
-        
+
         // Timestamp for validation
         savedAt: new Date().toISOString(),
         version: '1.1' // Updated version for auth-aware state
       };
-      
+
       localStorage.setItem('automate-my-blog-workflow-state', JSON.stringify(workflowStateSnapshot));
-      
+
+      console.log('✅ Workflow state saved to localStorage');
+
       return true;
     } catch (error) {
       console.error('Failed to save workflow state:', error);
