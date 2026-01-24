@@ -16,22 +16,23 @@ const RegisterModal = ({ onClose, onSwitchToLogin, context = null, onSuccess = n
     // Extract company data from workflow analysis stored in localStorage
     const extractWorkflowData = () => {
       try {
-        // Check for workflow progress data
-        const progressKey = 'workflow_progress_anonymous';
-        const workflowProgress = localStorage.getItem(progressKey);
-        
-        if (workflowProgress) {
-          const parsed = JSON.parse(workflowProgress);
-          const stepResults = parsed.stepResults;
-          
-          // Look for website analysis data
-          if (stepResults?.websiteAnalysis) {
-            const analysis = stepResults.websiteAnalysis;
+        // Check for workflow state data
+        const workflowState = localStorage.getItem('automate-my-blog-workflow-state');
+
+        if (workflowState) {
+          const parsed = JSON.parse(workflowState);
+
+          // Look for website analysis data in stepResults.home.websiteAnalysis
+          const analysis = parsed.stepResults?.home?.websiteAnalysis;
+
+          if (analysis) {
             const detectedInfo = {
               websiteUrl: analysis.websiteUrl || analysis.url || '',
               businessName: analysis.businessName || analysis.companyName || '',
               autoDetected: true
             };
+
+            console.log('📝 Prepopulating registration with website:', detectedInfo.websiteUrl);
 
             if (detectedInfo.websiteUrl) {
               setDetectedData(detectedInfo);
@@ -216,12 +217,25 @@ const RegisterModal = ({ onClose, onSwitchToLogin, context = null, onSuccess = n
           name="websiteUrl"
           rules={[
             { required: true, message: 'Please enter your website URL' },
-            { type: 'url', message: 'Please enter a valid website URL' }
+            {
+              validator(_, value) {
+                if (!value) {
+                  return Promise.resolve();
+                }
+                // Accept URLs with or without protocol, with or without www
+                // Examples: example.com, www.example.com, https://example.com, http://www.example.com
+                const urlPattern = /^(https?:\/\/)?(www\.)?[a-zA-Z0-9-]+\.[a-zA-Z]{2,}(\/.*)?$/;
+                if (urlPattern.test(value)) {
+                  return Promise.resolve();
+                }
+                return Promise.reject(new Error('Please enter a valid website URL (e.g., example.com)'));
+              }
+            }
           ]}
         >
           <Input
             prefix={<LinkOutlined />}
-            placeholder="Website URL"
+            placeholder="Website URL (e.g., example.com)"
             size="large"
           />
         </Form.Item>

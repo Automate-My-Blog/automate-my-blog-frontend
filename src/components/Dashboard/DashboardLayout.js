@@ -136,6 +136,26 @@ const DashboardLayout = ({
     }
   }, [user]);
 
+  // Handle Stripe payment redirect feedback
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const paymentStatus = urlParams.get('payment');
+
+    if (paymentStatus === 'success') {
+      message.success('Payment successful! Your credits have been added.');
+      // Refresh credits after successful payment
+      if (user) {
+        refreshQuota();
+      }
+      // Clean up URL
+      window.history.replaceState({}, '', window.location.pathname);
+    } else if (paymentStatus === 'cancelled') {
+      message.info('Payment was cancelled. You can try again anytime.');
+      // Clean up URL
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, [user]); // Only run when user changes to avoid showing on every render
+
   // Check if user has seen Save Project button before and handle login/registration
   useEffect(() => {
     if (user) {
