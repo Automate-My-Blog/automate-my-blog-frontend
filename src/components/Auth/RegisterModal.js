@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Form, Input, Button, Alert, Space } from 'antd';
 import { LockOutlined, MailOutlined, BankOutlined, LinkOutlined } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
+import { useAnalytics } from '../../contexts/AnalyticsContext';
 
 const RegisterModal = ({ onClose, onSwitchToLogin, context = null, onSuccess = null }) => {
   const [loading, setLoading] = useState(false);
@@ -11,6 +12,7 @@ const RegisterModal = ({ onClose, onSwitchToLogin, context = null, onSuccess = n
   const [form] = Form.useForm();
   const [detectedData, setDetectedData] = useState(null);
   const { register } = useAuth();
+  const { trackFormSubmit, trackFunnelStep } = useAnalytics();
 
   useEffect(() => {
     // Extract company data from workflow analysis stored in localStorage
@@ -87,7 +89,15 @@ const RegisterModal = ({ onClose, onSwitchToLogin, context = null, onSuccess = n
         organizationName: values.firstName + "'s Blog", // Auto-generate from first name
         websiteUrl: values.websiteUrl,
       }, context);
-      
+
+      // Track successful registration
+      trackFormSubmit('register', true, {
+        context,
+        referralProcessed: result.referralProcessed,
+        referralType: result.referralType
+      });
+      trackFunnelStep('signed_up');
+
       // Check if referral was processed
       if (result.referralProcessed) {
         setReferralInfo({
@@ -95,15 +105,18 @@ const RegisterModal = ({ onClose, onSwitchToLogin, context = null, onSuccess = n
           rewardValue: result.rewardValue
         });
       }
-      
+
       setSuccess(true);
-      
+
       // Call success callback after successful registration
       if (onSuccess) {
         onSuccess();
       }
     } catch (error) {
       setError(error.message || 'Registration failed. Please try again.');
+
+      // Track failed registration attempt
+      trackFormSubmit('register', false, { error: error.message, context });
     } finally {
       setLoading(false);
     }

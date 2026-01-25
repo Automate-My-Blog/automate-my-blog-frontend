@@ -2,26 +2,36 @@ import React, { useState } from 'react';
 import { Form, Input, Button, Alert, Space } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
+import { useAnalytics } from '../../contexts/AnalyticsContext';
 
 const LoginModal = ({ onClose, context = null, onSuccess = null }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const { login } = useAuth();
+  const { trackFormSubmit, trackFunnelStep } = useAnalytics();
 
   const onFinish = async (values) => {
     setLoading(true);
     setError('');
-    
+
     try {
       await login(values.email, values.password, context);
+
+      // Track successful login
+      trackFormSubmit('login', true, { context });
+      trackFunnelStep('first_login');
+
       onClose();
-      
+
       // Call success callback after successful login
       if (onSuccess) {
         onSuccess();
       }
     } catch (error) {
       setError(error.message || 'Login failed. Please try again.');
+
+      // Track failed login attempt
+      trackFormSubmit('login', false, { error: error.message, context });
     } finally {
       setLoading(false);
     }

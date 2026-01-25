@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal, Button, Row, Col, Typography, Card, Tag, Space, Divider, message, Alert } from 'antd';
 import { CheckOutlined, StarOutlined, CrownOutlined, UserAddOutlined, LoadingOutlined, GiftOutlined, CopyOutlined } from '@ant-design/icons';
 import api from '../../services/api';
+import { useAnalytics } from '../../contexts/AnalyticsContext';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -18,6 +19,15 @@ const PricingModal = ({
 }) => {
   const [loading, setLoading] = useState(false);
   const [selectedPlanId, setSelectedPlanId] = useState(null);
+  const { trackPageView, trackClick, trackFunnelStep } = useAnalytics();
+
+  // Track when pricing modal is opened
+  useEffect(() => {
+    if (open) {
+      trackPageView('pricing_modal', { isAuthenticated: !!user });
+      trackFunnelStep('view_pricing');
+    }
+  }, [open, user, trackPageView, trackFunnelStep]);
 
   // Stripe Price ID mapping
   const stripePriceMap = {
@@ -114,14 +124,23 @@ const PricingModal = ({
   ];
 
   const handlePlanSelection = async (plan) => {
+    // Track plan selection click
+    trackClick('pricing_plan_select', plan.id, {
+      planName: plan.name,
+      price: plan.price,
+      planType: plan.planType
+    });
+
     // Handle enterprise/custom plan
     if (plan.id === 'enterprise') {
       message.info('Please contact sales@automatemyblog.com for Enterprise pricing');
+      trackClick('contact_sales', 'enterprise');
       return;
     }
 
     // If user is not logged in, prompt to create account
     if (!user) {
+      trackFunnelStep('signup_initiated', { source: 'pricing_modal', planId: plan.id });
       if (onCreateAccount) {
         onCreateAccount();
       }
@@ -131,6 +150,14 @@ const PricingModal = ({
     try {
       setLoading(true);
       setSelectedPlanId(plan.id);
+
+      // Track checkout initiation
+      trackFunnelStep('initiate_checkout', {
+        planId: plan.id,
+        planName: plan.name,
+        price: plan.price,
+        planType: plan.planType
+      });
 
       // Get Stripe Price ID
       const priceId = stripePriceMap[plan.stripeKey];
@@ -145,6 +172,14 @@ const PricingModal = ({
 
       if (response.success && response.url) {
         console.log('✅ Checkout session created, redirecting to:', response.url);
+
+        // Track successful checkout redirect
+        trackFunnelStep('checkout_redirect', {
+          planId: plan.id,
+          planName: plan.name,
+          sessionId: response.sessionId
+        });
+
         // Redirect to Stripe checkout
         window.location.href = response.url;
       } else {
@@ -153,6 +188,13 @@ const PricingModal = ({
     } catch (error) {
       console.error('Error creating checkout session:', error);
       message.error('Failed to start checkout. Please try again.');
+
+      // Track checkout failure
+      trackClick('checkout_failed', plan.id, {
+        error: error.message,
+        planName: plan.name
+      });
+
       setLoading(false);
       setSelectedPlanId(null);
     }

@@ -12,7 +12,10 @@ import autoBlogAPI from '../../services/api';
 import FunnelVisualization from './Analytics/FunnelVisualization';
 import CohortRetentionChart from './Analytics/CohortRetentionChart';
 import UserJourneyTimeline from './Analytics/UserJourneyTimeline';
-import LLMInsightsPanel from './Analytics/LLMInsightsPanel';
+import RevenueSectionPanel from './Analytics/RevenueSectionPanel';
+import FunnelSectionPanel from './Analytics/FunnelSectionPanel';
+import ProductSectionPanel from './Analytics/ProductSectionPanel';
+import UsageMetricsPanel from './Analytics/UsageMetricsPanel';
 import SessionHeatmap from './Analytics/SessionHeatmap';
 
 const { RangePicker } = DatePicker;
@@ -250,10 +253,38 @@ const UserAnalyticsTab = () => {
             </Col>
           </Row>
 
-          {/* LLM Insights Panel */}
+          {/* Three-Section Analytics Insights */}
           <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
             <Col span={24}>
-              <LLMInsightsPanel insights={llmInsights} onRefresh={loadAnalytics} />
+              <RevenueSectionPanel
+                revenueData={llmInsights?.sections?.revenue}
+                loading={loading}
+              />
+            </Col>
+          </Row>
+
+          <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
+            <Col span={24}>
+              <FunnelSectionPanel
+                funnelData={llmInsights?.sections?.funnel}
+                loading={loading}
+              />
+            </Col>
+          </Row>
+
+          <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
+            <Col span={24}>
+              <ProductSectionPanel
+                productData={llmInsights?.sections?.product}
+                loading={loading}
+              />
+            </Col>
+          </Row>
+
+          {/* Usage Metrics Panel */}
+          <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
+            <Col span={24}>
+              <UsageMetricsPanel />
             </Col>
           </Row>
 

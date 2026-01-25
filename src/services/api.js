@@ -3218,6 +3218,70 @@ Please provide analysis in this JSON format:
       throw new Error(`Failed to get analytics insights: ${error.message}`);
     }
   }
+
+  /**
+   * Get clicks over time for usage metrics
+   */
+  async getClicksOverTime(startDate, endDate, interval = 'day') {
+    try {
+      const start = startDate.toISOString();
+      const end = endDate.toISOString();
+      const response = await this.makeRequest(
+        `/api/v1/analytics/usage-metrics/clicks-over-time?startDate=${start}&endDate=${end}&interval=${interval}`
+      );
+      return response;
+    } catch (error) {
+      throw new Error(`Failed to get clicks over time: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get actions over time for usage metrics
+   */
+  async getActionsOverTime(startDate, endDate, interval = 'hour') {
+    try {
+      const start = startDate.toISOString();
+      const end = endDate.toISOString();
+      const response = await this.makeRequest(
+        `/api/v1/analytics/usage-metrics/actions-over-time?startDate=${start}&endDate=${end}&interval=${interval}`
+      );
+      return response;
+    } catch (error) {
+      throw new Error(`Failed to get actions over time: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get active users over time for usage metrics
+   */
+  async getActiveUsersOverTime(startDate, endDate, interval = 'day') {
+    try {
+      const start = startDate.toISOString();
+      const end = endDate.toISOString();
+      const response = await this.makeRequest(
+        `/api/v1/analytics/usage-metrics/active-users-over-time?startDate=${start}&endDate=${end}&interval=${interval}`
+      );
+      return response;
+    } catch (error) {
+      throw new Error(`Failed to get active users over time: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get clicks by page for usage metrics
+   */
+  async getClicksByPage(startDate, endDate) {
+    try {
+      const start = startDate.toISOString();
+      const end = endDate.toISOString();
+      const response = await this.makeRequest(
+        `/api/v1/analytics/usage-metrics/clicks-by-page?startDate=${start}&endDate=${end}`
+      );
+      return response;
+    } catch (error) {
+      throw new Error(`Failed to get clicks by page: ${error.message}`);
+    }
+  }
 }
 
 // Create singleton instance

@@ -35,6 +35,7 @@ import AdminContentTab from './AdminContentTab';
 import AdminSystemTab from './AdminSystemTab';
 import AdminLeadsTab from './AdminLeadsTab';
 import ComprehensiveAnalysisTab from './ComprehensiveAnalysisTab';
+import UserAnalyticsTab from './UserAnalyticsTab';
 import PricingModal from '../Modals/PricingModal';
 
 const { Header, Sider, Content } = Layout;
@@ -112,7 +113,15 @@ const DashboardLayout = ({
     try {
       setLoadingQuota(true);
       const credits = await api.getUserCredits();
-      console.log('✅ Credits loaded:', credits);
+      console.log('✅ Credits loaded:', {
+        availableCredits: credits.availableCredits,
+        totalCredits: credits.totalCredits,
+        usedCredits: credits.usedCredits,
+        basePlan: credits.basePlan,
+        isUnlimited: credits.isUnlimited,
+        breakdown: credits.breakdown,
+        fullResponse: credits
+      });
       setUserCredits(credits);
     } catch (error) {
       console.error('❌ Failed to fetch quota:', error);
@@ -523,7 +532,13 @@ const DashboardLayout = ({
       icon: <LineChartOutlined style={{ color: 'red' }} />,
       label: 'Admin Analytics',
     });
-    
+
+    adminMenuItems.push({
+      key: 'user-analytics',
+      icon: <BarChartOutlined style={{ color: 'red' }} />,
+      label: 'User Analytics',
+    });
+
     adminMenuItems.push({
       key: 'admin-content',
       icon: <SafetyOutlined style={{ color: 'red' }} />,
@@ -578,7 +593,7 @@ const DashboardLayout = ({
   const renderContent = () => {
     console.log('🔍 DashboardLayout renderContent - activeTab:', activeTab);
     // Special tabs that don't use scrollable layout
-    if (activeTab === 'settings' || activeTab.startsWith('admin-') || activeTab === 'sandbox' || activeTab === 'comprehensive-analysis') {
+    if (activeTab === 'settings' || activeTab.startsWith('admin-') || activeTab === 'sandbox' || activeTab === 'comprehensive-analysis' || activeTab === 'user-analytics') {
       switch (activeTab) {
         case 'settings':
           return <SettingsTab />;
@@ -591,6 +606,8 @@ const DashboardLayout = ({
           return <AdminLeadsTab />;
         case 'admin-analytics':
           return <AdminAnalyticsTab />;
+        case 'user-analytics':
+          return <UserAnalyticsTab />;
         case 'admin-content':
           return <AdminContentTab />;
         case 'admin-system':

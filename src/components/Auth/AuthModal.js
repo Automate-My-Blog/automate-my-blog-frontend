@@ -1,13 +1,27 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal, Tabs, Typography } from 'antd';
 import { LockOutlined, StarOutlined, ThunderboltOutlined } from '@ant-design/icons';
 import LoginModal from './LoginModal';
 import RegisterModal from './RegisterModal';
+import { useAnalytics } from '../../contexts/AnalyticsContext';
 
 const { Title, Text } = Typography;
 
 const AuthModal = ({ open, onClose, defaultTab = 'login', context = null, onSuccess = null }) => {
   const [activeTab, setActiveTab] = useState(defaultTab);
+  const { trackPageView, trackClick } = useAnalytics();
+
+  // Track when auth modal is opened
+  useEffect(() => {
+    if (open) {
+      trackPageView('auth_modal', { initialTab: defaultTab, context });
+    }
+  }, [open, defaultTab, context, trackPageView]);
+
+  const handleTabChange = (key) => {
+    setActiveTab(key);
+    trackClick('auth_tab_switch', key, { from: activeTab, to: key });
+  };
 
   const items = [
     {
@@ -77,7 +91,7 @@ const AuthModal = ({ open, onClose, defaultTab = 'login', context = null, onSucc
 
       <Tabs
         activeKey={activeTab}
-        onChange={setActiveTab}
+        onChange={handleTabChange}
         centered
         items={items}
       />
