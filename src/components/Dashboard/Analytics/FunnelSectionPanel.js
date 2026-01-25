@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, List, Tag, Alert, Statistic, Row, Col, Progress, Collapse, Spin, Table } from 'antd';
+import { Card, List, Tag, Alert, Statistic, Row, Col, Progress, Collapse, Spin, Table, Switch } from 'antd';
 import { FunnelPlotOutlined, WarningOutlined, DownOutlined } from '@ant-design/icons';
 import autoBlogAPI from '../../../services/api';
 
@@ -9,6 +9,7 @@ const FunnelSectionPanel = ({ funnelData, loading, funnelVisualizationData, date
   const [expandedStages, setExpandedStages] = useState({});
   const [stageUsers, setStageUsers] = useState({});
   const [loadingStage, setLoadingStage] = useState({});
+  const [excludeAdvanced, setExcludeAdvanced] = useState({});
 
   // Process funnel visualization data
   const funnelSteps = funnelVisualizationData?.steps || [];
@@ -42,13 +43,44 @@ const FunnelSectionPanel = ({ funnelData, loading, funnelVisualizationData, date
       const startDate = dateRange?.[0] ? dateRange[0].format('YYYY-MM-DD') : '2025-12-26';
       const endDate = dateRange?.[1] ? dateRange[1].format('YYYY-MM-DD') : '2026-01-25';
 
-      const response = await autoBlogAPI.getUsersAtFunnelStage(stageKey, startDate, endDate);
+      const response = await autoBlogAPI.getUsersAtFunnelStage(
+        stageKey,
+        startDate,
+        endDate,
+        excludeAdvanced[stageKey] || false
+      );
       setStageUsers({ ...stageUsers, [stageKey]: response.users || [] });
       setExpandedStages({ ...expandedStages, [stageKey]: true });
     } catch (error) {
       console.error(`Failed to load users for stage ${stageKey}:`, error);
     } finally {
       setLoadingStage({ ...loadingStage, [stageKey]: false });
+    }
+  };
+
+  const handleToggleExcludeAdvanced = async (stageKey, checked) => {
+    // Update the toggle state
+    setExcludeAdvanced({ ...excludeAdvanced, [stageKey]: checked });
+
+    // If the stage is already expanded, reload the data
+    if (expandedStages[stageKey]) {
+      setLoadingStage({ ...loadingStage, [stageKey]: true });
+      try {
+        const startDate = dateRange?.[0] ? dateRange[0].format('YYYY-MM-DD') : '2025-12-26';
+        const endDate = dateRange?.[1] ? dateRange[1].format('YYYY-MM-DD') : '2026-01-25';
+
+        const response = await autoBlogAPI.getUsersAtFunnelStage(
+          stageKey,
+          startDate,
+          endDate,
+          checked
+        );
+        setStageUsers({ ...stageUsers, [stageKey]: response.users || [] });
+      } catch (error) {
+        console.error(`Failed to reload users for stage ${stageKey}:`, error);
+      } finally {
+        setLoadingStage({ ...loadingStage, [stageKey]: false });
+      }
     }
   };
 
@@ -173,6 +205,20 @@ const FunnelSectionPanel = ({ funnelData, loading, funnelVisualizationData, date
                   {/* Expandable user list */}
                   {isExpanded && (
                     <div style={{ marginTop: 12, padding: 12, background: '#fafafa', borderRadius: 4 }}>
+                      {/* Filter toggle - only show for stages that have a next stage */}
+                      {step.step !== 'upsell' && (
+                        <div style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <Switch
+                            checked={excludeAdvanced[stageKey] || false}
+                            onChange={(checked) => handleToggleExcludeAdvanced(stageKey, checked)}
+                            size="small"
+                          />
+                          <span style={{ fontSize: 12, color: '#666' }}>
+                            Hide users who have progressed to next stage
+                          </span>
+                        </div>
+                      )}
+
                       {isLoading ? (
                         <div style={{ textAlign: 'center', padding: 20 }}>
                           <Spin />
