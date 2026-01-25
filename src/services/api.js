@@ -3304,10 +3304,9 @@ Please provide analysis in this JSON format:
    */
   async getUsersAtFunnelStage(funnelStep, startDate, endDate) {
     try {
-      const start = startDate.toISOString();
-      const end = endDate.toISOString();
+      // Dates should be YYYY-MM-DD strings, not Date objects
       const response = await this.makeRequest(
-        `/api/v1/analytics/funnel/stage/${funnelStep}/users?startDate=${start}&endDate=${end}`
+        `/api/v1/analytics/funnel/stage/${funnelStep}/users?startDate=${startDate}&endDate=${endDate}`
       );
       return response;
     } catch (error) {

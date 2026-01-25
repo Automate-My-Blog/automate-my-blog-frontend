@@ -38,8 +38,9 @@ const FunnelSectionPanel = ({ funnelData, loading, funnelVisualizationData, date
     // Fetch users at this stage
     setLoadingStage({ ...loadingStage, [stageKey]: true });
     try {
-      const startDate = dateRange?.[0] || new Date(Date.now() - 30*24*60*60*1000);
-      const endDate = dateRange?.[1] || new Date();
+      // Format dates as YYYY-MM-DD strings to match funnel calculation
+      const startDate = dateRange?.[0] ? dateRange[0].format('YYYY-MM-DD') : '2025-12-26';
+      const endDate = dateRange?.[1] ? dateRange[1].format('YYYY-MM-DD') : '2026-01-25';
 
       const response = await autoBlogAPI.getUsersAtFunnelStage(stageKey, startDate, endDate);
       setStageUsers({ ...stageUsers, [stageKey]: response.users || [] });
