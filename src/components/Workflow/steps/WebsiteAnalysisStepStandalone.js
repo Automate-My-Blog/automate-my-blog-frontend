@@ -206,8 +206,14 @@ const WebsiteAnalysisStepStandalone = ({
       // Set loading state
       const updateLoading = setIsLoading || setLocalLoading;
       const updateScanningMessage = setScanningMessage || setLocalScanningMessage;
-      
+
       updateLoading(true);
+
+      // Track analysis started
+      autoBlogAPI.trackLeadConversion('analysis_started', {
+        website_url: validation.formattedUrl,
+        timestamp: new Date().toISOString()
+      }).catch(err => console.error('Failed to track analysis_started:', err));
 
       // Add to progressive sticky header immediately when analysis starts
       addStickyWorkflowStep && addStickyWorkflowStep('websiteAnalysis', {
@@ -244,6 +250,14 @@ const WebsiteAnalysisStepStandalone = ({
         setWebSearchInsights && setWebSearchInsights(result.webSearchInsights);
         setAnalysisCompleted && setAnalysisCompleted(true);
         setWebsiteUrl && setWebsiteUrl(validation.formattedUrl);
+
+        // Track analysis completed
+        autoBlogAPI.trackLeadConversion('analysis_completed', {
+          website_url: validation.formattedUrl,
+          business_name: result.analysis?.businessName || result.analysis?.companyName,
+          business_type: result.analysis?.businessType || result.analysis?.industry,
+          timestamp: new Date().toISOString()
+        }).catch(err => console.error('Failed to track analysis_completed:', err));
 
         message.success('Website analysis completed successfully!');
 

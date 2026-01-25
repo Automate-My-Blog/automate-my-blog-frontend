@@ -15,6 +15,7 @@ import {
 import { ComponentHelpers } from '../interfaces/WorkflowComponentInterface';
 import { contentAPI } from '../../../services/workflowAPI';
 import MarkdownPreview from '../../MarkdownPreview/MarkdownPreview';
+import autoBlogAPI from '../../../services/api';
 
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
@@ -141,9 +142,16 @@ const ContentGenerationStepStandalone = ({
         updateGeneratedContent(result.content);
         updateEditingContent(result.content);
         updateContentGenerated(true);
-        
+
+        // Track content generated
+        autoBlogAPI.trackLeadConversion('content_generated', {
+          topic_title: selectedTopic?.title,
+          content_length: result.content?.length || 0,
+          timestamp: new Date().toISOString()
+        }).catch(err => console.error('Failed to track content_generated:', err));
+
         message.success('Blog content generated successfully!');
-        
+
         onContentGenerated && onContentGenerated({
           content: result.content,
           blogPost: result.blogPost,
@@ -183,9 +191,16 @@ const ContentGenerationStepStandalone = ({
   const handleSaveContent = () => {
     const updateGeneratedContent = setGeneratedContent || setLocalGeneratedContent;
     updateGeneratedContent(currentEditingContent);
-    
+
+    // Track project saved
+    autoBlogAPI.trackLeadConversion('project_saved', {
+      topic_title: selectedTopic?.title,
+      content_length: currentEditingContent?.length || 0,
+      timestamp: new Date().toISOString()
+    }).catch(err => console.error('Failed to track project_saved:', err));
+
     message.success('Content saved successfully!');
-    
+
     onContentSaved && onContentSaved({
       content: currentEditingContent,
       topic: selectedTopic
@@ -204,9 +219,17 @@ const ContentGenerationStepStandalone = ({
     document.body.appendChild(element);
     element.click();
     document.body.removeChild(element);
-    
+
+    // Track content exported
+    autoBlogAPI.trackLeadConversion('content_exported', {
+      topic_title: selectedTopic?.title,
+      content_length: currentEditingContent?.length || 0,
+      format: 'txt',
+      timestamp: new Date().toISOString()
+    }).catch(err => console.error('Failed to track content_exported:', err));
+
     message.success('Content exported successfully!');
-    
+
     onContentExported && onContentExported({
       content: currentEditingContent,
       topic: selectedTopic,

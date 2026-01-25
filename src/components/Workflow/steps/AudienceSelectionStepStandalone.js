@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Button, Row, Col, Typography, Tag, message } from 'antd';
-import { 
-  CheckOutlined, 
-  BulbOutlined, 
-  DatabaseOutlined, 
+import {
+  CheckOutlined,
+  BulbOutlined,
+  DatabaseOutlined,
   LockOutlined,
   UserOutlined
 } from '@ant-design/icons';
 import { ComponentHelpers } from '../interfaces/WorkflowComponentInterface';
+import autoBlogAPI from '../../../services/api';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -62,6 +63,16 @@ const AudienceSelectionStepStandalone = ({
   const currentSelectedStrategy = selectedCustomerStrategy !== undefined ? 
     selectedCustomerStrategy : localSelectedStrategy;
   
+  // Track previews viewed when scenarios are available
+  useEffect(() => {
+    if (scenarios && scenarios.length > 0) {
+      autoBlogAPI.trackLeadConversion('previews_viewed', {
+        scenario_count: scenarios.length,
+        timestamp: new Date().toISOString()
+      }).catch(err => console.error('Failed to track previews_viewed:', err));
+    }
+  }, [scenarios.length]);
+
   // Auto-advance when strategy is selected
   useEffect(() => {
     if (autoAdvance && currentSelectedStrategy && !strategySelectionCompleted) {
@@ -84,17 +95,25 @@ const AudienceSelectionStepStandalone = ({
       ...scenario,
       index: index
     };
-    
+
     // Update state (local or parent)
     if (setSelectedCustomerStrategy) {
       setSelectedCustomerStrategy(strategy);
     } else {
       setLocalSelectedStrategy(strategy);
     }
-    
+
+    // Track audience selected
+    autoBlogAPI.trackLeadConversion('audience_selected', {
+      customer_problem: scenario.customerProblem,
+      target_audience: scenario.targetAudience,
+      strategy_index: index,
+      timestamp: new Date().toISOString()
+    }).catch(err => console.error('Failed to track audience_selected:', err));
+
     // Notify parent component
     onStrategySelected && onStrategySelected(strategy, scenario, index);
-    
+
     message.success(`Selected strategy for: ${scenario.customerProblem}`);
   };
   

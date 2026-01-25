@@ -17,6 +17,7 @@ import FunnelSectionPanel from './Analytics/FunnelSectionPanel';
 import ProductSectionPanel from './Analytics/ProductSectionPanel';
 import UsageMetricsPanel from './Analytics/UsageMetricsPanel';
 import SessionHeatmap from './Analytics/SessionHeatmap';
+import LeadFunnelPanel from './Analytics/LeadFunnelPanel';
 
 const { RangePicker } = DatePicker;
 
@@ -30,6 +31,7 @@ const UserAnalyticsTab = () => {
 
   const [platformMetrics, setPlatformMetrics] = useState(null);
   const [funnelData, setFunnelData] = useState(null);
+  const [leadFunnelData, setLeadFunnelData] = useState(null);
   const [cohortData, setCohortData] = useState(null);
   const [llmInsights, setLLMInsights] = useState(null);
 
@@ -39,13 +41,17 @@ const UserAnalyticsTab = () => {
       const startDate = dateRange[0].format('YYYY-MM-DD');
       const endDate = dateRange[1].format('YYYY-MM-DD');
 
-      const [metrics, funnel, cohorts, insights] = await Promise.all([
+      const [metrics, funnel, leadFunnel, cohorts, insights] = await Promise.all([
         autoBlogAPI.getComprehensiveMetrics('30d').catch(err => {
           console.error('Failed to load comprehensive metrics:', err);
           return null;
         }),
         autoBlogAPI.getFunnelData(startDate, endDate).catch(err => {
           console.error('Failed to load funnel data:', err);
+          return null;
+        }),
+        autoBlogAPI.getLeadFunnelData(startDate, endDate).catch(err => {
+          console.error('Failed to load lead funnel data:', err);
           return null;
         }),
         autoBlogAPI.getCohortAnalysis(startDate, endDate, 'week').catch(err => {
@@ -60,6 +66,7 @@ const UserAnalyticsTab = () => {
 
       setPlatformMetrics(metrics);
       setFunnelData(funnel);
+      setLeadFunnelData(leadFunnel);
       setCohortData(cohorts);
       setLLMInsights(insights);
     } catch (error) {
@@ -269,6 +276,15 @@ const UserAnalyticsTab = () => {
                 funnelData={llmInsights?.sections?.funnel}
                 funnelVisualizationData={funnelData}
                 dateRange={dateRange}
+                loading={loading}
+              />
+            </Col>
+          </Row>
+
+          <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
+            <Col span={24}>
+              <LeadFunnelPanel
+                leadFunnelData={leadFunnelData}
                 loading={loading}
               />
             </Col>

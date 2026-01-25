@@ -3313,6 +3313,43 @@ Please provide analysis in this JSON format:
       throw new Error(`Failed to get users at funnel stage: ${error.message}`);
     }
   }
+
+  async getLeadFunnelData(startDate, endDate) {
+    try {
+      const response = await this.makeRequest(
+        `/api/v1/analytics/lead-funnel?startDate=${startDate}&endDate=${endDate}`
+      );
+      return response;
+    } catch (error) {
+      throw new Error(`Failed to get lead funnel data: ${error.message}`);
+    }
+  }
+
+  /**
+   * Track a conversion step for a lead
+   * @param {string} step - Conversion step name (e.g., 'analysis_started', 'view_audiences_clicked')
+   * @param {object} stepData - Additional data about the step
+   * @param {string} leadId - Lead ID (optional if sessionId provided)
+   * @param {string} sessionId - Session ID (optional if leadId provided)
+   */
+  async trackLeadConversion(step, stepData = {}, leadId = null, sessionId = null) {
+    try {
+      const response = await this.makeRequest('/api/v1/leads/track-conversion', {
+        method: 'POST',
+        body: JSON.stringify({
+          step,
+          stepData,
+          leadId,
+          sessionId: sessionId || this.getSessionId()
+        })
+      });
+      return response;
+    } catch (error) {
+      // Don't throw - we don't want tracking failures to break the user experience
+      console.error(`Failed to track lead conversion step ${step}:`, error);
+      return { success: false, error: error.message };
+    }
+  }
 }
 
 // Create singleton instance
