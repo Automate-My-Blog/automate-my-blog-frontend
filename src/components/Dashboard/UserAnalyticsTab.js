@@ -268,6 +268,7 @@ const UserAnalyticsTab = () => {
               <FunnelSectionPanel
                 funnelData={llmInsights?.sections?.funnel}
                 funnelVisualizationData={funnelData}
+                dateRange={dateRange}
                 loading={loading}
               />
             </Col>

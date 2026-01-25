@@ -3298,6 +3298,22 @@ Please provide analysis in this JSON format:
       throw new Error(`Failed to get revenue over time: ${error.message}`);
     }
   }
+
+  /**
+   * Get users at a specific funnel stage
+   */
+  async getUsersAtFunnelStage(funnelStep, startDate, endDate) {
+    try {
+      const start = startDate.toISOString();
+      const end = endDate.toISOString();
+      const response = await this.makeRequest(
+        `/api/v1/analytics/funnel/stage/${funnelStep}/users?startDate=${start}&endDate=${end}`
+      );
+      return response;
+    } catch (error) {
+      throw new Error(`Failed to get users at funnel stage: ${error.message}`);
+    }
+  }
 }
 
 // Create singleton instance

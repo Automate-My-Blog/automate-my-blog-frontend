@@ -1,14 +1,75 @@
-import React from 'react';
-import { Card, List, Tag, Alert, Statistic, Row, Col, Progress } from 'antd';
-import { FunnelPlotOutlined, WarningOutlined } from '@ant-design/icons';
+import React, { useState } from 'react';
+import { Card, List, Tag, Alert, Statistic, Row, Col, Progress, Collapse, Spin, Table } from 'antd';
+import { FunnelPlotOutlined, WarningOutlined, DownOutlined } from '@ant-design/icons';
+import autoBlogAPI from '../../../services/api';
 
-const FunnelSectionPanel = ({ funnelData, loading, funnelVisualizationData }) => {
+const { Panel } = Collapse;
+
+const FunnelSectionPanel = ({ funnelData, loading, funnelVisualizationData, dateRange }) => {
+  const [expandedStages, setExpandedStages] = useState({});
+  const [stageUsers, setStageUsers] = useState({});
+  const [loadingStage, setLoadingStage] = useState({});
+
   if (!funnelData) return null;
 
   const { title, insights = [], atRiskCount, potentialChurnCost, priority } = funnelData;
 
   // Process funnel visualization data
   const funnelSteps = funnelVisualizationData?.steps || [];
+
+  const handleStageExpand = async (step) => {
+    const stageKey = step.step;
+
+    // Toggle expansion
+    if (expandedStages[stageKey]) {
+      setExpandedStages({ ...expandedStages, [stageKey]: false });
+      return;
+    }
+
+    // If already loaded, just expand
+    if (stageUsers[stageKey]) {
+      setExpandedStages({ ...expandedStages, [stageKey]: true });
+      return;
+    }
+
+    // Fetch users at this stage
+    setLoadingStage({ ...loadingStage, [stageKey]: true });
+    try {
+      const startDate = dateRange?.[0] || new Date(Date.now() - 30*24*60*60*1000);
+      const endDate = dateRange?.[1] || new Date();
+
+      const response = await autoBlogAPI.getUsersAtFunnelStage(stageKey, startDate, endDate);
+      setStageUsers({ ...stageUsers, [stageKey]: response.users || [] });
+      setExpandedStages({ ...expandedStages, [stageKey]: true });
+    } catch (error) {
+      console.error(`Failed to load users for stage ${stageKey}:`, error);
+    } finally {
+      setLoadingStage({ ...loadingStage, [stageKey]: false });
+    }
+  };
+
+  const userColumns = [
+    {
+      title: 'Email',
+      dataIndex: 'email',
+      key: 'email',
+      width: '40%'
+    },
+    {
+      title: 'Website',
+      dataIndex: 'website_url',
+      key: 'website_url',
+      width: '40%',
+      render: (url) => url || <span style={{ color: '#999' }}>No website</span>
+    },
+    {
+      title: 'Joined',
+      dataIndex: 'created_at',
+      key: 'created_at',
+      width: '20%',
+      render: (date) => new Date(date).toLocaleDateString()
+    }
+  ];
 
   return (
     <Card
@@ -61,10 +122,34 @@ const FunnelSectionPanel = ({ funnelData, loading, funnelVisualizationData }) =>
               // Use 100% for first step (no previous step to convert from), otherwise use provided conversion_rate
               const conversionRate = step.conversion_rate !== undefined ? step.conversion_rate : 100;
               const isLowConversion = conversionRate <= 50;
+              const stageKey = step.step;
+              const isExpanded = expandedStages[stageKey];
+              const users = stageUsers[stageKey] || [];
+              const isLoading = loadingStage[stageKey];
+
               return (
                 <div key={index} style={{ marginBottom: 16 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <span style={{ fontWeight: 500 }}>{step.step}</span>
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      marginBottom: 4,
+                      cursor: 'pointer',
+                      padding: '4px 0'
+                    }}
+                    onClick={() => handleStageExpand(step)}
+                  >
+                    <span style={{ fontWeight: 500 }}>
+                      <DownOutlined
+                        style={{
+                          fontSize: 10,
+                          marginRight: 8,
+                          transform: isExpanded ? 'rotate(0deg)' : 'rotate(-90deg)',
+                          transition: 'transform 0.3s'
+                        }}
+                      />
+                      {step.name || step.step}
+                    </span>
                     <span>
                       <strong>{step.count}</strong> users
                       {index > 0 && step.conversion_rate !== undefined && (
@@ -80,6 +165,28 @@ const FunnelSectionPanel = ({ funnelData, loading, funnelVisualizationData }) =>
                     showInfo={false}
                     strokeWidth={20}
                   />
+
+                  {/* Expandable user list */}
+                  {isExpanded && (
+                    <div style={{ marginTop: 12, padding: 12, background: '#fafafa', borderRadius: 4 }}>
+                      {isLoading ? (
+                        <div style={{ textAlign: 'center', padding: 20 }}>
+                          <Spin />
+                        </div>
+                      ) : users.length > 0 ? (
+                        <Table
+                          dataSource={users}
+                          columns={userColumns}
+                          size="small"
+                          pagination={{ pageSize: 10 }}
+                          rowKey="id"
+                        />
+                      ) : (
+                        <Alert message="No users found at this stage" type="info" showIcon />
+                      )}
+                    </div>
+                  )}
+
                   {step.dropoff_reasons && step.dropoff_reasons.length > 0 && (
                     <div style={{ marginTop: 4, fontSize: 12, color: '#8c8c8c' }}>
                       Dropoff reasons: {step.dropoff_reasons.join(', ')}
