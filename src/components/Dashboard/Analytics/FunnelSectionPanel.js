@@ -1,11 +1,14 @@
 import React from 'react';
-import { Card, List, Tag, Alert, Statistic, Row, Col } from 'antd';
+import { Card, List, Tag, Alert, Statistic, Row, Col, Progress } from 'antd';
 import { FunnelPlotOutlined, WarningOutlined } from '@ant-design/icons';
 
-const FunnelSectionPanel = ({ funnelData, loading }) => {
+const FunnelSectionPanel = ({ funnelData, loading, funnelVisualizationData }) => {
   if (!funnelData) return null;
 
   const { title, insights = [], atRiskCount, potentialChurnCost, priority } = funnelData;
+
+  // Process funnel visualization data
+  const funnelSteps = funnelVisualizationData?.steps || [];
 
   return (
     <Card
@@ -22,14 +25,14 @@ const FunnelSectionPanel = ({ funnelData, loading }) => {
       style={{ marginTop: 16 }}
     >
       <Row gutter={16} style={{ marginBottom: 16 }}>
-        <Col span={12}>
+        <Col span={8}>
           <Statistic
             title="At-Risk Users"
             value={atRiskCount || 0}
             prefix={atRiskCount > 5 ? <WarningOutlined style={{ color: '#faad14' }} /> : null}
           />
         </Col>
-        <Col span={12}>
+        <Col span={8}>
           <Statistic
             title="Potential Monthly Churn Cost"
             value={potentialChurnCost || 0}
@@ -37,8 +40,57 @@ const FunnelSectionPanel = ({ funnelData, loading }) => {
             suffix="/mo"
           />
         </Col>
+        <Col span={8}>
+          <Statistic
+            title="Funnel Conversion Steps"
+            value={funnelSteps.length}
+            suffix="stages"
+          />
+        </Col>
       </Row>
 
+      {/* Visual Funnel */}
+      {funnelSteps.length > 0 && (
+        <Card
+          title="Conversion Funnel Visualization"
+          size="small"
+          style={{ marginBottom: 16 }}
+        >
+          <div style={{ padding: '16px 0' }}>
+            {funnelSteps.map((step, index) => {
+              const isLowConversion = step.conversion_rate <= 50;
+              return (
+                <div key={index} style={{ marginBottom: 16 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <span style={{ fontWeight: 500 }}>{step.step}</span>
+                    <span>
+                      <strong>{step.count}</strong> users
+                      {index > 0 && (
+                        <span style={{ marginLeft: 8, color: isLowConversion ? '#ff4d4f' : '#52c41a' }}>
+                          ({step.conversion_rate.toFixed(1)}% conversion)
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                  <Progress
+                    percent={step.conversion_rate}
+                    strokeColor={isLowConversion ? '#ff4d4f' : '#52c41a'}
+                    showInfo={false}
+                    strokeWidth={20}
+                  />
+                  {step.dropoff_reasons && step.dropoff_reasons.length > 0 && (
+                    <div style={{ marginTop: 4, fontSize: 12, color: '#8c8c8c' }}>
+                      Dropoff reasons: {step.dropoff_reasons.join(', ')}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      )}
+
+      {/* Insights List */}
       {insights.length === 0 ? (
         <Alert
           message="Funnel is healthy"

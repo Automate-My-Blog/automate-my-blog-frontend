@@ -267,6 +267,7 @@ const UserAnalyticsTab = () => {
             <Col span={24}>
               <FunnelSectionPanel
                 funnelData={llmInsights?.sections?.funnel}
+                funnelVisualizationData={funnelData}
                 loading={loading}
               />
             </Col>
@@ -276,6 +277,7 @@ const UserAnalyticsTab = () => {
             <Col span={24}>
               <ProductSectionPanel
                 productData={llmInsights?.sections?.product}
+                platformMetrics={platformMetrics}
                 loading={loading}
               />
             </Col>

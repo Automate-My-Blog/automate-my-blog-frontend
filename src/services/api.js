@@ -3282,6 +3282,22 @@ Please provide analysis in this JSON format:
       throw new Error(`Failed to get clicks by page: ${error.message}`);
     }
   }
+
+  /**
+   * Get revenue over time for revenue section visualization
+   */
+  async getRevenueOverTime(startDate, endDate, interval = 'day') {
+    try {
+      const start = startDate.toISOString();
+      const end = endDate.toISOString();
+      const response = await this.makeRequest(
+        `/api/v1/analytics/revenue-over-time?startDate=${start}&endDate=${end}&interval=${interval}`
+      );
+      return response;
+    } catch (error) {
+      throw new Error(`Failed to get revenue over time: ${error.message}`);
+    }
+  }
 }
 
 // Create singleton instance
