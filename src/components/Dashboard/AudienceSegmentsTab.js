@@ -275,6 +275,13 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
           setGeneratingStrategies(false);
           console.log('✅ Strategies set in state');
 
+          // Track previews viewed (user sees audience options)
+          autoBlogAPI.trackLeadConversion('previews_viewed', {
+            scenario_count: openAIStrategies.length,
+            business_name: analysis.businessName,
+            timestamp: new Date().toISOString()
+          }).catch(err => console.error('Failed to track previews_viewed:', err));
+
           // Save generated strategies to database for persistence
           try {
             console.log('💾 Saving strategies to database with images:', openAIStrategies.map(s => ({
@@ -461,14 +468,14 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
       ...strategy,
       index: index
     };
-    
+
     setSelectedStrategy(enhancedStrategy);
-    
+
     if (tabMode.mode === 'workflow' || forceWorkflowMode) {
       // Update unified workflow state
       setSelectedCustomerStrategy(enhancedStrategy);
       updateCustomerStrategy(enhancedStrategy);
-      
+
       // Add to progressive sticky header
       addStickyWorkflowStep('audienceSelection', {
         audienceName: strategy.targetSegment?.demographics?.split(' ').slice(0, 4).join(' ') + '...' || 'Selected Audience',
@@ -477,7 +484,15 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
         businessValue: strategy.businessValue,
         timestamp: new Date().toISOString()
       });
-      
+
+      // Track audience selected
+      autoBlogAPI.trackLeadConversion('audience_selected', {
+        customer_problem: strategy.customerProblem,
+        target_audience: strategy.targetSegment?.demographics,
+        strategy_index: index,
+        timestamp: new Date().toISOString()
+      }).catch(err => console.error('Failed to track audience_selected:', err));
+
       message.success(`Selected audience strategy: ${strategy.targetSegment.demographics.split(' ')[0]}...`);
     }
   };

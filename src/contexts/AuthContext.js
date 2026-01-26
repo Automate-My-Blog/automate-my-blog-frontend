@@ -219,7 +219,16 @@ export const AuthProvider = ({ children }) => {
       
       setLoginContext(context);
       setIsNewRegistration(true); // Mark as new registration
-      
+
+      // Track registration conversion
+      autoBlogAPI.trackLeadConversion('registration', {
+        user_id: response.user.id,
+        email: response.user.email,
+        has_organization: !!(response.user?.organization || response.organization),
+        registration_context: context,
+        timestamp: new Date().toISOString()
+      }).catch(err => console.error('Failed to track registration:', err));
+
       // Trigger session adoption to transfer anonymous data to user account
       try {
         const sessionId = sessionStorage.getItem('audience_session_id');

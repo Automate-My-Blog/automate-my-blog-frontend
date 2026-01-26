@@ -549,7 +549,15 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
       if (result.success) {
         setEditingContent(result.content);
         setContentGenerated(true);
-        
+
+        // Track content generated
+        api.trackLeadConversion('content_generated', {
+          topic_title: topic.title,
+          content_length: result.content?.length || 0,
+          used_enhancement: shouldUseEnhancement,
+          timestamp: new Date().toISOString()
+        }).catch(err => console.error('Failed to track content_generated:', err));
+
         // Store enhanced metadata if available
         console.log('🔍 DEBUG: Generation result structure:', {
           hasResult: !!result,
@@ -730,6 +738,16 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
             }, 100);
           }
           
+          // Track project saved (only for manual saves, not autosaves)
+          if (showUserFeedback) {
+            api.trackLeadConversion('project_saved', {
+              post_title: currentDraft.title,
+              content_length: editingContent?.length || 0,
+              is_update: isUpdate,
+              timestamp: new Date().toISOString()
+            }).catch(err => console.error('Failed to track project_saved:', err));
+          }
+
           // Show success message only for manual saves
           if (showUserFeedback) {
             message.success(
@@ -976,7 +994,15 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
       // Cleanup
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-      
+
+      // Track content exported
+      api.trackLeadConversion('content_exported', {
+        post_title: post.title,
+        content_length: post.content?.length || 0,
+        format: 'markdown',
+        timestamp: new Date().toISOString()
+      }).catch(err => console.error('Failed to track content_exported:', err));
+
       message.success('Post exported successfully!');
       console.log('✅ Post exported:', post.title);
       
