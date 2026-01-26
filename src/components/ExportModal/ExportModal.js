@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { Modal, Button, Select, Input, Switch, Typography, Space, message, Divider } from 'antd';
-import { 
-  DownloadOutlined, 
-  CopyOutlined, 
+import {
+  DownloadOutlined,
+  CopyOutlined,
   FileTextOutlined,
   CodeOutlined,
   GlobalOutlined
 } from '@ant-design/icons';
+import api from '../../services/api';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -226,7 +227,16 @@ const ExportModal = ({
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-      
+
+      // Track content exported
+      api.trackLeadConversion('content_exported', {
+        post_title: title,
+        content_length: content?.length || 0,
+        format: exportFormat,
+        filename: filename,
+        timestamp: new Date().toISOString()
+      }).catch(err => console.error('Failed to track content_exported:', err));
+
       message.success(`Exported as ${filename}`);
     } catch (error) {
       console.error('Export error:', error);
