@@ -35,7 +35,8 @@ jobs:
       - name: Link Vercel project
         run: |
           vercel link --yes --token=${{ secrets.VERCEL_TOKEN }} \
-            --project=${{ secrets.VERCEL_PROJECT_ID }}
+            --project=${{ secrets.VERCEL_PROJECT_ID }} \
+            --scope=${{ secrets.VERCEL_ORG_ID }}
         
       - name: Pull Vercel Environment Information
         run: |
