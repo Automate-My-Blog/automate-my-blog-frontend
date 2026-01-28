@@ -86,7 +86,7 @@ const DashboardLayout = ({
   } = useWorkflowMode();
   
   // Analytics tracking
-  const { trackPageView } = useAnalytics();
+  const { trackPageView, trackEvent } = useAnalytics();
   
   // Step management for logged-out users
   const [currentStep, setCurrentStep] = useState(0);
@@ -201,6 +201,11 @@ const DashboardLayout = ({
     window.history.replaceState({}, '', window.location.pathname);
 
     if (paymentStatus === 'success') {
+      // Track payment_completed event
+      trackEvent('payment_completed', {
+        userId: user?.id
+      }).catch(err => console.error('Failed to track payment_completed:', err));
+      
       if (user) {
         message.success('Payment successful! Your credits are being added...');
 
@@ -241,6 +246,12 @@ const DashboardLayout = ({
         message.warning('Payment successful, but you were logged out. Please log in to see your credits.');
       }
     } else if (paymentStatus === 'cancelled') {
+      // Track payment_failed/cancelled event
+      trackEvent('payment_failed', {
+        reason: 'cancelled',
+        userId: user?.id
+      }).catch(err => console.error('Failed to track payment_failed:', err));
+      
       message.info('Payment was cancelled. You can try again anytime.');
     }
   }, [user, loading, refreshQuota]); // Re-run when user or loading changes
@@ -371,6 +382,13 @@ const DashboardLayout = ({
   
   // Handle tab changes with smooth scroll navigation
   const handleTabChange = (newTab) => {
+    // Track tab_switched event
+    const { trackEvent } = useAnalytics();
+    trackEvent('tab_switched', {
+      fromTab: activeTab,
+      toTab: newTab
+    }).catch(err => console.error('Failed to track tab_switched:', err));
+    
     // Track page view for analytics
     trackPageView(newTab, { 
       previousTab: activeTab,

@@ -225,10 +225,32 @@ const ExportModal = ({
   // Handle export download
   const handleDownload = () => {
     try {
+      // Track export_started event
+      trackEvent('export_started', {
+        format: exportFormat,
+        includeTitle,
+        includeFormatting
+      }).catch(err => console.error('Failed to track export_started:', err));
+      
       const formattedContent = formatContent();
       const filename = generateFilename();
       
-      // Track successful export
+      // Track export_format_selected event
+      trackEvent('export_format_selected', {
+        format: exportFormat
+      }).catch(err => console.error('Failed to track export_format_selected:', err));
+      
+      // Track successful export (export_completed)
+      trackEvent('export_completed', {
+        format: exportFormat,
+        filename,
+        contentLength: formattedContent.length,
+        wordCount: formattedContent.split(/\s+/).length,
+        includeTitle,
+        includeFormatting
+      }).catch(err => console.error('Failed to track export_completed:', err));
+      
+      // Also track publish_success for backward compatibility
       trackEvent('publish_success', {
         format: exportFormat,
         filename,
@@ -261,8 +283,21 @@ const ExportModal = ({
       }).catch(err => console.error('Failed to track content_exported:', err));
 
       message.success(`Exported as ${filename}`);
+      
+      // Track workflow_completed when export succeeds
+      trackEvent('workflow_completed', {
+        format: exportFormat,
+        contentLength: formattedContent.length
+      }).catch(err => console.error('Failed to track workflow_completed:', err));
     } catch (error) {
       console.error('Export error:', error);
+      
+      // Track export_failed event
+      trackEvent('export_failed', {
+        format: exportFormat,
+        error: error.message
+      }).catch(err => console.error('Failed to track export_failed:', err));
+      
       message.error('Failed to export content');
     }
   };

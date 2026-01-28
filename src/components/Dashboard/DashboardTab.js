@@ -7,6 +7,7 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { useTabMode } from '../../hooks/useTabMode';
 import { useWorkflowMode } from '../../contexts/WorkflowModeContext';
+import { useAnalytics } from '../../contexts/AnalyticsContext';
 import WebsiteAnalysisStepStandalone from '../Workflow/steps/WebsiteAnalysisStepStandalone';
 import UnifiedWorkflowHeader from './UnifiedWorkflowHeader';
 import { format } from 'date-fns';
@@ -136,7 +137,10 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
   }, [stepResults.home.analysisCompleted, stepResults.home.websiteAnalysis?.businessName, saveWorkflowState]);
 
 
-  const handleCreateNewPost = () => {
+  // Import analytics
+import { useAnalytics } from '../../contexts/AnalyticsContext';
+
+const DashboardTab = () => {
     // This starts the guided project from Dashboard → Audience → Posts
     if (onEnterProjectMode) {
       onEnterProjectMode();
