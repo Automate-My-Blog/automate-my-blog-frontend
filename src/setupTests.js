@@ -103,33 +103,35 @@ const sessionStorageMock = (() => {
 
 Object.defineProperty(window, 'sessionStorage', { value: sessionStorageMock });
 
-// Suppress console warnings/errors during tests for cleaner output
-// Comment out these lines if you need to debug test failures
+// Suppress console output during tests for cleaner CI output
 const originalError = console.error;
 const originalWarn = console.warn;
+const originalLog = console.log;
 
 beforeAll(() => {
   console.error = (...args) => {
-    // Ignore React 18 warnings about act()
-    if (args[0]?.includes?.('Warning: An update to') || 
-        args[0]?.includes?.('Warning: ReactDOM.render')) {
-      return;
-    }
+    if (args[0]?.includes?.('Warning: An update to') ||
+        args[0]?.includes?.('Warning: ReactDOM.render')) return;
     originalError.call(console, ...args);
   };
-  
+
   console.warn = (...args) => {
-    // Ignore React 18 warnings
-    if (args[0]?.includes?.('Warning:')) {
-      return;
-    }
+    if (args[0]?.includes?.('Warning:')) return;
     originalWarn.call(console, ...args);
+  };
+
+  // Suppress AnalyticsContext flush logs (CI noise)
+  console.log = (...args) => {
+    const msg = typeof args[0] === 'string' ? args[0] : String(args[0]);
+    if (msg.includes('Analytics: Flushed') || msg.includes('✅ Analytics:')) return;
+    originalLog.call(console, ...args);
   };
 });
 
 afterAll(() => {
   console.error = originalError;
   console.warn = originalWarn;
+  console.log = originalLog;
 });
 
 // Reset mocks after each test
