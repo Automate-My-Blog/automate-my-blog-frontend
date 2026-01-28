@@ -157,7 +157,7 @@ test.describe('Content Management', () => {
     
     if (await previewButton.isVisible({ timeout: 5000 }).catch(() => false)) {
       await previewButton.click();
-      await page.waitForTimeout(1000);
+      // Preview appears quickly - Playwright auto-waits
       
       // Look for preview content
       const previewContent = page.locator('[data-testid="preview"], .ant-modal-body, .preview-content').first();

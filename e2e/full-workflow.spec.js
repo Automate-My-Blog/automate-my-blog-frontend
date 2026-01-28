@@ -78,18 +78,18 @@ test.describe('Complete User Workflow', () => {
     // This test validates the authentication and content creation flow
     // It's designed to be resilient and pass even if backend is unavailable
     
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(2000);
+    await page.waitForLoadState('load');
+    await page.waitForTimeout(300); // Reduced wait
     
     // Step 1: Check if sign up is available
     const signUpButton = page.locator('button:has-text("Sign Up"), button:has-text("Sign Up Free")').first();
-    const buttonVisible = await signUpButton.isVisible({ timeout: 10000 }).catch(() => false);
+    const buttonVisible = await signUpButton.isVisible({ timeout: 5000 }).catch(() => false); // Reduced timeout
     
     if (buttonVisible) {
       // Try to open sign up modal (but don't fail if it doesn't work)
       try {
         await signUpButton.click();
-        await page.waitForTimeout(1500);
+        await page.waitForTimeout(300); // Reduced from 1500ms
         
         // Check if modal opened (reduced timeout)
         const modal = page.locator('.ant-modal').first();

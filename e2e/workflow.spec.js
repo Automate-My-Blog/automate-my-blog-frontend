@@ -262,9 +262,9 @@ test.describe('Content Generation Workflow', () => {
     if (await websiteInput.isVisible({ timeout: 5000 }).catch(() => false)) {
       await websiteInput.fill('https://example.com');
       
-      // Reload page
+      // Reload page (optimized)
       await page.reload();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('load');
       
       // Check if workflow state persisted (check localStorage or UI state)
       const persistedState = await page.evaluate(() => {
