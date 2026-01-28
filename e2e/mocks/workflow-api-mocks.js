@@ -112,6 +112,27 @@ function pathMatch(url, path) {
   }
 }
 
+/** Match path prefix (e.g. /api/v1/posts for /api/v1/posts/123) */
+function pathPrefixMatch(url, prefix) {
+  try {
+    const u = new URL(url);
+    const p = prefix.startsWith('/') ? prefix : `/${prefix}`;
+    return u.pathname === p || u.pathname.startsWith(p + '/');
+  } catch {
+    return url.includes(prefix);
+  }
+}
+
+const MOCK_POST = {
+  id: 'e2e-post-1',
+  title: 'E2E Test Post',
+  content: '<p>Test content</p>',
+  slug: 'e2e-test-post',
+  status: 'draft',
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
+};
+
 /** Install route mocks for all workflow + auth + user APIs */
 async function installWorkflowMocks(page) {
   const patterns = [
@@ -131,6 +152,7 @@ async function installWorkflowMocks(page) {
           content: MOCK_CONTENT,
         }),
     },
+    { path: '/api/export', method: 'POST', body: () => json({ success: true }) },
     { path: '/api/v1/session/create', method: 'POST', body: () => json({ session_id: 'e2e-session-id' }) },
     { path: '/api/v1/auth/me', method: 'GET', body: () => json({ success: true, user: MOCK_USER }) },
     { path: '/api/v1/auth/refresh', method: 'POST', body: () => json({ success: true, accessToken: fakeJWT(), refreshToken: fakeJWT() }) },
@@ -151,6 +173,30 @@ async function installWorkflowMocks(page) {
         return route.fulfill(body());
       }
     }
+
+    if (pathPrefixMatch(url, '/api/v1/posts') && method === 'GET') {
+      try {
+        const p = new URL(url).pathname;
+        if (p === '/api/v1/posts' || p === 'api/v1/posts') {
+          return route.fulfill(json({ posts: [] }));
+        }
+        const match = p.match(/\/api\/v1\/posts\/([^/]+)$/);
+        if (match) {
+          return route.fulfill(json({ ...MOCK_POST, id: match[1] }));
+        }
+      } catch (_) {}
+    }
+    if (pathPrefixMatch(url, '/api/v1/posts') && method === 'POST') {
+      if (url.includes('/adopt-session')) return route.fulfill(json({ success: true }));
+      return route.fulfill(json({ ...MOCK_POST }));
+    }
+    if (pathPrefixMatch(url, '/api/v1/posts') && (method === 'PUT' || method === 'PATCH')) {
+      return route.fulfill(json({ ...MOCK_POST, updatedAt: new Date().toISOString() }));
+    }
+    if (pathPrefixMatch(url, '/api/v1/posts') && method === 'DELETE') {
+      return route.fulfill(json({ success: true }));
+    }
+
     return route.continue();
   });
 }
@@ -173,4 +219,5 @@ module.exports = {
   MOCK_TOPICS,
   MOCK_CONTENT,
   MOCK_SCENARIOS,
+  MOCK_POST,
 };

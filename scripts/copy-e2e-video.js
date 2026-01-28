@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Copy the latest Playwright video from test-results to e2e/videos/complete-workflow-demo.webm.
- * Run after: npx playwright test e2e/complete-workflow-mocked.spec.js --config=playwright.record.config.js --workers=1
+ * Run after: npm run test:e2e:record (runs full-workflow test with record config)
  */
 const fs = require('fs');
 const path = require('path');
@@ -10,8 +10,8 @@ const resultsDir = path.join(__dirname, '..', 'test-results');
 const outDir = path.join(__dirname, '..', 'e2e', 'videos');
 const outPath = path.join(outDir, 'complete-workflow-demo.webm');
 
-if (!fs.existsSync(resultsDir)) {
-  console.warn('No test-results directory found. Run the complete-workflow-mocked tests with record config first.');
+  if (!fs.existsSync(resultsDir)) {
+  console.warn('No test-results directory found. Run npm run test:e2e:record first.');
   process.exit(1);
 }
 
