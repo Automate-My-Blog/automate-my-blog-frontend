@@ -20,7 +20,7 @@ test.describe('Content Management', () => {
     
     if (await postsTab.isVisible({ timeout: 5000 }).catch(() => false)) {
       await postsTab.click();
-      await page.waitForTimeout(2000);
+      await page.waitForTimeout(500); // Reduced from 2000ms
       
       // Look for posts list or empty state
       const postsList = page.locator('[data-testid="posts-list"], .ant-list, .ant-table').first();
@@ -59,7 +59,7 @@ test.describe('Content Management', () => {
     
     if (await postsTab.isVisible({ timeout: 5000 }).catch(() => false)) {
       await postsTab.click();
-      await page.waitForTimeout(2000);
+      await page.waitForTimeout(500); // Reduced from 2000ms
       
       // Look for edit button or clickable post
       const editButton = page.locator('button:has-text("Edit"), .ant-btn-link:has-text("Edit")').first();
@@ -173,7 +173,7 @@ test.describe('Content Management', () => {
     
     if (await postsTab.isVisible({ timeout: 5000 }).catch(() => false)) {
       await postsTab.click();
-      await page.waitForTimeout(2000);
+      await page.waitForTimeout(500); // Reduced from 2000ms
       
       // Look for export button
       const exportButton = page.locator('button:has-text("Export"), button[aria-label*="export" i]').first();
@@ -201,7 +201,7 @@ test.describe('Content Management', () => {
     
     if (await postsTab.isVisible({ timeout: 5000 }).catch(() => false)) {
       await postsTab.click();
-      await page.waitForTimeout(2000);
+      await page.waitForTimeout(500); // Reduced from 2000ms
       
       // Look for delete button
       const deleteButton = page.locator('button:has-text("Delete"), button[aria-label*="delete" i], .ant-btn-danger').first();
@@ -236,7 +236,7 @@ test.describe('Content Management', () => {
     
     if (await postsTab.isVisible({ timeout: 5000 }).catch(() => false)) {
       await postsTab.click();
-      await page.waitForTimeout(2000);
+      await page.waitForTimeout(500); // Reduced from 2000ms
       
       // Look for search input
       const searchInput = page.locator('input[placeholder*="search" i], input[type="search"]').first();
@@ -292,7 +292,7 @@ test.describe('Content Management', () => {
     
     if (await postsTab.isVisible({ timeout: 5000 }).catch(() => false)) {
       await postsTab.click();
-      await page.waitForTimeout(2000);
+      await page.waitForTimeout(500); // Reduced from 2000ms
       
       // Click on a post to view details
       const postItem = page.locator('.ant-list-item, .ant-table-row').first();

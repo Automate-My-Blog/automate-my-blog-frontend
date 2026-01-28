@@ -89,7 +89,7 @@ test.describe('Content Generation Workflow', () => {
         await analyzeButton.click();
         
         // Wait for potential results - reduced timeout
-        await page.waitForTimeout(2000);
+        await page.waitForTimeout(1000); // Reduced from 2000ms
         
         // Look for results indicators
         const resultIndicators = [

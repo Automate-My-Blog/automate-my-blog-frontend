@@ -160,7 +160,7 @@ export async function loginUser(page, email, password) {
 
   // Wait for login to complete
   await waitForAPICall(page);
-  await page.waitForTimeout(2000);
+  await page.waitForTimeout(1000); // Reduced from 2000ms - API call wait handles most of the delay
 }
 
 /**
