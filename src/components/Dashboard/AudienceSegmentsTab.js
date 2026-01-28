@@ -50,6 +50,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
   // UI helpers from workflow components
   const responsive = ComponentHelpers.getResponsiveStyles();
   const defaultColors = ComponentHelpers.getDefaultColors();
+  const theme = ComponentHelpers.getTheme();
   
   // Load persistent audience strategies when component mounts  
   useEffect(() => {
@@ -671,7 +672,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
           hoverable
           style={{
             border: isSelected ? `2px solid ${defaultColors.primary}` : '1px solid #f0f0f0',
-            borderRadius: '12px',
+            borderRadius: theme.borderRadius.lg,
             minHeight: '400px',
             cursor: 'pointer',
             opacity: isOthersSelected ? 0.5 : 1,
@@ -691,7 +692,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                 width: '60%',
                 aspectRatio: '1 / 1',
                 backgroundColor: '#fafafa',
-                borderRadius: '8px',
+                borderRadius: theme.borderRadius.md,
                 overflow: 'hidden',
                 display: 'flex',
                 justifyContent: 'center',
@@ -741,7 +742,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
               {isSelected && (
                 <CheckOutlined style={{
                   color: defaultColors.primary,
-                  fontSize: '16px'
+                  fontSize: theme.typography.base
                 }} />
               )}
             </div>
@@ -749,8 +750,8 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
             {/* Audience Name - Prominent */}
             <Title level={3} style={{
               margin: '8px 0 0 0',
-              color: '#262626',
-              fontSize: '18px',
+              color: theme.colors.text,
+              fontSize: theme.typography.lg,
               fontWeight: 600,
               lineHeight: 1.3
             }}>
@@ -766,7 +767,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                     <>
                       {' searching for '}
                       <span style={{
-                        color: '#1890ff',
+                        color: theme.colors.primary,
                         fontStyle: 'italic',
                         fontWeight: 500
                       }}>
@@ -784,10 +785,11 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
           {strategy.pitch && (
             <div style={{ marginBottom: '16px' }}>
               <Collapse
+                defaultActiveKey={[]}
                 bordered={false}
                 style={{
                   backgroundColor: '#f0f5ff',
-                  borderLeft: '3px solid #1890ff',
+                  borderLeft: `3px solid ${theme.colors.primary}`,
                   borderRadius: '4px'
                 }}
                 items={[
@@ -795,14 +797,27 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                     key: '1',
                     label: (
                       <Text strong style={{
-                        color: '#333',
-                        fontSize: '14px'
+                        color: theme.colors.gray800,
+                        fontSize: theme.typography.sm
                       }}>
                         {(() => {
-                          // Extract revenue from Step 5 of pitch
+                          // Extract consultation price
+                          const priceMatch = strategy.pitch.match(/\$(\d+(?:,\d{3})*)\/consultation/);
+                          const consultationPrice = priceMatch ? parseInt(priceMatch[1].replace(/,/g, '')) : null;
+
+                          // Extract monthly revenue range
                           const step5Match = strategy.pitch.match(/Step 5:[^\$]*\$([0-9,]+)-\$([0-9,]+)(?:\/month)?/);
+
+                          // Calculate ROI multiple
+                          const annualFee = 240;
+                          const roiMultiple = consultationPrice ? Math.floor(consultationPrice / annualFee) : null;
+
+                          if (consultationPrice && roiMultiple) {
+                            return `✅ Just 1 deal/year at $${consultationPrice.toLocaleString()} = ${roiMultiple}x your annual fees back. What's the risk?`;
+                          }
+                          // Fallback if extraction fails
                           if (step5Match) {
-                            return `💰 Projected value: $${step5Match[1]}-$${step5Match[2]}/month`;
+                            return `💡 Potential: $${step5Match[1]}-$${step5Match[2]}/month`;
                           }
                           return '💡 Why This Audience';
                         })()}
@@ -810,23 +825,66 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                     ),
                     children: (
                       <div style={{ padding: '0 12px 12px 12px' }}>
+                        {/* SEO Range Context Box */}
+                        {(() => {
+                          const step5Match = strategy.pitch.match(/Step 5:[^\$]*\$([0-9,]+)-\$([0-9,]+)(?:\/month)?/);
+                          if (step5Match) {
+                            const lowRevenue = step5Match[1];
+                            const highRevenue = step5Match[2];
+                            return (
+                              <div style={{
+                                padding: '12px',
+                                backgroundColor: theme.colors.backgroundAlt,
+                                borderRadius: theme.borderRadius.sm,
+                                marginBottom: '12px',
+                                borderLeft: `3px solid ${theme.colors.primary}`
+                              }}>
+                                <Text strong style={{
+                                  fontSize: '13px',
+                                  color: theme.colors.text,
+                                  display: 'block',
+                                  marginBottom: '4px'
+                                }}>
+                                  📊 With a solid SEO strategy:
+                                </Text>
+                                <Text style={{
+                                  fontSize: '14px',
+                                  color: theme.colors.primary,
+                                  fontWeight: 600
+                                }}>
+                                  ${lowRevenue}-${highRevenue}/month potential
+                                </Text>
+                                <Text style={{
+                                  fontSize: '12px',
+                                  color: theme.colors.textSecondary,
+                                  display: 'block',
+                                  marginTop: '4px'
+                                }}>
+                                  Here's how we calculated this range:
+                                </Text>
+                              </div>
+                            );
+                          }
+                          return null;
+                        })()}
+
                         {/* Parse and format step-by-step pitch */}
                         {strategy.pitch.split(/\n/).map((line, index) => {
                           const stepMatch = line.match(/^(Step \d+:)\s*(.+)$/);
                           if (stepMatch) {
                             return (
                               <div key={index} style={{ marginBottom: index < strategy.pitch.split(/\n/).length - 1 ? '8px' : '0' }}>
-                                <Text strong style={{ fontSize: '13px', color: '#1890ff' }}>
+                                <Text strong style={{ fontSize: '13px', color: theme.colors.primary }}>
                                   {stepMatch[1]}
                                 </Text>
-                                <Text style={{ fontSize: '13px', color: '#262626', marginLeft: '6px' }}>
+                                <Text style={{ fontSize: '13px', color: theme.colors.text, marginLeft: '6px' }}>
                                   {stepMatch[2]}
                                 </Text>
                               </div>
                             );
                           }
                           return line ? (
-                            <Text key={index} style={{ fontSize: '13px', lineHeight: '1.5', color: '#262626', display: 'block' }}>
+                            <Text key={index} style={{ fontSize: '13px', lineHeight: '1.5', color: theme.colors.text, display: 'block' }}>
                               {line}
                             </Text>
                           ) : null;
@@ -891,20 +949,9 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
             {/* Strategy Selection Cards - Core workflow step */}
             <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
               <Col span={24}>
-                <Card 
-                  title={
-                    <Space>
-                      <TeamOutlined style={{ color: '#1890ff' }} />
-                      Select Your Customer Strategy
-                    </Space>
-                  }
-                  extra={<Tag color="blue">Required</Tag>}
-                >
+                <Card>
                   <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-                    <Title level={4}>Who is your ideal customer?</Title>
-                    <Paragraph>
-                      Choose the audience strategy that best describes your target market and business model.
-                    </Paragraph>
+                    <Title level={4}>Pick the strategy that matches your business</Title>
                   </div>
                   
                   {/* Strategy Cards Grid */}
@@ -914,7 +961,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                       <Title level={4} style={{ color: '#fa8c16' }}>
                         Complete Website Analysis First
                       </Title>
-                      <Text style={{ color: '#666', fontSize: '16px' }}>
+                      <Text style={{ color: theme.colors.textSecondary, fontSize: theme.typography.base }}>
                         Please complete the website analysis in Step 1 before selecting your target audience.
                         This helps us create personalized audience strategies based on your business.
                       </Text>
@@ -922,10 +969,10 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                   ) : generatingStrategies ? (
                     <div style={{ textAlign: 'center', padding: '40px' }}>
                       <div style={{ fontSize: '24px', marginBottom: '16px' }}>🎯</div>
-                      <Title level={4} style={{ color: '#1890ff' }}>
+                      <Title level={4} style={{ color: theme.colors.primary }}>
                         Generating Audience Strategies...
                       </Title>
-                      <Text style={{ color: '#666' }}>
+                      <Text style={{ color: theme.colors.textSecondary }}>
                         Analyzing your website to create targeted customer strategies
                       </Text>
                     </div>
@@ -945,7 +992,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                               transform: 'translateY(-50%)',
                               zIndex: 10,
                               backgroundColor: 'white',
-                              boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                              boxShadow: theme.shadows.sm,
                               border: '1px solid #d9d9d9'
                             }}
                           />
@@ -960,7 +1007,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                               transform: 'translateY(-50%)',
                               zIndex: 10,
                               backgroundColor: 'white',
-                              boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                              boxShadow: theme.shadows.sm,
                               border: '1px solid #d9d9d9'
                             }}
                           />
@@ -1066,7 +1113,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
         <Paragraph style={{ 
           textAlign: 'center', 
           marginBottom: '20px', 
-          color: '#666',
+          color: theme.colors.textSecondary,
           fontSize: responsive.fontSize.text
         }}>
           Select the audience you want to target with your content. These strategies are ranked by business opportunity and include enhanced targeting data.
@@ -1088,10 +1135,10 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
         
         {/* Strategy Selection Cards */}
         {strategies.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
+          <div style={{ textAlign: 'center', padding: '40px', color: theme.colors.textSecondary }}>
             <DatabaseOutlined style={{ fontSize: '48px', color: '#d9d9d9', marginBottom: '16px' }} />
-            <Title level={4} style={{ color: '#999' }}>No Customer Strategies Found</Title>
-            <Text style={{ marginBottom: '20px', color: '#666' }}>
+            <Title level={4} style={{ color: theme.colors.textTertiary }}>No Customer Strategies Found</Title>
+            <Text style={{ marginBottom: '20px', color: theme.colors.textSecondary }}>
               Run website analysis to generate personalized customer strategies based on your business.
             </Text>
             <Button 
@@ -1103,7 +1150,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                 marginTop: '8px',
                 minWidth: '200px',
                 height: '40px',
-                fontSize: '16px'
+                fontSize: theme.typography.base
               }}
             >
               Run Website Analysis
@@ -1126,7 +1173,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                       transform: 'translateY(-50%)',
                       zIndex: 10,
                       backgroundColor: 'white',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                      boxShadow: theme.shadows.sm,
                       border: '1px solid #d9d9d9'
                     }}
                   />
@@ -1141,7 +1188,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                       transform: 'translateY(-50%)',
                       zIndex: 10,
                       backgroundColor: 'white',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                      boxShadow: theme.shadows.sm,
                       border: '1px solid #d9d9d9'
                     }}
                   />
