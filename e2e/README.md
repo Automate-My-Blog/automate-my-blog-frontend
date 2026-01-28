@@ -10,6 +10,7 @@ This test suite covers all major user workflows and interactions:
 - **Content Workflow**: Website analysis → Content generation → Editing → Export
 - **Dashboard Navigation**: Tab switching, layout, responsive design
 - **Content Management**: Post creation, editing, deletion, scheduling, export
+- **Complete Workflow (mocked)**: Full journey with **no backend** — analyze → audience → topics → generate → editor → export. See [E2E_WORKFLOWS_INDEX.md](./E2E_WORKFLOWS_INDEX.md) and [README-COMPLETE-WORKFLOW-MOCKED.md](./README-COMPLETE-WORKFLOW-MOCKED.md).
 
 ## Prerequisites
 
@@ -55,6 +56,12 @@ npm run test:e2e:content
 
 # Full workflow integration tests
 npm run test:e2e:full
+
+# Complete workflow with mocked backend (no API required)
+npm run test:e2e:complete-mocked
+
+# Record video of complete-workflow run → e2e/videos/complete-workflow-demo.webm
+npm run test:e2e:complete-mocked:record
 ```
 
 ### Interactive Mode
@@ -81,16 +88,23 @@ npm run test:e2e:report
 
 ```
 e2e/
-├── auth.spec.js              # Authentication flow tests
-├── workflow.spec.js           # Main content generation workflow
-├── dashboard.spec.js          # Dashboard navigation and layout
-├── content-management.spec.js # Post CRUD operations
-├── full-workflow.spec.js      # Complete end-to-end scenarios
+├── auth.spec.js                  # Authentication flow tests
+├── workflow.spec.js              # Main content generation workflow
+├── dashboard.spec.js             # Dashboard navigation and layout
+├── content-management.spec.js    # Post CRUD operations
+├── full-workflow.spec.js         # Complete end-to-end scenarios
+├── complete-workflow-mocked.spec.js  # Full workflow with mocked backend
+├── mocks/
+│   └── workflow-api-mocks.js     # API mocks for complete-workflow tests
+├── videos/
+│   └── complete-workflow-demo.webm   # Recorded demo (run :record to regenerate)
 ├── utils/
-│   └── test-helpers.js        # Reusable test utilities
+│   └── test-helpers.js           # Reusable test utilities
 ├── fixtures/
-│   └── test-data.js          # Test data fixtures
-└── README.md                  # This file
+│   └── test-data.js              # Test data fixtures
+├── E2E_WORKFLOWS_INDEX.md        # Workflow → spec mapping
+├── README-COMPLETE-WORKFLOW-MOCKED.md
+└── README.md                     # This file
 ```
 
 ## Test Utilities

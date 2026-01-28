@@ -61,6 +61,8 @@
     "test:e2e:dashboard": "playwright test e2e/dashboard.spec.js",
     "test:e2e:content": "playwright test e2e/content-management.spec.js",
     "test:e2e:full": "playwright test e2e/full-workflow.spec.js",
+    "test:e2e:complete-mocked": "playwright test e2e/complete-workflow-mocked.spec.js",
+    "test:e2e:complete-mocked:record": "playwright test e2e/complete-workflow-mocked.spec.js --grep \"full workflow\" --config=playwright.record.config.js --workers=1 && node scripts/copy-e2e-video.js",
     "test:e2e:report": "playwright show-report"
   },
   "eslintConfig": {
