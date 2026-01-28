@@ -52,13 +52,13 @@ export async function clearStorage(page) {
 }
 
 /**
- * Wait for API call to complete (checks for loading indicators)
+ * Wait for API call to complete (checks for loading indicators) - optimized
  */
-export async function waitForAPICall(page, timeout = 30000) {
-  // Wait for any loading spinners to disappear
+export async function waitForAPICall(page, timeout = 10000) {
+  // Wait for any loading spinners to disappear with shorter timeout
   await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout }).catch(() => {});
-  // Small delay to ensure state updates
-  await page.waitForTimeout(500);
+  // Reduced delay - state updates are usually fast
+  await page.waitForTimeout(200);
 }
 
 /**
@@ -117,11 +117,14 @@ export async function takeScreenshot(page, name) {
 }
 
 /**
- * Wait for navigation to complete
+ * Wait for navigation to complete (optimized for speed)
  */
 export async function waitForNavigation(page) {
-  await page.waitForLoadState('networkidle');
-  await page.waitForTimeout(1000); // Additional wait for React to render
+  // Use 'load' instead of 'networkidle' for faster execution
+  // networkidle waits for 500ms of no network activity, which is slow
+  await page.waitForLoadState('load');
+  // Reduced wait time - React usually renders quickly after load
+  await page.waitForTimeout(300);
 }
 
 /**

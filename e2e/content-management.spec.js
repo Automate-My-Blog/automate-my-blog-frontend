@@ -9,8 +9,9 @@ const { waitForElement, waitForAPICall, clearStorage, elementExists } = require(
 test.describe('Content Management', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(2000);
+    // Optimized wait
+    await page.waitForLoadState('load');
+    await page.waitForTimeout(300); // Reduced from 2000ms
   });
 
   test('should display posts list', async ({ page }) => {
@@ -70,7 +71,7 @@ test.describe('Content Management', () => {
         await postItem.click();
       }
       
-      await page.waitForTimeout(1000);
+      await page.waitForTimeout(300); // Reduced wait
       
       // Look for title input
       const titleInput = page.locator('input[placeholder*="title" i], input[value*=""]').first();
@@ -87,9 +88,7 @@ test.describe('Content Management', () => {
     
     if (await createButton.isVisible({ timeout: 5000 }).catch(() => false)) {
       await createButton.click();
-      await page.waitForTimeout(1000);
-      
-      // Find editor
+      // Editor appears quickly
       const editor = page.locator('.tiptap, [contenteditable="true"]').first();
       
       if (await editor.isVisible({ timeout: 3000 }).catch(() => false)) {
@@ -109,9 +108,7 @@ test.describe('Content Management', () => {
     
     if (await createButton.isVisible({ timeout: 5000 }).catch(() => false)) {
       await createButton.click();
-      await page.waitForTimeout(1000);
-      
-      // Look for formatting toolbar
+      // Toolbar appears with editor
       const toolbar = page.locator('.tiptap-toolbar, [data-testid="toolbar"], .ant-btn-group').first();
       const boldButton = page.locator('button[aria-label*="bold" i], button:has-text("B")').first();
       
@@ -142,7 +139,7 @@ test.describe('Content Management', () => {
       
       if (await saveButton.isVisible({ timeout: 3000 }).catch(() => false)) {
         await saveButton.click();
-        await page.waitForTimeout(2000);
+        await page.waitForTimeout(1000); // Reduced from 2000ms
         
         // Check for success message or state change
         const successMessage = page.locator('.ant-message-success, text=/saved|success/i').first();
@@ -183,7 +180,8 @@ test.describe('Content Management', () => {
       
       if (await exportButton.isVisible({ timeout: 3000 }).catch(() => false)) {
         await exportButton.click();
-        await page.waitForTimeout(1000);
+        // Modal appears quickly
+        await page.waitForTimeout(300);
         
         // Look for export options modal
         const exportModal = page.locator('.ant-modal, [data-testid="export-modal"]').first();
@@ -217,9 +215,9 @@ test.describe('Content Management', () => {
         const confirmButton = page.locator('button:has-text("OK"), button:has-text("Confirm"), button:has-text("Delete")').first();
         
         if (await confirmModal.isVisible({ timeout: 2000 }).catch(() => false)) {
-          if (await confirmButton.isVisible({ timeout: 2000 }).catch(() => false)) {
-            await confirmButton.click();
-            await page.waitForTimeout(2000);
+        if (await confirmButton.isVisible({ timeout: 2000 }).catch(() => false)) {
+          await confirmButton.click();
+          await page.waitForTimeout(1000); // Reduced from 2000ms
             
             // Check for success message
             const successMessage = page.locator('.ant-message-success, text=/deleted|removed/i').first();
@@ -245,7 +243,8 @@ test.describe('Content Management', () => {
       
       if (await searchInput.isVisible({ timeout: 3000 }).catch(() => false)) {
         await searchInput.fill('test');
-        await page.waitForTimeout(1000);
+        // Results update quickly - no need for long wait
+        await page.waitForTimeout(300);
         
         // Results should update (may require backend)
         expect(true).toBeTruthy();
@@ -255,7 +254,8 @@ test.describe('Content Management', () => {
       const filterButton = page.locator('button:has-text("Filter"), .ant-select').first();
       if (await filterButton.isVisible({ timeout: 3000 }).catch(() => false)) {
         await filterButton.click();
-        await page.waitForTimeout(500);
+        // Dropdown appears quickly
+        await page.waitForTimeout(200);
         
         // Should show filter options
         expect(true).toBeTruthy();
@@ -269,14 +269,13 @@ test.describe('Content Management', () => {
     
     if (await createButton.isVisible({ timeout: 5000 }).catch(() => false)) {
       await createButton.click();
-      await page.waitForTimeout(1000);
-      
-      // Look for schedule/publish button
+      // Schedule button appears with form
       const scheduleButton = page.locator('button:has-text("Schedule"), button:has-text("Publish")').first();
       
       if (await scheduleButton.isVisible({ timeout: 3000 }).catch(() => false)) {
         await scheduleButton.click();
-        await page.waitForTimeout(1000);
+        // Date picker appears quickly
+        await page.waitForTimeout(300);
         
         // Look for date/time picker
         const datePicker = page.locator('.ant-picker, input[type="date"], input[type="datetime-local"]').first();
@@ -300,7 +299,7 @@ test.describe('Content Management', () => {
       
       if (await postItem.isVisible({ timeout: 3000 }).catch(() => false)) {
         await postItem.click();
-        await page.waitForTimeout(1000);
+        await page.waitForTimeout(300); // Reduced wait
         
         // Look for analytics/metrics
         const analytics = page.locator('text=/views|clicks|engagement|analytics/i, [data-testid="analytics"]').first();

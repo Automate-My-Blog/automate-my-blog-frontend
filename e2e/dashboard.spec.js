@@ -9,8 +9,9 @@ const { waitForElement, waitForAPICall, navigateToTab, clearStorage, elementExis
 test.describe('Dashboard Navigation', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(2000);
+    // Optimized wait - use 'load' instead of 'networkidle'
+    await page.waitForLoadState('load');
+    await page.waitForTimeout(300); // Reduced from 2000ms
   });
 
   test('should display dashboard layout', async ({ page }) => {
@@ -41,7 +42,8 @@ test.describe('Dashboard Navigation', () => {
     
     if (await dashboardTab.isVisible({ timeout: 5000 }).catch(() => false)) {
       await dashboardTab.click();
-      await page.waitForTimeout(1000);
+      // Reduced wait - Playwright auto-waits for navigation
+      await page.waitForTimeout(300);
       
       // Verify dashboard content is visible
       const dashboardContent = page.locator('[data-testid="dashboard-content"], .ant-layout-content').first();
@@ -69,7 +71,7 @@ test.describe('Dashboard Navigation', () => {
     
     if (await audienceTab.isVisible({ timeout: 5000 }).catch(() => false)) {
       await audienceTab.click();
-      await page.waitForTimeout(1000);
+      await page.waitForTimeout(300);
       
       // Look for audience-related content
       const audienceContent = page.locator('text=/audience|segment/i, [data-testid="audience-tab"]').first();
@@ -84,7 +86,7 @@ test.describe('Dashboard Navigation', () => {
     
     if (await analyticsTab.isVisible({ timeout: 5000 }).catch(() => false)) {
       await analyticsTab.click();
-      await page.waitForTimeout(1000);
+      await page.waitForTimeout(300);
       
       // Look for analytics content
       const analyticsContent = page.locator('text=/analytics|metrics|chart/i, [data-testid="analytics-tab"]').first();
@@ -99,7 +101,7 @@ test.describe('Dashboard Navigation', () => {
     
     if (await settingsTab.isVisible({ timeout: 5000 }).catch(() => false)) {
       await settingsTab.click();
-      await page.waitForTimeout(1000);
+      await page.waitForTimeout(300);
       
       // Look for settings content
       const settingsContent = page.locator('text=/settings|preferences|configuration/i, [data-testid="settings-tab"]').first();
@@ -115,7 +117,7 @@ test.describe('Dashboard Navigation', () => {
     
     if (await postsTab.isVisible({ timeout: 5000 }).catch(() => false)) {
       await postsTab.click();
-      await page.waitForTimeout(1000);
+      // No need for wait - check immediately
       
       // Check if tab has active state
       const activeClass = await postsTab.evaluate((el) => {
@@ -133,7 +135,8 @@ test.describe('Dashboard Navigation', () => {
     // Set mobile viewport
     await page.setViewportSize({ width: 375, height: 667 });
     await page.reload();
-    await page.waitForTimeout(2000);
+    await page.waitForLoadState('load');
+    await page.waitForTimeout(300); // Reduced wait
     
     // Look for mobile menu toggle
     const menuToggle = page.locator('.ant-layout-sider-trigger, [data-testid="menu-toggle"], button[aria-label*="menu" i]').first();
@@ -147,7 +150,7 @@ test.describe('Dashboard Navigation', () => {
       
       // Toggle menu
       await menuToggle.click();
-      await page.waitForTimeout(500);
+      await page.waitForTimeout(200); // Reduced wait
       
       // Check if state changed
       const isCollapsedAfter = await sidebar.evaluate((el) => {
@@ -164,7 +167,7 @@ test.describe('Dashboard Navigation', () => {
     
     if (await userMenu.isVisible({ timeout: 5000 }).catch(() => false)) {
       await userMenu.click();
-      await page.waitForTimeout(500);
+      await page.waitForTimeout(200); // Reduced wait
       
       // Look for dropdown menu items
       const menuItems = page.locator('.ant-dropdown-menu-item, [role="menuitem"]');
@@ -179,7 +182,8 @@ test.describe('Dashboard Navigation', () => {
     // Test mobile viewport
     await page.setViewportSize({ width: 375, height: 667 });
     await page.reload();
-    await page.waitForTimeout(2000);
+    await page.waitForLoadState('load');
+    await page.waitForTimeout(300); // Reduced wait
     
     // Check if layout adapts to mobile
     const sidebar = page.locator('.ant-layout-sider').first();
@@ -220,7 +224,7 @@ test.describe('Dashboard Navigation', () => {
       
       // Toggle mode
       await modeToggle.click();
-      await page.waitForTimeout(1000);
+      await page.waitForTimeout(300); // Reduced wait
       
       // Check if mode changed
       const newMode = await modeToggle.textContent();

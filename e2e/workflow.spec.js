@@ -10,9 +10,9 @@ test.describe('Content Generation Workflow', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
     await clearStorage(page);
-    // Wait for app to load
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(2000);
+    // Wait for app to load (optimized)
+    await page.waitForLoadState('load');
+    await page.waitForTimeout(300); // Reduced from 2000ms
   });
 
   test('should display workflow steps on homepage', async ({ page }) => {
@@ -50,8 +50,8 @@ test.describe('Content Generation Workflow', () => {
       if (await analyzeButton.isVisible({ timeout: 2000 }).catch(() => false)) {
         await analyzeButton.click();
         
-        // Wait for analysis to start (loading indicator or progress)
-        await page.waitForTimeout(2000);
+        // Wait for analysis to start - reduced timeout
+        await page.waitForTimeout(500);
         
         // Check for loading state or progress indicator
         const loadingIndicators = [
@@ -88,8 +88,8 @@ test.describe('Content Generation Workflow', () => {
       if (await analyzeButton.isVisible({ timeout: 2000 }).catch(() => false)) {
         await analyzeButton.click();
         
-        // Wait for potential results (with longer timeout if backend available)
-        await page.waitForTimeout(5000);
+        // Wait for potential results - reduced timeout
+        await page.waitForTimeout(2000);
         
         // Look for results indicators
         const resultIndicators = [
@@ -140,7 +140,7 @@ test.describe('Content Generation Workflow', () => {
       const nextButton = page.locator('button:has-text("Next"), button:has-text("Continue")').first();
       if (await nextButton.isVisible({ timeout: 2000 }).catch(() => false)) {
         await nextButton.click();
-        await page.waitForTimeout(1000);
+        await page.waitForTimeout(300); // Reduced wait
         
         // Verify step changed (check for step indicators or content change)
         expect(true).toBeTruthy();
@@ -168,13 +168,11 @@ test.describe('Content Generation Workflow', () => {
         
         // Try to interact with topic selector
         await element.click();
-        await page.waitForTimeout(500);
-        
-        // Look for topic options
+        // Playwright auto-waits for elements
         const options = page.locator('.ant-select-item, .ant-dropdown-menu-item').first();
         if (await options.isVisible({ timeout: 2000 }).catch(() => false)) {
           await options.click();
-          await page.waitForTimeout(500);
+          // No need for additional wait - Playwright handles it
         }
         
         break;

@@ -10,8 +10,9 @@ test.describe('Complete User Workflow', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
     await clearStorage(page);
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(2000);
+    // Optimized wait
+    await page.waitForLoadState('load');
+    await page.waitForTimeout(300); // Reduced from 2000ms
   });
 
   test('complete workflow: homepage → analysis → content generation → export', async ({ page }) => {
@@ -27,28 +28,28 @@ test.describe('Complete User Workflow', () => {
       const analyzeButton = page.locator('button:has-text("Analyze"), button:has-text("Start"), button[type="submit"]').first();
       if (await analyzeButton.isVisible({ timeout: 5000 }).catch(() => false)) {
         await analyzeButton.click();
-        await page.waitForTimeout(3000);
+        await page.waitForTimeout(1000); // Reduced from 3000ms
         
         // Step 3: Wait for analysis results (or proceed if backend unavailable)
         const results = page.locator('.ant-card, [data-testid="results"], text=/business|audience/i').first();
-        await results.isVisible({ timeout: 10000 }).catch(() => {});
+        await results.isVisible({ timeout: 5000 }).catch(() => {}); // Reduced timeout
         
         // Step 4: Navigate through workflow steps
         const nextButton = page.locator('button:has-text("Next"), button:has-text("Continue")').first();
         if (await nextButton.isVisible({ timeout: 5000 }).catch(() => false)) {
           await nextButton.click();
-          await page.waitForTimeout(2000);
+          await page.waitForTimeout(500); // Reduced from 2000ms
         }
         
         // Step 5: Select topic (if available)
         const topicSelector = page.locator('.ant-select, [data-testid="topic"]').first();
         if (await topicSelector.isVisible({ timeout: 5000 }).catch(() => false)) {
           await topicSelector.click();
-          await page.waitForTimeout(500);
+          // Playwright auto-waits for dropdown
           const firstOption = page.locator('.ant-select-item').first();
           if (await firstOption.isVisible({ timeout: 2000 }).catch(() => false)) {
             await firstOption.click();
-            await page.waitForTimeout(1000);
+            // No additional wait needed
           }
         }
         
@@ -56,7 +57,7 @@ test.describe('Complete User Workflow', () => {
         const generateButton = page.locator('button:has-text("Generate"), button:has-text("Create Content")').first();
         if (await generateButton.isVisible({ timeout: 5000 }).catch(() => false)) {
           await generateButton.click();
-          await page.waitForTimeout(5000); // Wait for generation
+          await page.waitForTimeout(2000); // Reduced from 5000ms
         }
         
         // Step 7: Verify content editor appears
@@ -90,9 +91,9 @@ test.describe('Complete User Workflow', () => {
         await signUpButton.click();
         await page.waitForTimeout(1500);
         
-        // Check if modal opened
+        // Check if modal opened (reduced timeout)
         const modal = page.locator('.ant-modal').first();
-        const modalVisible = await modal.isVisible({ timeout: 3000 }).catch(() => false);
+        const modalVisible = await modal.isVisible({ timeout: 2000 }).catch(() => false);
         
         if (modalVisible) {
           // Test validates modal opens - actual signup requires backend
@@ -111,9 +112,9 @@ test.describe('Complete User Workflow', () => {
       // Test validates create button exists
       expect(createVisible).toBeTruthy();
     } else {
-      // If no create button, check for workflow start
+      // If no create button, check for workflow start (reduced timeout)
       const workflowStart = page.locator('input[placeholder*="website" i], input[placeholder*="url" i]').first();
-      const workflowVisible = await workflowStart.isVisible({ timeout: 3000 }).catch(() => false);
+      const workflowVisible = await workflowStart.isVisible({ timeout: 2000 }).catch(() => false);
       
       // Test validates workflow UI exists
       expect(workflowVisible || true).toBeTruthy();
@@ -133,7 +134,7 @@ test.describe('Complete User Workflow', () => {
       const tabElement = page.locator(tab.selector).first();
       if (await tabElement.isVisible({ timeout: 5000 }).catch(() => false)) {
         await tabElement.click();
-        await page.waitForTimeout(1000);
+        await page.waitForTimeout(300); // Reduced wait
         
         // Verify tab content loads
         expect(true).toBeTruthy();
@@ -147,7 +148,7 @@ test.describe('Complete User Workflow', () => {
     
     if (await createButton.isVisible({ timeout: 5000 }).catch(() => false)) {
       await createButton.click();
-      await page.waitForTimeout(1000);
+      // Form appears quickly
       
       // Edit title
       const titleInput = page.locator('input[placeholder*="title" i]').first();
@@ -165,13 +166,11 @@ test.describe('Complete User Workflow', () => {
       const previewButton = page.locator('button:has-text("Preview")').first();
       if (await previewButton.isVisible({ timeout: 3000 }).catch(() => false)) {
         await previewButton.click();
-        await page.waitForTimeout(1000);
-        
-        // Close preview if modal
+        // Close preview if modal - Playwright auto-waits
         const closeButton = page.locator('button[aria-label="Close"], .ant-modal-close').first();
         if (await closeButton.isVisible({ timeout: 2000 }).catch(() => false)) {
           await closeButton.click();
-          await page.waitForTimeout(500);
+          // No additional wait needed
         }
       }
       
@@ -179,7 +178,8 @@ test.describe('Complete User Workflow', () => {
       const exportButton = page.locator('button:has-text("Export")').first();
       if (await exportButton.isVisible({ timeout: 3000 }).catch(() => false)) {
         await exportButton.click();
-        await page.waitForTimeout(1000);
+        // Modal appears quickly
+        await page.waitForTimeout(300);
         
         // Verify export modal/options appear
         expect(true).toBeTruthy();

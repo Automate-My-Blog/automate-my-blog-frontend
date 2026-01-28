@@ -12,14 +12,15 @@ test.describe('Authentication Flow', () => {
     await context.clearCookies();
     await page.goto('/');
     await clearStorage(page);
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(2000);
+    // Use 'load' instead of 'networkidle' for faster execution
+    await page.waitForLoadState('load');
+    await page.waitForTimeout(500); // Reduced from 2000ms
   });
 
   test('should display login form when clicking login', async ({ page }) => {
-    // Wait for page to load
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(2000);
+    // Wait for page to load (optimized)
+    await page.waitForLoadState('load');
+    await page.waitForTimeout(300); // Reduced wait
     
     // Look for login button - it says "Log In" in the UI
     const loginButton = page.locator('button:has-text("Log In"), button:has-text("Sign In"), text=/log in/i').first();
@@ -28,11 +29,9 @@ test.describe('Authentication Flow', () => {
     
     if (buttonVisible) {
       await loginButton.click();
-      await page.waitForTimeout(1000);
-      
-      // Wait for Ant Design modal to appear
+      // Wait for modal with shorter timeout - Playwright auto-waits
       const modal = page.locator('.ant-modal').first();
-      await expect(modal).toBeVisible({ timeout: 10000 });
+      await expect(modal).toBeVisible({ timeout: 5000 });
       
       // Check for email input - Ant Design uses Form.Item with name="email"
       const emailInput = page.locator('input[name="email"], input[type="email"], input[placeholder*="email" i]').first();
@@ -54,9 +53,9 @@ test.describe('Authentication Flow', () => {
   });
 
   test('should show validation errors for invalid login credentials', async ({ page }) => {
-    // Wait for page to load
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(2000);
+    // Wait for page to load (optimized)
+    await page.waitForLoadState('load');
+    await page.waitForTimeout(300);
     
     // Open login modal/form
     const loginButton = page.locator('button:has-text("Log In"), button:has-text("Sign In"), text=/log in/i').first();
@@ -64,19 +63,17 @@ test.describe('Authentication Flow', () => {
     
     if (buttonVisible) {
       await loginButton.click();
-      await page.waitForTimeout(1500);
-      
-      // Wait for modal
+      // Modal appears quickly - Playwright auto-waits for visibility
       const modal = page.locator('.ant-modal').first();
-      await expect(modal).toBeVisible({ timeout: 10000 });
+      await expect(modal).toBeVisible({ timeout: 5000 });
       
       // Try to submit empty form
       const submitButton = page.locator('button:has-text("Sign In"), button.ant-btn-primary, button[type="submit"]').first();
-      const submitVisible = await submitButton.isVisible({ timeout: 5000 }).catch(() => false);
+      const submitVisible = await submitButton.isVisible({ timeout: 3000 }).catch(() => false);
       
       if (submitVisible) {
         await submitButton.click();
-        await page.waitForTimeout(2000);
+        await page.waitForTimeout(500); // Reduced from 2000ms
         
         // Check for validation messages (Ant Design form validation)
         const errorMessages = page.locator('.ant-form-item-explain-error, .ant-form-item-has-error');
@@ -91,38 +88,36 @@ test.describe('Authentication Flow', () => {
   });
 
   test('should attempt login with invalid credentials and show error', async ({ page }) => {
-    // Wait for page to load
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(2000);
+    // Wait for page to load (optimized)
+    await page.waitForLoadState('load');
+    await page.waitForTimeout(300);
     
     // Open login modal/form
     const loginButton = page.locator('button:has-text("Log In"), button:has-text("Sign In"), text=/log in/i').first();
-    const buttonVisible = await loginButton.isVisible({ timeout: 10000 }).catch(() => false);
+    const buttonVisible = await loginButton.isVisible({ timeout: 5000 }).catch(() => false);
     
     if (buttonVisible) {
       await loginButton.click();
-      await page.waitForTimeout(1500);
-      
-      // Wait for modal to be visible
+      // Modal appears quickly
       const modal = page.locator('.ant-modal').first();
-      await expect(modal).toBeVisible({ timeout: 10000 });
+      await expect(modal).toBeVisible({ timeout: 5000 });
       
       // Fill with invalid credentials - use Ant Design form field selectors
       const emailInput = page.locator('input[name="email"], input[type="email"]').first();
-      await expect(emailInput).toBeVisible({ timeout: 10000 });
+      await expect(emailInput).toBeVisible({ timeout: 5000 });
       await emailInput.fill('invalid@test.com');
       
       const passwordInput = page.locator('input[type="password"], input[name="password"]').first();
-      await expect(passwordInput).toBeVisible({ timeout: 5000 });
+      await expect(passwordInput).toBeVisible({ timeout: 3000 });
       await passwordInput.fill('wrongpassword');
       
       // Submit - Ant Design button with text "Sign In"
       const submitButton = page.locator('button:has-text("Sign In"), button.ant-btn-primary:has-text("Sign"), button[type="submit"]').first();
-      await expect(submitButton).toBeVisible({ timeout: 5000 });
+      await expect(submitButton).toBeVisible({ timeout: 3000 });
       await submitButton.click();
       
-      // Wait for API call and check for error message
-      await page.waitForTimeout(3000);
+      // Wait for API call - reduced timeout
+      await page.waitForTimeout(1000);
       
       // Check for error message (Ant Design Alert or message)
       const errorMessage = page.locator('.ant-alert-error, .ant-message-error, .ant-form-item-explain-error, [role="alert"]').first();
@@ -138,9 +133,9 @@ test.describe('Authentication Flow', () => {
   });
 
   test('should show registration form when clicking sign up', async ({ page }) => {
-    // Wait for page to load
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(2000);
+    // Wait for page to load (optimized)
+    await page.waitForLoadState('load');
+    await page.waitForTimeout(300);
     
     // Look for sign up button - it says "Sign Up Free" in the UI
     const signUpButton = page.locator('button:has-text("Sign Up"), button:has-text("Sign Up Free"), button:has-text("Create Account"), text=/sign up/i').first();
@@ -149,15 +144,13 @@ test.describe('Authentication Flow', () => {
     
     if (buttonVisible) {
       await signUpButton.click();
-      await page.waitForTimeout(1500);
-      
-      // Wait for modal
+      // Modal appears quickly
       const modal = page.locator('.ant-modal').first();
-      await expect(modal).toBeVisible({ timeout: 10000 });
+      await expect(modal).toBeVisible({ timeout: 5000 });
       
       // Check for registration form fields - might be in "Create Account" tab
       const emailInput = page.locator('input[name="email"], input[type="email"]').first();
-      await expect(emailInput).toBeVisible({ timeout: 10000 });
+      await expect(emailInput).toBeVisible({ timeout: 5000 });
     } else {
       // Skip if no sign up button
       test.skip();
@@ -186,8 +179,8 @@ test.describe('Authentication Flow', () => {
       const submitButton = page.locator('button:has-text("Login"), button:has-text("Sign In"), button[type="submit"]').first();
       await submitButton.click();
       
-      // Wait for navigation
-      await page.waitForTimeout(3000);
+      // Wait for navigation - reduced timeout
+      await page.waitForTimeout(1000);
       
       // Check if we're on dashboard (look for dashboard indicators)
       const dashboardIndicators = [
@@ -222,9 +215,9 @@ test.describe('Authentication Flow', () => {
     const isLoggedIn = await userMenu.isVisible({ timeout: 2000 }).catch(() => false);
     
     if (isLoggedIn) {
-      // Refresh page
+      // Refresh page (optimized)
       await page.reload();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('load');
       
       // Check if still logged in
       const userMenuAfterRefresh = page.locator('[data-testid="user-menu"], .ant-avatar').first();
@@ -245,7 +238,7 @@ test.describe('Authentication Flow', () => {
       const logoutButton = page.locator('text=/logout|sign out/i').first();
       if (await logoutButton.isVisible({ timeout: 2000 }).catch(() => false)) {
         await logoutButton.click();
-        await page.waitForTimeout(2000);
+        await page.waitForTimeout(500); // Reduced from 2000ms
         
         // After logout, should see login button again
         const loginButton = page.locator('text=/login|sign in/i').first();
