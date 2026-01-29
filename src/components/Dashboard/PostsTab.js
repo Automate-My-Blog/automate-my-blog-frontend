@@ -30,6 +30,7 @@ import TypographySettings from '../TypographySettings/TypographySettings';
 import FormattingToolbar from '../FormattingToolbar/FormattingToolbar';
 import ExportModal from '../ExportModal/ExportModal';
 import HighlightedContentSuggestions from '../HighlightedContent/HighlightedContentSuggestions';
+import { EmptyState } from '../EmptyStates';
 
 // New Enhanced Components
 import EditorLayout, { EditorPane, PreviewPane } from '../Editor/Layout/EditorLayout';
