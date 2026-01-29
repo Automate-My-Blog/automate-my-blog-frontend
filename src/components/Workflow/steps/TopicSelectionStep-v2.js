@@ -10,6 +10,7 @@ import {
 import { ComponentHelpers } from '../interfaces/WorkflowComponentInterface';
 import ManualCTAInputModal from '../../Modals/ManualCTAInputModal';
 import api from '../../../services/api';
+import { systemVoice } from '../../../copy/systemVoice';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -284,9 +285,9 @@ const TopicSelectionStepV2 = (props) => {
         color: '#666',
         fontSize: responsive.fontSize.text
       }}>
-        {selectedCustomerStrategy ? 
-          `Creating targeted blog post ideas for customers struggling with: "${selectedCustomerStrategy.customerProblem}"` :
-          `Based on your ${analysis.businessType ? analysis.businessType.toLowerCase() : 'business'} analysis, here are high-impact blog post ideas:`
+        {selectedCustomerStrategy ?
+          `Topic ideas for people who care about: "${selectedCustomerStrategy.customerProblem}"` :
+          systemVoice.topics.ideasHeadline(analysis?.businessType)
         }
       </Paragraph>
       
@@ -909,7 +910,7 @@ const TopicSelectionStepV2 = (props) => {
               color: '#666',
               fontSize: responsive.fontSize.text
             }}>
-              Based on your {analysis.businessType ? analysis.businessType.toLowerCase() : 'business'} analysis, here are high-impact blog post ideas:
+              {systemVoice.topics.ideasHeadline(analysis?.businessType)}
             </Paragraph>
             
             {/* Research Quality Indicators */}
