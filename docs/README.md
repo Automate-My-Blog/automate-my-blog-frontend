@@ -105,6 +105,7 @@ Each client maintains complete control over their content identity:
 - [Frontend UX & Analytics Plan](frontend-ux-analytics-plan.md) - Implementation plan (analytics, job progress, recommendations)
 - [UX Architecture Implementation Plan](UX_ARCHITECTURE_IMPLEMENTATION_PLAN.md) - Workflow vs focus mode, progressive headers
 - [GitHub Issues from Usability Proposal](GITHUB_ISSUES_FROM_USABILITY_PROPOSAL.md) - UX issues and implementation status
+- [Analytics Instrumentation Status](ANALYTICS_INSTRUMENTATION_STATUS.md) - What’s instrumented vs remaining (project_created, seo_strategy_selected)
 
 ### Testing & Roadmap
 - [Phase 1A Test Report](PHASE_1A_COMPREHENSIVE_TEST_REPORT.md) - Comprehensive test results
@@ -142,7 +143,7 @@ Each client maintains complete control over their content identity:
 ### Remaining Priorities (from audit)
 
 1. Job progress tracking (polling/streaming for analysis and content generation).
-2. Analytics instrumentation (core events: signup, login, content generation, publishing).
+2. Analytics instrumentation — **largely done**; most core events are in place. Remaining: `project_created`/`source_connected` (when Save Project calls API), `seo_strategy_selected` in AudienceSegmentsTab. See [ANALYTICS_INSTRUMENTATION_STATUS.md](ANALYTICS_INSTRUMENTATION_STATUS.md).
 3. Recommendation board (Now/Next/Later; suggested next steps).
 4. React Router (or equivalent) for URL state and shareable links.
 5. Security improvements (e.g. httpOnly cookies, consent UI).
@@ -150,7 +151,7 @@ Each client maintains complete control over their content identity:
 ### Next Steps
 
 1. Implement job progress tracking (backend job queue + frontend polling).
-2. Add analytics instrumentation for key user actions.
+2. Finish analytics: wire `project_created`/`source_connected` when Save Project calls API; add `seo_strategy_selected` in AudienceSegmentsTab (see [ANALYTICS_INSTRUMENTATION_STATUS.md](ANALYTICS_INSTRUMENTATION_STATUS.md)).
 3. Build recommendation board and “suggest next steps” surfaces.
 4. Extract AI services from me-search-back-end; build multi-tenant infrastructure.
 5. Launch with Lumibears + me-search validation; scale to external customers.

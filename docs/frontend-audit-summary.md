@@ -30,7 +30,7 @@ The following work addresses audit findings and the usability proposal (PR #47 /
 | **Motion & transitions** | ✅ Done | Design tokens in `design-system.css` (`--transition-step`, `--transition-reveal`, `--stagger-delay`); staggered topic card reveal; step enter animations. |
 | **Tab structure & terminology** | ✅ Done | Dashboard → Audience Segments → Posts → Analytics → Settings; automation settings in Settings → Content Discovery; “Create New Post” standardized. |
 | **Job progress tracking** | ❌ Not done | Still outstanding; depends on backend job queue. |
-| **Analytics instrumentation** | ❌ Not done | Still outstanding per plan. |
+| **Analytics instrumentation** | 🔶 Largely done | Most core events are instrumented (auth, tab/page, payments, analysis, content, export). Remaining: `project_created`/`source_connected` (when Save Project calls API), `seo_strategy_selected` in AudienceSegmentsTab. See [ANALYTICS_INSTRUMENTATION_STATUS.md](ANALYTICS_INSTRUMENTATION_STATUS.md). |
 | **Recommendation board** | ❌ Not done | Still outstanding. |
 | **URL state / React Router** | ❌ Not done | Still outstanding. |
 
