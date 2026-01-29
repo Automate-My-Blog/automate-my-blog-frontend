@@ -1,114 +1,134 @@
 # Observability Plan
 
-**Goal:** Increase visibility into runtime behavior, errors, performance, and usage so you can debug and improve the application reliably.
+We want to see what’s happening in the app at runtime—errors, performance, and how people use it—so we can fix issues and improve things without guessing.
+
+This doc summarizes where we are today and what to add next.
 
 ---
 
-## Current State
+## Where We Are Today
 
-| Area | What Exists | Gaps |
-|------|-------------|------|
-| **Analytics** | `AnalyticsContext` with batched events, `useAnalytics()` in ~8 components, backend `POST /api/v1/analytics/track` and `/track-batch` | Many flows not instrumented; no third-party (PostHog, GA) for session replay or funnels |
-| **Errors** | `console.error` in ~43 files (545 calls) | No React Error Boundary; no centralized error reporting (e.g. Sentry); errors not sent to backend |
-| **Performance** | `web-vitals` installed; `reportWebVitals()` called in `index.js` | **Not wired**—called with no callback, so CLS/LCP/FCP/INP/TTFB are never sent anywhere |
-| **Logging** | Ad-hoc `console.log/warn/error` | No levels, no structure, no forwarding to backend or log aggregation |
-| **API layer** | `makeRequest()` in `api.js` | No request timing, no status/metrics, no correlation IDs |
+**Analytics.** We have `AnalyticsContext`, the `useAnalytics()` hook in several components, and backend endpoints for tracking (`/api/v1/analytics/track` and `/track-batch`). A lot of user flows still aren’t instrumented, and we don’t have a third-party tool (e.g. PostHog or GA) for session replay or funnels.
 
----
+**Errors.** We use `console.error` in many places (dozens of files). There’s no React Error Boundary, so a single render error can white-screen the app. We don’t send errors to the backend or to a service like Sentry.
 
-## Recommended Improvements
+**Performance.** The `web-vitals` package is installed and `reportWebVitals()` is called in `index.js`, but we never pass it a callback. So we never actually record or send Core Web Vitals (e.g. LCP, FCP, CLS).
 
-### 1. **Error observability (high impact)**
+**Logging.** Logging is ad-hoc `console.log` / `console.warn` / `console.error`. There are no log levels, no consistent structure, and nothing is forwarded to the backend or a log system.
 
-- **Add a React Error Boundary** so uncaught render errors don’t white-screen; optionally report to backend or Sentry.
-- **Centralize error reporting**: one place (e.g. `reportError(error, context)`) that can:
-  - `console.error` in dev
-  - Send to backend (e.g. `POST /api/v1/analytics/error` or `/api/v1/events/error`) or Sentry in prod
-- **Optionally add Sentry** (or similar) for stack traces, release tracking, and alerts.
-
-**Where:** Wrap the app in `App.js` with an Error Boundary; add a small `utils/errorReporting.js` and call it from boundary + critical catch blocks.
+**API layer.** `makeRequest()` in `api.js` does the HTTP work but doesn’t record how long requests take or their status. We can’t easily see which endpoints are slow or failing.
 
 ---
 
-### 2. **Wire Web Vitals to your backend**
+## What to Improve
 
-`reportWebVitals` is invoked with no callback, so Core Web Vitals are never recorded.
+### 1. Error observability (high impact)
 
-- In `src/index.js`, pass a callback that sends metrics to your analytics backend, e.g.:
+**Why:** Crashes and errors are hard to see and debug if they only hit the console.
 
-  ```js
-  reportWebVitals((metric) => {
-    // Option A: send to existing analytics
-    if (window.__analyticsTrack) {
-      window.__analyticsTrack('web_vital', { name: metric.name, value: metric.value, id: metric.id });
-    }
-    // Option B: call api.trackEvent or a dedicated endpoint
-  });
-  ```
+**What to do:**
 
-- Ensure your backend accepts a `web_vital` (or similar) event and stores name/value/id (and optionally rating) for dashboards and SLOs.
+- Add a **React Error Boundary** so an uncaught error in the tree shows a fallback UI instead of a blank screen, and we can report it.
+- Introduce a single **error reporting function** (e.g. `reportError(error, context)`) that:
+  - In development: logs to the console.
+  - In production: can send to the backend (e.g. `POST /api/v1/analytics/error`) or to Sentry (or similar).
+- Optionally integrate **Sentry** (or similar) for stack traces, releases, and alerts.
+
+**Where:** An Error Boundary wrapping the app in `App.js` or `index.js`, plus a small `utils/errorReporting.js` used by the boundary and by important `catch` blocks.
 
 ---
 
-### 3. **API request observability**
+### 2. Wire Web Vitals to the backend
 
-In `api.js` `makeRequest()`:
+**Why:** Right now we never record Core Web Vitals, so we don’t know how the app feels in terms of load and interaction.
 
-- **Timing:** Record `start = performance.now()`, then `durationMs = performance.now() - start` after the request.
-- **Structured payload:** Send to analytics or a dedicated endpoint: `{ endpoint, method, status, durationMs, errorMessage? }` (no PII).
-- **Optional:** If backend returns a `X-Request-Id` (or similar), log or attach it to errors so frontend and backend logs can be correlated.
+**What to do:**
 
-This gives you latency and error rates per endpoint without changing every call site.
+- In `src/index.js`, pass a callback to `reportWebVitals()` that sends each metric (name, value, id) to our analytics backend—e.g. as a `web_vital` event via our existing `trackEvent` or a dedicated endpoint.
+- On the backend, store these so we can build dashboards or SLOs (e.g. “LCP under 2.5s”).
 
----
+**Example idea:**
 
-### 4. **Structured logging (optional but useful)**
-
-- Add a small `utils/logger.js` with levels (e.g. `debug`, `info`, `warn`, `error`) that:
-  - In development: forward to `console` with a consistent format.
-  - In production: send `warn`/`error` (and optionally `info`) to your backend or log aggregation, with context (e.g. userId, sessionId, page).
-- Gradually replace critical `console.*` calls with this logger so logs are queryable and correlatable.
+```js
+reportWebVitals((metric) => {
+  // Send to existing analytics (e.g. trackEvent('web_vital', { name, value, id }))
+});
+```
 
 ---
 
-### 5. **Expand analytics instrumentation**
+### 3. API request observability
 
-Your `docs/frontend-ux-analytics-plan.md` already defines events and instrumentation points. Prioritize:
+**Why:** We can’t easily see which endpoints are slow or failing.
 
-- **Navigation:** Ensure every tab/section change sends a `page_view` (you have `tab_switched` / `trackPageView` in `DashboardLayout`—align naming with backend).
-- **Auth:** `signup_started` / `signup_completed` / `login_completed` (partially done; complete and ensure they’re sent).
-- **Content lifecycle:** `content_generation_completed`, `post_created`, `post_edited`, `export_completed`, `publish_success` / `publish_failed` (many already in PostsTab/ExportModal; fill gaps).
-- **Failures:** Track `content_generation_failed`, `export_failed`, and API errors (e.g. via `reportError` or API layer) so you can measure failure rates and debug.
+**What to do:**
 
-Using `useAnalytics()` (or the same event shape) everywhere keeps one consistent pipeline (your backend + optional third-party).
+- Inside `makeRequest()` in `api.js`:
+  - Record start time with `performance.now()`, then compute duration after the request.
+  - Send a simple event or metric (e.g. `api_request` or a dedicated metrics endpoint) with: endpoint, HTTP status, duration in ms. No PII.
+- If the backend sends a `X-Request-Id` (or similar) header, we can log or attach it when reporting errors so frontend and backend logs line up.
 
----
-
-### 6. **Optional: third-party tools**
-
-- **PostHog:** Session replay, feature flags, and event funnels; can sit alongside your existing analytics.
-- **Sentry (or similar):** Dedicated error tracking, release mapping, and alerts.
-- **LogRocket / FullStory:** Session replay focused on support/debugging.
-
-Choose one or two to avoid duplication; prefer tools that accept the same event shape or a single “track” abstraction so you can switch providers later.
+One change in `makeRequest` gives us latency and error rates per endpoint without touching every call site.
 
 ---
 
-## Implementation order
+### 4. Expand analytics instrumentation
 
-1. **Error Boundary + centralized error reporting** — prevents invisible crashes and gives a single place to attach Sentry/backend later.
-2. **Web Vitals callback** — low effort, immediate visibility into LCP, FCP, CLS, INP, TTFB.
-3. **API timing + optional error/latency events** — one change in `makeRequest`, big gain in API observability.
-4. **Expand analytics** — follow `frontend-ux-analytics-plan.md` for key user and failure events.
-5. **Structured logger** — incremental replacement of `console.*` where it matters most.
-6. **Third-party (PostHog/Sentry)** — once the above is in place, add if you need replay or advanced error workflows.
+**Why:** We already have a plan; we just need to use it consistently.
+
+**What to do:**
+
+- Follow **`docs/frontend-ux-analytics-plan.md`** for event definitions and where to instrument.
+- Prioritize:
+  - **Navigation** — every tab/section change sends a `page_view` (we already have tab tracking in `DashboardLayout`; align names with the backend).
+  - **Auth** — `signup_started`, `signup_completed`, `login_completed` (partially done; finish and verify they fire).
+  - **Content lifecycle** — e.g. `content_generation_completed`, `post_created`, `post_edited`, `export_completed`, `publish_success` / `publish_failed` (many are already in PostsTab/ExportModal; fill gaps).
+  - **Failures** — track `content_generation_failed`, `export_failed`, and API errors (via `reportError` or the API layer) so we can measure failure rates.
+
+Use `useAnalytics()` (or the same event shape) everywhere so we keep one consistent pipeline for our backend and any third-party tool.
 
 ---
 
-## Quick wins you can do now
+### 5. Structured logging (optional)
 
-- **Error Boundary:** Add a small class component that catches render errors and renders a fallback UI + calls `reportError`; wrap `<App />` in `index.js` or inside the top-level provider in `App.js`.
-- **Web Vitals:** In `index.js`, pass a function to `reportWebVitals()` that calls your existing `trackEvent` (e.g. via a ref or a global set by AnalyticsProvider) with `eventType: 'web_vital'` and `eventData: { name, value, id }`.
-- **API:** In `makeRequest`, add timing and one `trackEvent('api_request', { endpoint, status, durationMs })` (or send to a dedicated metrics endpoint) so you can see which endpoints are slow or failing.
+**Why:** Right now logs are scattered and not queryable.
 
-If you tell me which of these you want to implement first (errors, Web Vitals, or API metrics), I can outline the exact code changes file-by-file.
+**What to do:**
+
+- Add a small **logger** (e.g. `utils/logger.js`) with levels like `debug`, `info`, `warn`, `error`:
+  - In development: output to the console in a consistent format.
+  - In production: send `warn` and `error` (and optionally `info`) to the backend or a log system, with context (e.g. userId, sessionId, page).
+- Gradually replace important `console.*` calls with this logger so we can search and correlate logs.
+
+---
+
+### 6. Optional third-party tools
+
+**Why:** They can add session replay, funnels, or dedicated error tracking without us building everything ourselves.
+
+**Options:**
+
+- **PostHog** — session replay, feature flags, event funnels; works alongside our existing analytics.
+- **Sentry** (or similar) — error tracking, release mapping, alerts.
+- **LogRocket / FullStory** — session replay for support and debugging.
+
+Pick one or two so we don’t duplicate. Prefer tools that work with a single “track” or “report” abstraction so we can switch later if needed.
+
+---
+
+## Suggested order of work
+
+1. **Error Boundary + centralized error reporting** — stops invisible crashes and gives one place to plug in Sentry or the backend later.
+2. **Web Vitals callback** — small change, immediate visibility into load and interaction metrics.
+3. **API timing (and optional metrics)** — one change in `makeRequest` for latency and error rates per endpoint.
+4. **Expand analytics** — implement the key events from `frontend-ux-analytics-plan.md`.
+5. **Structured logger** — introduce it and migrate critical `console.*` calls over time.
+6. **Third-party (PostHog/Sentry)** — add when we want replay or advanced error workflows.
+
+---
+
+## Quick wins you can do right away
+
+- **Error Boundary** — A small class component that catches render errors, shows a fallback UI, and calls `reportError`. Wrap the app in `App.js` or `index.js`.
+- **Web Vitals** — In `index.js`, pass a function to `reportWebVitals()` that calls our existing `trackEvent` with something like `eventType: 'web_vital'` and `eventData: { name, value, id }`.
+- **API** — In `makeRequest`, add timing and one `trackEvent('api_request', { endpoint, status, durationMs })` (or a dedicated metrics endpoint) so we can see slow or failing endpoints.
