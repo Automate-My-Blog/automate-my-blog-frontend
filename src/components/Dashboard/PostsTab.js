@@ -1288,10 +1288,10 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                             loading={true}
                             icon={<BulbOutlined />}
                           >
-                            Generating Topics...
+                            {systemVoice.topics.generatingTopics}
                           </Button>
                           <div style={{ marginTop: '12px', color: '#666', fontSize: '14px' }}>
-                            Creating personalized content ideas based on your audience strategy
+                            {systemVoice.topics.generatingTopicsWithTime}
                           </div>
                         </div>
                       ) : (
@@ -1467,7 +1467,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                                       marginBottom: '12px'
                                     }}
                                   >
-                                    {isGenerating ? 'Generating Content...' : 
+                                    {isGenerating ? systemVoice.content.generating : 
                                      user ? 'Create Post' : 'Get One Free Post'}
                                   </Button>
                                   
@@ -2375,10 +2375,10 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                           loading={true}
                           icon={<BulbOutlined />}
                         >
-                          Generating Topics...
+                          {systemVoice.topics.generatingTopics}
                         </Button>
                         <div style={{ marginTop: '12px', color: '#666', fontSize: '14px' }}>
-                          Creating personalized content ideas based on your audience strategy
+                          {systemVoice.topics.generatingTopicsWithTime}
                         </div>
                       </div>
                     ) : (
@@ -2563,7 +2563,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                                     marginBottom: '12px'
                                   }}
                                 >
-                                  {isGenerating ? 'Generating Content...' :
+                                  {isGenerating ? systemVoice.content.generating :
                                    user ?
                                      (remainingPosts > 0 ? 'Generate post' : 'Buy more posts') :
                                      'Register to claim free post'
