@@ -252,6 +252,26 @@ test.describe('E2E (mocked backend)', () => {
         await expect(anticipatory).toBeVisible({ timeout: 5000 });
       });
 
+      test('should show progress copy during analysis (Issue 3: no black-box waiting)', async ({ page }) => {
+        const createBtn = page.locator('button:has-text("Create New Post")').first();
+        if (!(await createBtn.isVisible({ timeout: 5000 }).catch(() => false))) {
+          test.skip();
+          return;
+        }
+        await createBtn.click();
+        await page.waitForTimeout(500);
+        const input = page.locator('input[placeholder*="website" i], input[placeholder*="url" i]').first();
+        if (!(await input.isVisible({ timeout: 5000 }).catch(() => false))) {
+          test.skip();
+          return;
+        }
+        await input.fill('https://example.com');
+        await page.locator('button:has-text("Analyze")').first().click();
+        const progressCopy = page.locator('text=/Reading your site|30–60 seconds|building your profile/').first();
+        await expect(progressCopy).toBeVisible({ timeout: 5000 });
+        await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 20000 }).catch(() => {});
+      });
+
       // "Why we suggested this" is implemented in PostsTab and TopicSelectionStep-v2 (data-testid="topic-why-suggested").
       // This test verifies the flow reaches topic load; topic cards with that copy may be replaced by the editor quickly in E2E.
       test('topic generation shows mock topics after audience selection', async ({ page }) => {
@@ -300,7 +320,7 @@ test.describe('E2E (mocked backend)', () => {
           return;
         }
         await genBtn.click();
-        await page.waitForSelector('button:has-text("Generating Topics")', { state: 'hidden', timeout: 15000 }).catch(() => {});
+        await page.waitForSelector('button:has-text("Generating Topics"), button:has-text("Generating…")', { state: 'hidden', timeout: 15000 }).catch(() => {});
         await page.waitForTimeout(2000);
         const topicTitle = page.locator(`text=${MOCK_TOPICS[0].title}`).first();
         await expect(topicTitle).toBeVisible({ timeout: 12000 });

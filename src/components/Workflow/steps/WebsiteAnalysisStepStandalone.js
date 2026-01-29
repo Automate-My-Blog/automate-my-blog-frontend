@@ -583,7 +583,7 @@ const WebsiteAnalysisStepStandalone = ({
         <div style={{ marginTop: '20px' }}>
           <Title level={4} style={{ color: defaultColors.primary, marginBottom: '8px' }}>
             <ScanOutlined style={{ marginRight: '8px' }} />
-            Analyzing {domain}
+            {systemVoice.analysis.loadingTitle}
           </Title>
           <Paragraph style={{ 
             color: '#666', 
@@ -592,6 +592,12 @@ const WebsiteAnalysisStepStandalone = ({
           }}>
             {currentScanningMessage || systemVoice.analysis.defaultProgress}
           </Paragraph>
+        </div>
+        {/* Skeleton hint so the result feels like a reveal (Issue 3) */}
+        <div style={{ marginTop: '24px', textAlign: 'left', maxWidth: '400px', margin: '24px auto 0' }}>
+          <div style={{ height: '14px', background: '#f0f0f0', borderRadius: '4px', marginBottom: '12px', width: '70%' }} />
+          <div style={{ height: '14px', background: '#f0f0f0', borderRadius: '4px', marginBottom: '12px', width: '90%' }} />
+          <div style={{ height: '14px', background: '#f0f0f0', borderRadius: '4px', width: '60%' }} />
         </div>
       </div>
     </Card>

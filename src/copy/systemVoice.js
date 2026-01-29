@@ -56,7 +56,7 @@ export const systemVoice = {
     edit: "Edit",
   },
 
-  // ─── Website analysis (WebsiteAnalysisStepStandalone) ───
+  // ─── Website analysis (WebsiteAnalysisStepStandalone) — Issue 3: no black-box waiting ───
   analysis: {
     title: "Analyze your site",
     inputPlaceholder: "Enter your website URL (e.g., https://example.com)",
@@ -69,6 +69,7 @@ export const systemVoice = {
       "Synthesizing…",
     ],
     defaultProgress: "Reading your site and building your profile. This usually takes 30–60 seconds.",
+    loadingTitle: "Reading your site…",
     // Toasts
     success: "We've got the full picture. Pick your audience next.",
     successLimited: "We've got a basic picture. You can continue or try a different URL.",
@@ -79,20 +80,29 @@ export const systemVoice = {
     saveFailed: "We couldn't save your changes. Try again in a moment.",
   },
 
-  // ─── Topic selection (TopicSelectionStep-v2, etc.) ───
+  // ─── Audience strategies (AudienceSegmentsTab) — Issue 3: progress copy ───
+  audience: {
+    generatingStrategies: "Building audience strategies…",
+    generatingStrategiesWithTime: "Using your site to create targeted customer strategies. This usually takes a few seconds.",
+  },
+
+  // ─── Topic selection (TopicSelectionStep-v2, etc.) — Issue 3: progress copy ───
   topics: {
-    // Headline: avoid "high-impact", use plain language
     ideasHeadline: (businessType) =>
       `Here's what we think will resonate with your audience right now${businessType ? ` (${businessType})` : ''}`,
     generateTopics: "Generate topic ideas",
-    generatingTopics: "Generating…",
+    generatingTopics: "Generating Topics…",
+    generatingTopicsWithTime: "Creating topic ideas… This usually takes a few seconds.",
   },
 
-  // ─── Content generation ───
+  // ─── Content generation — Issue 3: no black-box waiting ───
   content: {
     readyToGenerate: "Ready to create your post",
     generate: "Generate content",
     generating: "Writing your post…",
+    generatingWithTime: "Writing your post… This can take a minute.",
+    progressSteps: ["Structuring the post", "Matching your voice", "Polishing"],
+    progressLabel: "What we're doing:",
   },
 
   // ─── Toasts & messages (message.success / message.info / message.error) ───

@@ -7,6 +7,7 @@ import { useWorkflowMode } from '../../contexts/WorkflowModeContext';
 import UnifiedWorkflowHeader from './UnifiedWorkflowHeader';
 import { ComponentHelpers } from '../Workflow/interfaces/WorkflowComponentInterface';
 import autoBlogAPI from '../../services/api';
+import { systemVoice } from '../../copy/systemVoice';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -1143,10 +1144,10 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                     <div style={{ textAlign: 'center', padding: '40px' }}>
                       <div style={{ fontSize: '24px', marginBottom: '16px' }}>🎯</div>
                       <Title level={4} style={{ color: theme.colors.primary }}>
-                        Generating Audience Strategies...
+                        {systemVoice.audience.generatingStrategies}
                       </Title>
                       <Text style={{ color: theme.colors.textSecondary }}>
-                        Analyzing your website to create targeted customer strategies
+                        {systemVoice.audience.generatingStrategiesWithTime}
                       </Text>
                     </div>
                   ) : (

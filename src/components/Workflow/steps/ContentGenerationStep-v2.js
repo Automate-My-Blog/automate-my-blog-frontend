@@ -196,7 +196,7 @@ const ContentGenerationStepV2 = (props) => {
         color: defaultColors.primary,
         fontSize: responsive.fontSize.title
       }}>
-        Generating Your Blog Post
+        {systemVoice.content.generating}
       </Title>
       
       <Spin size="large" style={{ marginBottom: '20px' }} />
@@ -208,7 +208,7 @@ const ContentGenerationStepV2 = (props) => {
         maxWidth: '500px',
         margin: '0 auto 30px auto'
       }}>
-        Creating your personalized blog post with AI...
+        {systemVoice.content.generatingWithTime}
       </Paragraph>
       
       {/* Web Search Enhancement Indicator */}
@@ -228,7 +228,7 @@ const ContentGenerationStepV2 = (props) => {
         </div>
       )}
       
-      {/* Generation Process Indicators */}
+      {/* Generation process — plain language (Issue 3) */}
       <div style={{ 
         backgroundColor: '#f8f9fa', 
         padding: '16px', 
@@ -244,7 +244,7 @@ const ContentGenerationStepV2 = (props) => {
           display: 'block',
           marginBottom: '8px'
         }}>
-          <strong>AI is working on:</strong>
+          <strong>{systemVoice.content.progressLabel}</strong>
         </Text>
         <div style={{ 
           display: 'flex', 
@@ -254,13 +254,12 @@ const ContentGenerationStepV2 = (props) => {
           fontSize: responsive.fontSize.small,
           color: '#666'
         }}>
-          <span>📝 Structure</span>
-          <span>•</span>
-          <span>🎯 SEO optimization</span>
-          <span>•</span>
-          <span>🧠 Personalization</span>
-          <span>•</span>
-          <span>✨ Brand voice</span>
+          {systemVoice.content.progressSteps.map((step, i) => (
+            <React.Fragment key={i}>
+              {i > 0 && <span>→</span>}
+              <span>{step}</span>
+            </React.Fragment>
+          ))}
         </div>
       </div>
 
