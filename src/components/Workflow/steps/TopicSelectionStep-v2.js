@@ -404,7 +404,7 @@ const TopicSelectionStepV2 = (props) => {
    * Render individual topic card with full functionality
    * EXTRACTED FROM: App.js topic card rendering
    */
-  const renderTopicCard = (topic) => {
+  const renderTopicCard = (topic, topicIndex = 0) => {
     const isSelected = selectedTopic === topic.id;
     const isGenerating = isLoading && selectedTopic === topic.id;
 
@@ -417,7 +417,7 @@ const TopicSelectionStepV2 = (props) => {
     });
 
     return (
-      <Col key={topic.id} xs={24} md={12} lg={12}>
+      <Col key={topic.id} xs={24} md={12} lg={12} className="reveal-stagger" style={{ animationDelay: `${topicIndex * 60}ms`, opacity: 0 }}>
         <Card 
           hoverable
           cover={
@@ -996,7 +996,7 @@ const TopicSelectionStepV2 = (props) => {
             ) : (
               <div>
                 <Row gutter={responsive.gutter}>
-                  {enhancedTopics.slice(0, 2).map(renderTopicCard)}
+                  {enhancedTopics.slice(0, 2).map((topic, index) => renderTopicCard(topic, index))}
                 </Row>
                 
                 {/* Lead Generation CTA */}

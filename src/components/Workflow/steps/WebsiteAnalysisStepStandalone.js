@@ -85,6 +85,9 @@ const WebsiteAnalysisStepStandalone = ({
   const [organizationCTAs, setOrganizationCTAs] = useState([]);
   const [ctasLoading, setCtasLoading] = useState(false);
 
+  // Issue 4: success highlight when analysis result first appears
+  const [showSuccessHighlight, setShowSuccessHighlight] = useState(false);
+
   // Use local state if parent doesn't provide state management
   const loading = isLoading !== undefined ? isLoading : localLoading;
   const currentScanningMessage = scanningMessage !== undefined ? scanningMessage : localScanningMessage;
@@ -102,6 +105,15 @@ const WebsiteAnalysisStepStandalone = ({
       handleWebsiteSubmit();
     }
   }, [autoAnalyze, websiteUrl, analysisCompleted, loading]);
+
+  // Issue 4: trigger success highlight when analysis result appears
+  useEffect(() => {
+    if (!loading && analysisResults) {
+      setShowSuccessHighlight(true);
+      const t = setTimeout(() => setShowSuccessHighlight(false), 600);
+      return () => clearTimeout(t);
+    }
+  }, [loading, analysisResults]);
   
   // Load cached analysis for logged-in users when component mounts
   useEffect(() => {
@@ -618,6 +630,7 @@ const WebsiteAnalysisStepStandalone = ({
 
     return (
       <Card 
+        className={showSuccessHighlight ? 'success-highlight' : ''}
         style={{ 
           border: `2px solid ${defaultColors.primary}`,
           borderRadius: '12px',
