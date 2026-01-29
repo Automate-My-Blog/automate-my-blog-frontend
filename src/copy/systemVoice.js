@@ -3,7 +3,7 @@
  * For users who are not marketers: builders, small businesses, solopreneurs.
  * Plain language, no buzzwords or acronyms. Helpful, confident, a bit warm.
  *
- * See: docs/USABILITY_PROPOSAL_SENTIENT_MAGIC.md (PR #47), Issue: One consistent voice
+ * See: docs/GITHUB_ISSUES_FROM_USABILITY_PROPOSAL.md (usability proposal, PR #47).
  */
 
 export const systemVoice = {

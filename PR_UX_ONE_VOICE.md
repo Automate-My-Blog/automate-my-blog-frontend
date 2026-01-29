@@ -1,6 +1,6 @@
 ## Summary
 
-Implements **one consistent voice across the app so it feels like one helpful person** from the usability proposal (see `docs/USABILITY_PROPOSAL_SENTIENT_MAGIC.md` / PR #47).
+Implements **one consistent voice across the app so it feels like one helpful person** from the usability proposal (PR #47; see `docs/GITHUB_ISSUES_FROM_USABILITY_PROPOSAL.md`).
 
 Target audience: people who are **not** marketers—builders, small businesses, solopreneurs. All copy uses plain language: no industry buzzwords or acronyms.
 
