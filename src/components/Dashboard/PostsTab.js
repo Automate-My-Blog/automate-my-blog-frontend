@@ -1349,7 +1349,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                           const isGenerating = generatingContent && selectedTopic?.id === topic.id;
                           
                           return (
-                            <Col key={topic.id} xs={24} md={12} lg={12} className="reveal-stagger" style={{ animationDelay: `${index * 60}ms`, opacity: 0 }}>
+                            <Col key={topic.id} xs={24} md={12} lg={12} className="reveal-stagger" style={{ animationDelay: `${index * 60}ms` }}>
                               <Card 
                                 hoverable={!isGenerating}
                                 cover={
@@ -2436,7 +2436,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                         const isGenerating = generatingContent && selectedTopic?.id === topic.id;
                         
                         return (
-                          <Col key={topic.id} xs={24} md={12} lg={12} className="reveal-stagger" style={{ animationDelay: `${index * 60}ms`, opacity: 0 }}>
+                          <Col key={topic.id} xs={24} md={12} lg={12} className="reveal-stagger" style={{ animationDelay: `${index * 60}ms` }}>
                             <Card 
                               hoverable={!isGenerating}
                               cover={
