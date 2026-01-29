@@ -1335,14 +1335,14 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                         }
                       </Paragraph>
                       
-                      {/* ENHANCED TOPIC CARDS - Full functionality from TopicSelectionStep-v2 */}
+                      {/* ENHANCED TOPIC CARDS — Issue 4: stagger reveal */}
                       <Row gutter={responsive.gutter}>
-                        {availableTopics.map((topic) => {
+                        {availableTopics.map((topic, index) => {
                           const isSelected = selectedTopic?.id === topic.id;
                           const isGenerating = generatingContent && selectedTopic?.id === topic.id;
                           
                           return (
-                            <Col key={topic.id} xs={24} md={12} lg={12}>
+                            <Col key={topic.id} xs={24} md={12} lg={12} className="reveal-stagger" style={{ animationDelay: `${index * 60}ms`, opacity: 0 }}>
                               <Card 
                                 hoverable={!isGenerating}
                                 cover={
@@ -2422,14 +2422,14 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                       }
                     </Paragraph>
                     
-                    {/* ENHANCED TOPIC CARDS - Full functionality from TopicSelectionStep-v2 */}
+                    {/* ENHANCED TOPIC CARDS — Issue 4: stagger reveal */}
                     <Row gutter={responsive.gutter}>
-                      {availableTopics.map((topic) => {
+                      {availableTopics.map((topic, index) => {
                         const isSelected = selectedTopic?.id === topic.id;
                         const isGenerating = generatingContent && selectedTopic?.id === topic.id;
                         
                         return (
-                          <Col key={topic.id} xs={24} md={12} lg={12}>
+                          <Col key={topic.id} xs={24} md={12} lg={12} className="reveal-stagger" style={{ animationDelay: `${index * 60}ms`, opacity: 0 }}>
                             <Card 
                               hoverable={!isGenerating}
                               cover={

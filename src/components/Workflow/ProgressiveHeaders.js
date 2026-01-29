@@ -97,6 +97,7 @@ const ProgressiveHeaders = ({
           return (
             <Card
               key={stepKey}
+              className="progressive-step-enter"
               size="small"
               style={{
                 marginBottom: 0,
@@ -105,7 +106,8 @@ const ProgressiveHeaders = ({
                 borderRadius: '6px',
                 cursor: onEditStep ? 'pointer' : 'default',
                 transition: 'all 0.2s ease',
-                opacity: isLast ? 1 : 0.8
+                animationDelay: `${index * 80}ms`,
+                opacity: 0,
               }}
               bodyStyle={{ 
                 padding: '8px 16px',

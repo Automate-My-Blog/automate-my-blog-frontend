@@ -697,9 +697,9 @@ const DashboardLayout = ({
           </section>
         )}
 
-        {/* Audience Section - Unlocked after step 1 */}
+        {/* Audience Section - Unlocked after step 1 (Issue 4: light motion) */}
         {((!user && visibleSections.includes('audience-segments')) || (user && (!projectMode || stepResults.home.analysisCompleted))) && (
-          <section id="audience-segments" style={{ 
+          <section id="audience-segments" className="workflow-section-enter" style={{ 
             minHeight: '100vh', 
             background: '#fff',
             borderRadius: '8px',
@@ -714,9 +714,9 @@ const DashboardLayout = ({
           </section>
         )}
 
-        {/* Posts Section - Unlocked after step 2 */}
+        {/* Posts Section - Unlocked after step 2 (Issue 4: light motion) */}
         {((!user && visibleSections.includes('posts')) || (user && (!projectMode || stepResults.audience.customerStrategy))) && (
-          <section id="posts" style={{ 
+          <section id="posts" className="workflow-section-enter" style={{ 
             minHeight: '100vh', 
             background: '#fff',
             borderRadius: '8px',

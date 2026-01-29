@@ -80,6 +80,7 @@ const ProgressiveStickyHeader = ({
         return (
           <div
             key={step.type}
+            className="progressive-step-enter"
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -87,7 +88,9 @@ const ProgressiveStickyHeader = ({
               borderBottom: index < completedSteps.length - 1 ? '1px solid #f0f0f0' : 'none',
               backgroundColor: '#fafafa',
               transition: 'all 0.3s ease',
-              minHeight: '40px'
+              minHeight: '40px',
+              animationDelay: `${index * 80}ms`,
+              opacity: 0
             }}
           >
             {/* Completion indicator */}
