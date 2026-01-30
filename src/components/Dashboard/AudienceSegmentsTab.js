@@ -754,6 +754,8 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
     const strategyId = strategy.id || strategy.databaseId;
     const pricing = strategyPricing[strategyId];
     const hasPricing = !!pricing;
+    const subscription = subscribedStrategies[strategyId];
+    const isSubscribed = !!subscription;
 
     return (
       <motion.div
@@ -770,7 +772,11 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
         <Card
           hoverable
           style={{
-            border: isSelected ? `2px solid ${defaultColors.primary}` : '1px solid #f0f0f0',
+            border: isSubscribed
+              ? '2px solid #10b981'
+              : isSelected
+                ? `2px solid ${defaultColors.primary}`
+                : '1px solid #f0f0f0',
             borderRadius: theme.borderRadius.lg,
             minHeight: '400px',
             cursor: 'pointer',
@@ -779,14 +785,35 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
             margin: '0 auto',
             maxWidth: '600px',
             position: 'relative',
-            boxShadow: 'var(--shadow-card)'
+            boxShadow: isSubscribed ? '0 4px 12px rgba(16, 185, 129, 0.15)' : 'var(--shadow-card)',
+            backgroundColor: isSubscribed ? '#f0fdf4' : 'white'
           }}
-          onMouseEnter={(e) => e.currentTarget.style.boxShadow = 'var(--shadow-elevated)'}
-          onMouseLeave={(e) => e.currentTarget.style.boxShadow = 'var(--shadow-card)'}
+          onMouseEnter={(e) => e.currentTarget.style.boxShadow = isSubscribed ? '0 6px 16px rgba(16, 185, 129, 0.2)' : 'var(--shadow-elevated)'}
+          onMouseLeave={(e) => e.currentTarget.style.boxShadow = isSubscribed ? '0 4px 12px rgba(16, 185, 129, 0.15)' : 'var(--shadow-card)'}
           onClick={() => handleSelectStrategy(strategy, index)}
         >
-          {/* Pricing Badge (Top-Right Corner) - Phase 2 */}
-          {hasPricing && (
+          {/* Subscribed Badge or Pricing Badge (Top-Right Corner) */}
+          {isSubscribed ? (
+            <div style={{
+              position: 'absolute',
+              top: '16px',
+              right: '16px',
+              backgroundColor: '#10b981',
+              color: 'white',
+              padding: '8px 16px',
+              borderRadius: theme.borderRadius.md,
+              fontSize: '13px',
+              fontWeight: 600,
+              boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)',
+              zIndex: 10,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}>
+              <CheckOutlined style={{ fontSize: '14px' }} />
+              <span>Active</span>
+            </div>
+          ) : hasPricing && (
             <div style={{
               position: 'absolute',
               top: '16px',
@@ -1027,96 +1054,26 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
 
           {/* Subscribe Buttons / Subscription Status (Phase 2 - Dynamic Pricing) */}
           {hasPricing && (() => {
-            const subscription = subscribedStrategies[strategyId];
-            const isSubscribed = !!subscription;
-
             if (isSubscribed) {
-              // Show subscription status
+              // Show generate content button for subscribed strategies
               return (
-                <div style={{
-                  marginTop: '20px',
-                  padding: '16px',
-                  backgroundColor: '#f0f9ff',
-                  borderRadius: theme.borderRadius.md,
-                  border: '2px solid #10b981'
-                }}
-                  onClick={(e) => e.stopPropagation()}
+                <Button
+                  type="primary"
+                  block
+                  size="large"
+                  style={{
+                    marginTop: '20px',
+                    height: '48px',
+                    fontWeight: 600,
+                    fontSize: '15px'
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleSelectStrategy(strategy, index);
+                  }}
                 >
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    marginBottom: '12px'
-                  }}>
-                    <CheckOutlined style={{
-                      color: '#10b981',
-                      fontSize: '20px',
-                      marginRight: '8px'
-                    }} />
-                    <Text strong style={{
-                      fontSize: '16px',
-                      color: '#10b981'
-                    }}>
-                      Subscribed
-                    </Text>
-                  </div>
-
-                  <div style={{
-                    textAlign: 'center',
-                    marginBottom: '12px'
-                  }}>
-                    <Text style={{
-                      fontSize: '24px',
-                      fontWeight: 700,
-                      color: theme.colors.primary,
-                      display: 'block',
-                      lineHeight: 1.2
-                    }}>
-                      {subscription.postsRemaining}
-                    </Text>
-                    <Text style={{
-                      fontSize: '13px',
-                      color: theme.colors.textSecondary
-                    }}>
-                      posts remaining this month
-                    </Text>
-                  </div>
-
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    paddingTop: '12px',
-                    borderTop: '1px solid #e0e7ff'
-                  }}>
-                    <div>
-                      <Text style={{
-                        fontSize: '11px',
-                        color: theme.colors.textSecondary,
-                        display: 'block'
-                      }}>
-                        Plan: {subscription.billingInterval === 'annual' ? 'Annual' : 'Monthly'}
-                      </Text>
-                      <Text style={{
-                        fontSize: '11px',
-                        color: theme.colors.textSecondary,
-                        display: 'block'
-                      }}>
-                        Renews: {new Date(subscription.nextBillingDate).toLocaleDateString()}
-                      </Text>
-                    </div>
-                    <Button
-                      type="primary"
-                      size="small"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleSelectStrategy(strategy, index);
-                      }}
-                    >
-                      Generate Content
-                    </Button>
-                  </div>
-                </div>
+                  Generate Content
+                </Button>
               );
             }
 
