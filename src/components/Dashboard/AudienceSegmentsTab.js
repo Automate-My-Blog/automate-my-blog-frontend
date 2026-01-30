@@ -351,6 +351,12 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
               setSubscribedStrategies(subscriptionsMap);
               console.log('✅ Found new subscription! Strategy is now active:', strategySubscribed);
               message.success('Subscription activated! You can now generate content.', 4);
+
+              // Switch to focus mode to show saved strategies
+              if (tabMode.mode !== 'focus') {
+                console.log('🔄 Switching to focus mode to display subscribed strategies');
+                tabMode.enterFocusMode();
+              }
             } else if (attempt < maxAttempts) {
               // Webhook hasn't processed yet, retry after delay
               console.log(`⏳ Subscription not found yet, retrying in ${attempt * 2} seconds...`);
