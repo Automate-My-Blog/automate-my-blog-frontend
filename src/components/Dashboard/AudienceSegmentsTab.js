@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Button, Row, Col, Typography, Tag, message, Carousel, Collapse, Space } from 'antd';
 import { BulbOutlined, CheckOutlined, DatabaseOutlined, RocketOutlined, LeftOutlined, RightOutlined } from '@ant-design/icons';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTabMode } from '../../hooks/useTabMode';
 import { useWorkflowMode } from '../../contexts/WorkflowModeContext';
@@ -182,26 +183,10 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
 
   // Fetch pricing for strategies (Phase 2 - Dynamic Pricing) — only when logged in (backend returns 401 without token)
   useEffect(() => {
-    console.log('🔍 Pricing useEffect triggered:', {
-      hasUser: !!user,
-      strategiesLength: strategies.length,
-      loadingPricing
-    });
-
-    if (!user) {
-      console.log('⚠️ Pricing fetch skipped: No user');
-      return;
-    }
+    if (!user) return;
 
     const fetchStrategyPricing = async () => {
-      if (strategies.length === 0) {
-        console.log('⚠️ Pricing fetch skipped: No strategies');
-        return;
-      }
-      if (loadingPricing) {
-        console.log('⚠️ Pricing fetch skipped: Already loading');
-        return;
-      }
+      if (strategies.length === 0 || loadingPricing) return;
 
       setLoadingPricing(true);
 
@@ -209,18 +194,11 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
         // Helper to check if ID is a valid UUID (database ID)
         const isValidDatabaseId = (id) => {
           if (!id) return false;
-          // Check if it's a UUID format (with hyphens) or temp ID
           return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
         };
 
         // Filter strategies to only fetch pricing for those with database IDs
         const strategiesWithDbIds = strategies.filter(s => isValidDatabaseId(s.id || s.databaseId));
-
-        console.log('💰 Strategies to fetch pricing for:', {
-          total: strategies.length,
-          withDbIds: strategiesWithDbIds.length,
-          skipped: strategies.length - strategiesWithDbIds.length
-        });
 
         // Fetch pricing for each strategy with a database ID
         const pricingPromises = strategiesWithDbIds.map(async (strategy) => {
@@ -228,7 +206,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
             const pricing = await autoBlogAPI.getStrategyPricing(strategy.id || strategy.databaseId);
             return { strategyId: strategy.id || strategy.databaseId, pricing: pricing.pricing };
           } catch (error) {
-            console.error(`Failed to fetch pricing for strategy ${strategy.id}:`, error);
+            // Silently skip strategies without valid pricing data
             return null;
           }
         });
@@ -243,18 +221,10 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
           }
         });
 
-        console.log('💰 Pricing map built:', {
-          count: Object.keys(pricingMap).length,
-          sampleStrategyId: Object.keys(pricingMap)[0],
-          samplePricing: pricingMap[Object.keys(pricingMap)[0]]
-        });
-
         setStrategyPricing(pricingMap);
-        console.log('✅ Pricing fetched for strategies:', Object.keys(pricingMap).length);
       } catch (error) {
         console.error('Failed to fetch strategy pricing:', error);
       } finally {
-        console.log('💰 Resetting loadingPricing to false');
         setLoadingPricing(false);
       }
     };
@@ -264,29 +234,13 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
 
   // Fetch subscribed strategies to show subscription status
   useEffect(() => {
-    console.log('🔍 Subscription useEffect triggered:', { hasUser: !!user, loadingSubscriptions });
-
-    if (!user) {
-      console.log('⚠️ Subscription fetch skipped: No user');
-      return;
-    }
-
-    if (loadingSubscriptions) {
-      console.log('⚠️ Subscription fetch skipped: Already loading');
-      return;
-    }
+    if (!user || loadingSubscriptions) return;
 
     const fetchSubscribedStrategies = async () => {
       setLoadingSubscriptions(true);
 
       try {
-        console.log('📊 Fetching subscribed strategies...');
         const response = await autoBlogAPI.getSubscribedStrategies();
-
-        console.log('📊 Subscribed strategies response:', {
-          subscriptionsCount: response.subscriptions?.length || 0,
-          subscriptions: response.subscriptions
-        });
 
         // Build map of strategyId -> subscription data
         const subscriptionsMap = {};
@@ -301,10 +255,6 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
         });
 
         setSubscribedStrategies(subscriptionsMap);
-        console.log('✅ Loaded subscriptions:', {
-          count: Object.keys(subscriptionsMap).length,
-          strategyIds: Object.keys(subscriptionsMap)
-        });
       } catch (error) {
         console.error('Failed to fetch subscriptions:', error);
       } finally {
@@ -321,16 +271,12 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
     const strategySubscribed = urlParams.get('strategy_subscribed');
 
     if (strategySubscribed) {
-      console.log('✅ Subscription success detected for strategy:', strategySubscribed);
-
-      // Show success message
       message.success('Subscription successful! Processing...', 3);
 
       // Re-fetch subscriptions with retry logic (webhooks can take a few seconds)
       if (user && !loadingSubscriptions) {
         const refetchWithRetry = async (attempt = 1, maxAttempts = 5) => {
           try {
-            console.log(`🔄 Fetching subscriptions (attempt ${attempt}/${maxAttempts})...`);
             const response = await autoBlogAPI.getSubscribedStrategies();
 
             const subscriptionsMap = {};
@@ -349,26 +295,21 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
 
             if (foundNewSubscription) {
               setSubscribedStrategies(subscriptionsMap);
-              console.log('✅ Found new subscription! Strategy is now active:', strategySubscribed);
               message.success('Subscription activated! You can now generate content.', 4);
 
               // Switch to focus mode to show saved strategies
               if (tabMode.mode !== 'focus') {
-                console.log('🔄 Switching to focus mode to display subscribed strategies');
                 tabMode.enterFocusMode();
               }
             } else if (attempt < maxAttempts) {
               // Webhook hasn't processed yet, retry after delay
-              console.log(`⏳ Subscription not found yet, retrying in ${attempt * 2} seconds...`);
               setTimeout(() => refetchWithRetry(attempt + 1, maxAttempts), attempt * 2000);
             } else {
               // Max retries reached
               setSubscribedStrategies(subscriptionsMap);
-              console.warn('⚠️ Max retries reached. Subscription may take a moment to appear.');
               message.warning('Subscription is processing. Refresh the page in a moment if it doesn\'t appear.', 6);
             }
           } catch (error) {
-            console.error(`Failed to fetch subscriptions (attempt ${attempt}):`, error);
             if (attempt < maxAttempts) {
               setTimeout(() => refetchWithRetry(attempt + 1, maxAttempts), attempt * 2000);
             }
@@ -806,13 +747,6 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
 
   // Render enhanced strategy card with business intelligence
   const renderStrategyCard = (strategy, index) => {
-    console.log(`🎴 Rendering card ${index}:`, {
-      id: strategy.id,
-      demographics: strategy.targetSegment?.demographics,
-      hasImageUrl: !!strategy.imageUrl,
-      imageUrlPreview: strategy.imageUrl?.substring(0, 80) + '...'
-    });
-
     const isSelected = selectedStrategy?.index === index;
     const isOthersSelected = selectedStrategy && !isSelected;
 
@@ -821,18 +755,18 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
     const pricing = strategyPricing[strategyId];
     const hasPricing = !!pricing;
 
-    if (index === 0) {
-      console.log('💰 Card 0 pricing lookup:', {
-        strategyId,
-        hasPricing,
-        pricing,
-        strategyPricingKeys: Object.keys(strategyPricing),
-        strategyPricingCount: Object.keys(strategyPricing).length
-      });
-    }
-
     return (
-      <div key={strategy.id} style={{ padding: '0 8px' }}>
+      <motion.div
+        key={strategy.id}
+        style={{ padding: '0 8px' }}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{
+          delay: index * 0.1,
+          duration: 0.4,
+          ease: [0.4, 0, 0.2, 1]
+        }}
+      >
         <Card
           hoverable
           style={{
@@ -1259,7 +1193,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
             );
           })()}
         </Card>
-      </div>
+      </motion.div>
     );
   };
 
