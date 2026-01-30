@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Menu, Button, Avatar, Dropdown, message, Spin } from 'antd';
 import api from '../../services/api';
 import {
@@ -39,6 +39,7 @@ import PricingModal from '../Modals/PricingModal';
 import SystemHint from './SystemHint';
 import { useSystemHint } from '../../contexts/SystemHintContext';
 import { systemVoice } from '../../copy/systemVoice';
+import ThemeToggle from '../ThemeToggle/ThemeToggle';
 
 // Layout components not used directly
 
@@ -104,10 +105,26 @@ const DashboardLayout = ({
 
   // Quota tracking state
   const [userCredits, setUserCredits] = useState(null);
+  const [strategySubscriptions, setStrategySubscriptions] = useState([]);
   const [loadingQuota, setLoadingQuota] = useState(false);
-  const remainingPosts = userCredits
-    ? (userCredits.isUnlimited ? 'unlimited' : Math.max(0, userCredits.availableCredits))
-    : null;
+
+  // Calculate total remaining posts from both credits and strategy subscriptions
+  const remainingPosts = useMemo(() => {
+    if (!userCredits) return null;
+
+    // Check if user has unlimited credits
+    if (userCredits.isUnlimited) return 'unlimited';
+
+    // Calculate total posts from strategy subscriptions
+    const strategyPosts = strategySubscriptions.reduce((total, sub) => {
+      return total + (sub.postsRemaining || 0);
+    }, 0);
+
+    // Combine pay-per-post credits with strategy subscription posts
+    const totalPosts = Math.max(0, userCredits.availableCredits) + strategyPosts;
+
+    return totalPosts;
+  }, [userCredits, strategySubscriptions]);
 
   // Pricing modal state
   const [showPricingModal, setShowPricingModal] = useState(false);
@@ -117,17 +134,15 @@ const DashboardLayout = ({
     if (!user) return;
     try {
       setLoadingQuota(true);
-      const credits = await api.getUserCredits();
-      console.log('✅ Credits loaded:', {
-        availableCredits: credits.availableCredits,
-        totalCredits: credits.totalCredits,
-        usedCredits: credits.usedCredits,
-        basePlan: credits.basePlan,
-        isUnlimited: credits.isUnlimited,
-        breakdown: credits.breakdown,
-        fullResponse: credits
-      });
+
+      // Fetch both credits and strategy subscriptions in parallel
+      const [credits, subscriptionsResponse] = await Promise.all([
+        api.getUserCredits(),
+        api.getSubscribedStrategies().catch(() => ({ subscriptions: [] }))
+      ]);
+
       setUserCredits(credits);
+      setStrategySubscriptions(subscriptionsResponse.subscriptions || []);
     } catch (error) {
       console.error('❌ Failed to fetch quota:', error);
       // Set default credits on error so badge still shows
@@ -137,6 +152,7 @@ const DashboardLayout = ({
         availableCredits: 0,
         basePlan: 'Unknown'
       });
+      setStrategySubscriptions([]);
     } finally {
       setLoadingQuota(false);
     }
@@ -148,6 +164,7 @@ const DashboardLayout = ({
       refreshQuota();
     } else {
       setUserCredits(null);
+      setStrategySubscriptions([]);
     }
   }, [user, refreshQuota]);
 
@@ -820,7 +837,7 @@ const DashboardLayout = ({
           width: '240px',
           background: 'var(--color-background-body)',
           borderRight: '1px solid var(--color-border-base)',
-          boxShadow: 'var(--shadow-sm)',
+          boxShadow: 'var(--shadow-elevated)',
           display: 'flex',
           flexDirection: 'column',
           zIndex: 100,
@@ -875,7 +892,7 @@ const DashboardLayout = ({
               }}>
                 <Avatar 
                   icon={<UserOutlined />} 
-                  style={{ backgroundColor: '#1890ff' }}
+                  style={{ backgroundColor: 'var(--color-primary)' }}
                 />
                 {!collapsed && (
                   <div style={{ 
@@ -893,7 +910,7 @@ const DashboardLayout = ({
                     </div>
                     <div style={{ 
                       fontSize: '12px',
-                      color: '#666',
+                      color: 'var(--color-text-secondary)',
                       whiteSpace: 'nowrap',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis'
@@ -971,7 +988,7 @@ const DashboardLayout = ({
               <Avatar 
                 icon={<UserOutlined />} 
                 style={{ 
-                  backgroundColor: '#1890ff',
+                  backgroundColor: 'var(--color-primary)',
                   width: '20px',
                   height: '20px',
                   fontSize: '12px',
@@ -996,95 +1013,109 @@ const DashboardLayout = ({
           })()
         }}>
           {/* Floating Action Buttons - Fixed within content area */}
-          {user && (
+          <div style={{
+            position: 'fixed',
+            top: '29px',
+            right: '29px',
+            zIndex: 999,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px'
+          }}>
+            {/* Theme Toggle - Always visible for all users */}
             <div style={{
-              position: 'fixed',
-              top: '29px',
-              right: '29px',
-              zIndex: 999,
+              background: 'var(--color-background-body)',
+              padding: 'var(--space-2)',
+              borderRadius: 'var(--radius-lg)',
+              boxShadow: 'var(--shadow-md)',
               display: 'flex',
               alignItems: 'center',
-              gap: '12px'
+              border: '2px solid var(--color-border-base)'
             }}>
-              {/* Quota Counter - Always visible for logged-in users */}
-              <div
-                onClick={() => {
-                  if (remainingPosts === 0) {
-                    setShowPricingModal(true);
-                  }
-                }}
-                style={{
-                  background: 'var(--color-background-body)',
-                  padding: 'var(--space-2) var(--space-4)',
-                  borderRadius: 'var(--radius-lg)',
-                  boxShadow: 'var(--shadow-md)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  border: `2px solid ${remainingPosts === 0 ? '#ff4d4f' : remainingPosts === 'unlimited' ? '#52c41a' : '#1890ff'}`,
-                  cursor: remainingPosts === 0 ? 'pointer' : 'default',
-                  transition: 'all 0.3s ease'
-                }}
-                onMouseEnter={(e) => {
-                  if (remainingPosts === 0) {
-                    e.currentTarget.style.transform = 'scale(1.05)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'scale(1)';
-                }}
-              >
-                {loadingQuota || remainingPosts === null ? (
-                  <Spin size="small" />
-                ) : remainingPosts === 'unlimited' ? (
-                  <>
-                    <span style={{
-                      fontSize: '20px',
-                      fontWeight: 700,
-                      color: '#52c41a'
-                    }}>
-                      ∞
-                    </span>
-                    <span style={{
-                      fontSize: '12px',
-                      color: '#8c8c8c',
-                      fontWeight: 500
-                    }}>
-                      Unlimited posts
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <span style={{
-                      fontSize: '20px',
-                      fontWeight: 700,
-                      color: remainingPosts <= 2 ? '#ff4d4f' : '#1890ff'
-                    }}>
-                      {remainingPosts}
-                    </span>
-                    <span style={{
-                      fontSize: '12px',
-                      color: '#8c8c8c',
-                      fontWeight: 500
-                    }}>
-                      {userCredits?.basePlan === 'Free' && remainingPosts === 1
-                        ? 'free post remaining'
-                        : `post${remainingPosts === 1 ? '' : 's'} left`}
-                    </span>
-                  </>
-                )}
-              </div>
+              <ThemeToggle />
+            </div>
 
-              {/* Upgrade Button - Show when credits are 0 */}
-              {remainingPosts === 0 && (
+            {/* Quota Counter - Only visible for logged-in users */}
+            {user && (
+              <>
+                <div
+                  onClick={() => {
+                    if (remainingPosts === 0) {
+                      setShowPricingModal(true);
+                    }
+                  }}
+                  style={{
+                    background: 'var(--color-background-body)',
+                    padding: 'var(--space-2) var(--space-4)',
+                    borderRadius: 'var(--radius-lg)',
+                    boxShadow: 'var(--shadow-md)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    border: `2px solid ${remainingPosts === 0 ? 'var(--color-error)' : remainingPosts === 'unlimited' ? 'var(--color-success)' : 'var(--color-primary)'}`,
+                    cursor: remainingPosts === 0 ? 'pointer' : 'default',
+                    transition: 'all 0.3s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (remainingPosts === 0) {
+                      e.currentTarget.style.transform = 'scale(1.05)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'scale(1)';
+                  }}
+                >
+                  {loadingQuota || remainingPosts === null ? (
+                    <Spin size="small" />
+                  ) : remainingPosts === 'unlimited' ? (
+                    <>
+                      <span style={{
+                        fontSize: 'var(--font-size-xl)',
+                        fontWeight: 'var(--font-weight-bold)',
+                        color: 'var(--color-success)'
+                      }}>
+                        ∞
+                      </span>
+                      <span style={{
+                        fontSize: 'var(--font-size-xs)',
+                        color: 'var(--color-text-tertiary)',
+                        fontWeight: 'var(--font-weight-medium)'
+                      }}>
+                        Unlimited posts
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <span style={{
+                        fontSize: 'var(--font-size-xl)',
+                        fontWeight: 'var(--font-weight-bold)',
+                        color: remainingPosts <= 2 ? 'var(--color-error)' : 'var(--color-primary)'
+                      }}>
+                        {remainingPosts}
+                      </span>
+                      <span style={{
+                        fontSize: 'var(--font-size-xs)',
+                        color: 'var(--color-text-tertiary)',
+                        fontWeight: 'var(--font-weight-medium)'
+                      }}>
+                        {userCredits?.basePlan === 'Free' && remainingPosts === 1
+                          ? 'free post remaining'
+                          : `post${remainingPosts === 1 ? '' : 's'} left`}
+                      </span>
+                    </>
+                  )}
+                </div>
+
+                {/* Upgrade Button - Show when credits are 0 */}
+                {remainingPosts === 0 && (
                 <Button
                   type="primary"
                   size="large"
                   onClick={() => setShowPricingModal(true)}
                   style={{
-                    backgroundColor: '#52c41a',
-                    borderColor: '#52c41a',
-                    fontWeight: 600,
+                    backgroundColor: 'var(--color-success)',
+                    borderColor: 'var(--color-success)',
+                    fontWeight: 'var(--font-weight-semibold)',
                     boxShadow: 'none'
                   }}
                 >
@@ -1131,12 +1162,12 @@ const DashboardLayout = ({
                       }
                     }, 100);
                   }}
-                  style={{ 
-                    backgroundColor: '#1890ff', 
-                    borderColor: '#1890ff',
-                    fontWeight: 600,
+                  style={{
+                    backgroundColor: 'var(--color-primary)',
+                    borderColor: 'var(--color-primary)',
+                    fontWeight: 'var(--font-weight-semibold)',
                     boxShadow: 'none',
-                    border: '2px solid #1890ff',
+                    border: '2px solid var(--color-primary)',
                     marginRight: projectMode ? '0' : '0' // No margin when alone
                   }}
                 >
@@ -1194,8 +1225,9 @@ const DashboardLayout = ({
                   </Button>
                 )
               )}
-            </div>
-          )}
+              </>
+            )}
+          </div>
 
           <div style={{
             background: activeTab === 'settings' || activeTab.startsWith('admin-') || activeTab === 'sandbox' ? 'var(--color-background-body)' : 'transparent',
