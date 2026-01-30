@@ -48,6 +48,11 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
   const [subscribedStrategies, setSubscribedStrategies] = useState({}); // Map of strategyId -> subscription data
   const [loadingSubscriptions, setLoadingSubscriptions] = useState(false);
 
+  // Bundle pricing state
+  const [bundlePricing, setBundlePricing] = useState(null);
+  const [loadingBundlePricing, setLoadingBundlePricing] = useState(false);
+  const [hasBundleSubscription, setHasBundleSubscription] = useState(false);
+
   // Carousel navigation ref
   const carouselRef = React.useRef(null);
   
@@ -324,6 +329,33 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
       window.history.replaceState({}, document.title, cleanUrl);
     }
   }, [user]); // Run when user changes or on mount
+
+  // Fetch bundle pricing when strategies are loaded (2+ strategies required)
+  useEffect(() => {
+    if (!user || strategies.length < 2) {
+      setBundlePricing(null);
+      return;
+    }
+
+    const fetchBundlePricing = async () => {
+      setLoadingBundlePricing(true);
+      try {
+        const response = await autoBlogAPI.calculateBundlePrice();
+        setBundlePricing(response.bundlePricing);
+
+        // Check if user has a bundle subscription
+        const subscriptionsResponse = await autoBlogAPI.getBundleSubscription();
+        setHasBundleSubscription(!!subscriptionsResponse.bundleSubscription);
+      } catch (error) {
+        console.error('Failed to fetch bundle pricing:', error);
+        setBundlePricing(null);
+      } finally {
+        setLoadingBundlePricing(false);
+      }
+    };
+
+    fetchBundlePricing();
+  }, [user, strategies.length]);
 
   // Load audience strategies based on OpenAI analysis when entering workflow mode or when analysis data exists
   useEffect(() => {
@@ -745,6 +777,28 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
     }
   };
 
+  // Bundle subscription handler
+  const handleSubscribeToBundle = async (billingInterval) => {
+    try {
+      message.loading({ content: 'Redirecting to checkout...', key: 'bundle-subscribe' });
+
+      const response = await autoBlogAPI.subscribeToAllStrategies(billingInterval);
+
+      if (response.url || response.sessionUrl) {
+        // Redirect to Stripe checkout
+        window.location.href = response.url || response.sessionUrl;
+      } else {
+        throw new Error('No checkout URL received');
+      }
+    } catch (error) {
+      console.error('Failed to subscribe to bundle:', error);
+      message.error({
+        content: `Failed to start checkout: ${error.message}`,
+        key: 'bundle-subscribe'
+      });
+    }
+  };
+
   // Render enhanced strategy card with business intelligence
   const renderStrategyCard = (strategy, index) => {
     const isSelected = selectedStrategy?.index === index;
@@ -773,11 +827,11 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
           hoverable
           style={{
             border: isSubscribed
-              ? '2px solid #10b981'
+              ? '2px solid var(--color-success)'
               : isSelected
                 ? `2px solid ${defaultColors.primary}`
-                : '1px solid #f0f0f0',
-            borderRadius: theme.borderRadius.lg,
+                : '1px solid var(--color-border-base)',
+            borderRadius: 'var(--radius-lg)',
             minHeight: '400px',
             cursor: 'pointer',
             opacity: isOthersSelected ? 0.5 : 1,
@@ -786,7 +840,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
             maxWidth: '600px',
             position: 'relative',
             boxShadow: isSubscribed ? '0 4px 12px rgba(16, 185, 129, 0.15)' : 'var(--shadow-card)',
-            backgroundColor: isSubscribed ? '#f0fdf4' : 'white'
+            backgroundColor: isSubscribed ? 'var(--color-success-bg)' : 'white'
           }}
           onMouseEnter={(e) => e.currentTarget.style.boxShadow = isSubscribed ? '0 6px 16px rgba(16, 185, 129, 0.2)' : 'var(--shadow-elevated)'}
           onMouseLeave={(e) => e.currentTarget.style.boxShadow = isSubscribed ? '0 4px 12px rgba(16, 185, 129, 0.15)' : 'var(--shadow-card)'}
@@ -798,10 +852,10 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
               position: 'absolute',
               top: '16px',
               right: '16px',
-              backgroundColor: '#10b981',
+              backgroundColor: 'var(--color-success)',
               color: 'white',
               padding: '8px 16px',
-              borderRadius: theme.borderRadius.md,
+              borderRadius: 'var(--radius-md)',
               fontSize: '13px',
               fontWeight: 600,
               boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)',
@@ -818,10 +872,10 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
               position: 'absolute',
               top: '16px',
               right: '16px',
-              backgroundColor: theme.colors.primary,
+              backgroundColor: 'var(--color-primary)',
               color: 'white',
               padding: '8px 12px',
-              borderRadius: theme.borderRadius.md,
+              borderRadius: 'var(--radius-md)',
               fontSize: '13px',
               fontWeight: 600,
               boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
@@ -846,8 +900,8 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                 marginBottom: '12px',
                 width: '60%',
                 aspectRatio: '1 / 1',
-                backgroundColor: '#fafafa',
-                borderRadius: theme.borderRadius.md,
+                backgroundColor: 'var(--color-background-alt)',
+                borderRadius: 'var(--radius-md)',
                 overflow: 'hidden',
                 display: 'flex',
                 justifyContent: 'center',
@@ -882,7 +936,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                 </Tag>
                 {strategy.businessValue?.priority === 1 && (
                   <span style={{
-                    backgroundColor: '#ff4d4f',
+                    backgroundColor: 'var(--color-error)',
                     color: 'white',
                     padding: '2px 8px',
                     borderRadius: '10px',
@@ -897,7 +951,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
               {isSelected && (
                 <CheckOutlined style={{
                   color: defaultColors.primary,
-                  fontSize: theme.typography.base
+                  fontSize: 'var(--font-size-base)'
                 }} />
               )}
             </div>
@@ -905,8 +959,8 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
             {/* Audience Name - Prominent */}
             <Title level={3} style={{
               margin: '8px 0 0 0',
-              color: theme.colors.text,
-              fontSize: theme.typography.lg,
+              color: 'var(--color-text-primary)',
+              fontSize: 'var(--font-size-lg)',
               fontWeight: 600,
               lineHeight: 1.3
             }}>
@@ -922,7 +976,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                     <>
                       {' searching for '}
                       <span style={{
-                        color: theme.colors.primary,
+                        color: 'var(--color-primary)',
                         fontStyle: 'italic',
                         fontWeight: 500
                       }}>
@@ -943,8 +997,8 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                 defaultActiveKey={[]}
                 bordered={false}
                 style={{
-                  backgroundColor: '#f0f5ff',
-                  borderLeft: `3px solid ${theme.colors.primary}`,
+                  backgroundColor: 'var(--color-primary-50)',
+                  borderLeft: '3px solid var(--color-primary)',
                   borderRadius: '4px'
                 }}
                 items={[
@@ -952,8 +1006,8 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                     key: '1',
                     label: (
                       <Text strong style={{
-                        color: theme.colors.gray800,
-                        fontSize: theme.typography.sm
+                        color: 'var(--color-text-primary)',
+                        fontSize: 'var(--font-size-sm)'
                       }}>
                         {(() => {
                           // Extract consultation price
@@ -989,14 +1043,14 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                             return (
                               <div style={{
                                 padding: '12px',
-                                backgroundColor: theme.colors.backgroundAlt,
-                                borderRadius: theme.borderRadius.sm,
+                                backgroundColor: 'var(--color-background-container)',
+                                borderRadius: 'var(--radius-sm)',
                                 marginBottom: '12px',
-                                borderLeft: `3px solid ${theme.colors.primary}`
+                                borderLeft: '3px solid var(--color-border-base)'
                               }}>
                                 <Text strong style={{
                                   fontSize: '13px',
-                                  color: theme.colors.text,
+                                  color: 'var(--color-text-primary)',
                                   display: 'block',
                                   marginBottom: '4px'
                                 }}>
@@ -1004,14 +1058,14 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                                 </Text>
                                 <Text style={{
                                   fontSize: '14px',
-                                  color: theme.colors.primary,
+                                  color: 'var(--color-text-primary)',
                                   fontWeight: 600
                                 }}>
                                   ${lowRevenue}-${highRevenue}/month potential
                                 </Text>
                                 <Text style={{
                                   fontSize: '12px',
-                                  color: theme.colors.textSecondary,
+                                  color: 'var(--color-text-secondary)',
                                   display: 'block',
                                   marginTop: '4px'
                                 }}>
@@ -1029,17 +1083,17 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                           if (stepMatch) {
                             return (
                               <div key={index} style={{ marginBottom: index < strategy.pitch.split(/\n/).length - 1 ? '8px' : '0' }}>
-                                <Text strong style={{ fontSize: '13px', color: theme.colors.primary }}>
+                                <Text strong style={{ fontSize: '13px', color: 'var(--color-text-primary)' }}>
                                   {stepMatch[1]}
                                 </Text>
-                                <Text style={{ fontSize: '13px', color: theme.colors.text, marginLeft: '6px' }}>
+                                <Text style={{ fontSize: '13px', color: 'var(--color-text-primary)', marginLeft: '6px' }}>
                                   {stepMatch[2]}
                                 </Text>
                               </div>
                             );
                           }
                           return line ? (
-                            <Text key={index} style={{ fontSize: '13px', lineHeight: '1.5', color: theme.colors.text, display: 'block' }}>
+                            <Text key={index} style={{ fontSize: '13px', lineHeight: '1.5', color: 'var(--color-text-primary)', display: 'block' }}>
                               {line}
                             </Text>
                           ) : null;
@@ -1082,22 +1136,22 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
               <div style={{
                 marginTop: '20px',
                 padding: '16px',
-                backgroundColor: '#f0f5ff',
-                borderRadius: theme.borderRadius.md,
-                borderTop: `2px solid ${theme.colors.primary}`
+                backgroundColor: 'var(--color-primary-50)',
+                borderRadius: 'var(--radius-md)',
+                borderTop: '2px solid var(--color-primary)'
               }}
                 onClick={(e) => e.stopPropagation()} // Prevent card selection when clicking buttons
               >
                 <div style={{ marginBottom: '12px', textAlign: 'center' }}>
                   <Text strong style={{
                     fontSize: '14px',
-                    color: theme.colors.primary,
+                    color: 'var(--color-primary)',
                     display: 'block',
                     marginBottom: '4px'
                   }}>
                     💰 Projected Profit: ${pricing.projectedLow?.toLocaleString()}-${pricing.projectedHigh?.toLocaleString()}/month
                   </Text>
-                  <Text style={{ fontSize: '12px', color: theme.colors.textSecondary }}>
+                  <Text style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
                     Subscribe for ${pricing.monthly}/month ({pricing.percentage.monthly}% of your projected profit)
                   </Text>
                 </div>
@@ -1127,8 +1181,8 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                     }}
                     style={{
                       height: '40px',
-                      borderColor: theme.colors.primary,
-                      color: theme.colors.primary
+                      borderColor: 'var(--color-primary)',
+                      color: 'var(--color-primary)'
                     }}
                   >
                     Pay Annually - ${pricing.annual}/year
@@ -1138,7 +1192,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                   </Button>
                   <Text style={{
                     fontSize: '11px',
-                    color: theme.colors.textSecondary,
+                    color: 'var(--color-text-secondary)',
                     display: 'block',
                     textAlign: 'center',
                     marginTop: '8px'
@@ -1203,18 +1257,184 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
             <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
               <Col span={24}>
                 <Card>
-                  <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-                    <Title level={4}>Pick the strategy that matches your business</Title>
+                  <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+                    <Title level={3} style={{ marginBottom: '8px' }}>Choose Your SEO Strategy</Title>
+                    <Text style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--font-size-base)' }}>
+                      Get comprehensive coverage or pick specific audiences that match your business goals
+                    </Text>
                   </div>
-                  
+
+                  {/* Bundle Option - Comprehensive SEO Plan */}
+                  {bundlePricing && strategies.length >= 2 && !loadingBundlePricing && (
+                    <div style={{ marginBottom: '32px' }}>
+                      <Card
+                        style={{
+                          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                          border: 'none',
+                          borderRadius: 'var(--radius-lg)',
+                          position: 'relative',
+                          overflow: 'hidden'
+                        }}
+                      >
+                        {/* Best Value Badge */}
+                        <div style={{
+                          position: 'absolute',
+                          top: '16px',
+                          right: '16px',
+                          background: '#10b981',
+                          color: 'white',
+                          padding: '6px 16px',
+                          borderRadius: 'var(--radius-md)',
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)',
+                          zIndex: 1
+                        }}>
+                          BEST VALUE
+                        </div>
+
+                        <div style={{ padding: '8px' }}>
+                          <Row gutter={24} align="middle">
+                            <Col xs={24} md={12}>
+                              <div style={{ color: 'white' }}>
+                                <div style={{ fontSize: '28px', marginBottom: '12px' }}>🎯</div>
+                                <Title level={3} style={{ color: 'white', marginBottom: '12px' }}>
+                                  Comprehensive SEO Plan
+                                </Title>
+                                <Text style={{ color: 'rgba(255,255,255,0.9)', fontSize: '15px', display: 'block', marginBottom: '16px' }}>
+                                  Get all {bundlePricing.strategyCount} audience strategies with one subscription
+                                </Text>
+
+                                <div style={{
+                                  background: 'rgba(255,255,255,0.1)',
+                                  backdropFilter: 'blur(10px)',
+                                  padding: '16px',
+                                  borderRadius: 'var(--radius-md)',
+                                  marginBottom: '16px'
+                                }}>
+                                  <Text style={{ color: 'white', fontSize: '13px', display: 'block', marginBottom: '8px' }}>
+                                    ✓ {bundlePricing.strategyCount} targeted audience strategies
+                                  </Text>
+                                  <Text style={{ color: 'white', fontSize: '13px', display: 'block', marginBottom: '8px' }}>
+                                    ✓ {bundlePricing.strategyCount * bundlePricing.postsPerStrategy.recommended} posts/month total (up to {bundlePricing.strategyCount * bundlePricing.postsPerStrategy.maximum})
+                                  </Text>
+                                  <Text style={{ color: 'white', fontSize: '13px', display: 'block' }}>
+                                    ✓ Save ${bundlePricing.savings.monthlyDiscount.toFixed(0)}/month compared to individual subscriptions
+                                  </Text>
+                                </div>
+                              </div>
+                            </Col>
+
+                            <Col xs={24} md={12}>
+                              <div style={{
+                                background: 'white',
+                                padding: '24px',
+                                borderRadius: 'var(--radius-md)',
+                                textAlign: 'center'
+                              }}>
+                                {hasBundleSubscription ? (
+                                  <>
+                                    <div style={{ marginBottom: '16px' }}>
+                                      <CheckOutlined style={{
+                                        fontSize: '32px',
+                                        color: '#10b981',
+                                        marginBottom: '8px'
+                                      }} />
+                                      <Title level={4} style={{ color: '#10b981', margin: 0 }}>
+                                        Active Subscription
+                                      </Title>
+                                    </div>
+                                    <Text style={{ color: 'var(--color-text-secondary)', display: 'block', marginBottom: '16px' }}>
+                                      You have full access to all {bundlePricing.strategyCount} strategies
+                                    </Text>
+                                  </>
+                                ) : (
+                                  <>
+                                    <div style={{ marginBottom: '16px' }}>
+                                      <div style={{
+                                        fontSize: '36px',
+                                        fontWeight: 700,
+                                        color: 'var(--color-primary)',
+                                        lineHeight: 1
+                                      }}>
+                                        ${bundlePricing.bundleMonthly.toFixed(0)}
+                                        <span style={{ fontSize: '16px', fontWeight: 400 }}>/mo</span>
+                                      </div>
+                                      <Text style={{ color: 'var(--color-text-tertiary)', fontSize: '13px' }}>
+                                        Regular price: ${bundlePricing.individualMonthlyTotal.toFixed(0)}/mo
+                                      </Text>
+                                    </div>
+
+                                    <Space direction="vertical" style={{ width: '100%' }} size="small">
+                                      <Button
+                                        type="primary"
+                                        size="large"
+                                        block
+                                        onClick={() => handleSubscribeToBundle('monthly')}
+                                        style={{
+                                          height: '48px',
+                                          fontSize: '16px',
+                                          fontWeight: 600
+                                        }}
+                                      >
+                                        Subscribe Monthly
+                                      </Button>
+                                      <Button
+                                        size="large"
+                                        block
+                                        onClick={() => handleSubscribeToBundle('annual')}
+                                        style={{
+                                          height: '44px',
+                                          fontSize: '15px'
+                                        }}
+                                      >
+                                        Pay Annually - ${bundlePricing.bundleAnnual.toFixed(0)}
+                                        <Tag color="green" style={{ marginLeft: '8px' }}>
+                                          Save ${bundlePricing.savings.totalAnnualSavings.toFixed(0)}
+                                        </Tag>
+                                      </Button>
+                                    </Space>
+
+                                    <Text style={{
+                                      color: 'var(--color-text-tertiary)',
+                                      fontSize: '11px',
+                                      display: 'block',
+                                      marginTop: '12px'
+                                    }}>
+                                      Cancel anytime • Secure checkout powered by Stripe
+                                    </Text>
+                                  </>
+                                )}
+                              </div>
+                            </Col>
+                          </Row>
+                        </div>
+                      </Card>
+
+                      {/* Or Divider */}
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        margin: '32px 0',
+                        gap: '16px'
+                      }}>
+                        <div style={{ flex: 1, height: '1px', background: 'var(--color-border-base)' }} />
+                        <Text style={{ color: 'var(--color-text-tertiary)', fontSize: '13px', fontWeight: 500 }}>
+                          OR CHOOSE INDIVIDUAL STRATEGIES
+                        </Text>
+                        <div style={{ flex: 1, height: '1px', background: 'var(--color-border-base)' }} />
+                      </div>
+                    </div>
+                  )}
+
                   {/* Strategy Cards Grid */}
                   {!stepResults.home.analysisCompleted && forceWorkflowMode ? (
                     <div style={{ textAlign: 'center', padding: '40px' }}>
                       <div style={{ fontSize: '48px', marginBottom: '16px' }}>📋</div>
-                      <Title level={4} style={{ color: '#fa8c16' }}>
+                      <Title level={4} style={{ color: 'var(--color-warning)' }}>
                         Complete Website Analysis First
                       </Title>
-                      <Text style={{ color: theme.colors.textSecondary, fontSize: theme.typography.base }}>
+                      <Text style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--font-size-base)' }}>
                         Please complete the website analysis in Step 1 before selecting your target audience.
                         This helps us create personalized audience strategies based on your business.
                       </Text>
@@ -1222,10 +1442,10 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                   ) : generatingStrategies ? (
                     <div style={{ textAlign: 'center', padding: '40px' }}>
                       <div style={{ fontSize: '24px', marginBottom: '16px' }}>🎯</div>
-                      <Title level={4} style={{ color: theme.colors.primary }}>
+                      <Title level={4} style={{ color: 'var(--color-primary)' }}>
                         {systemVoice.audience.generatingStrategies}
                       </Title>
-                      <Text style={{ color: theme.colors.textSecondary }}>
+                      <Text style={{ color: 'var(--color-text-secondary)' }}>
                         {systemVoice.audience.generatingStrategiesWithTime}
                       </Text>
                     </div>
@@ -1245,8 +1465,8 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                               transform: 'translateY(-50%)',
                               zIndex: 10,
                               backgroundColor: 'white',
-                              boxShadow: theme.shadows.sm,
-                              border: '1px solid #d9d9d9'
+                              boxShadow: 'var(--shadow-sm)',
+                              border: '1px solid var(--color-border-light)'
                             }}
                           />
                           <Button
@@ -1260,8 +1480,8 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                               transform: 'translateY(-50%)',
                               zIndex: 10,
                               backgroundColor: 'white',
-                              boxShadow: theme.shadows.sm,
-                              border: '1px solid #d9d9d9'
+                              boxShadow: 'var(--shadow-sm)',
+                              border: '1px solid var(--color-border-light)'
                             }}
                           />
                         </>
@@ -1281,8 +1501,8 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                   )}
                   
                   {selectedStrategy && (
-                    <div style={{ marginTop: '24px', textAlign: 'center', padding: '16px', background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: '6px' }}>
-                      <Text strong style={{ color: '#52c41a' }}>
+                    <div style={{ marginTop: '24px', textAlign: 'center', padding: '16px', background: 'var(--color-success-bg)', border: '1px solid var(--color-success-border)', borderRadius: '6px' }}>
+                      <Text strong style={{ color: 'var(--color-success)' }}>
                         ✅ Selected: {selectedStrategy.targetSegment?.demographics.split(' ').slice(0, 4).join(' ')}...
                       </Text>
                       <div style={{ marginTop: '16px' }}>
@@ -1291,10 +1511,10 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                             type="primary"
                             size="large"
                             onClick={onNextStep}
-                            style={{ 
+                            style={{
                               minWidth: '200px',
-                              backgroundColor: '#52c41a',
-                              borderColor: '#52c41a'
+                              backgroundColor: 'var(--color-success)',
+                              borderColor: 'var(--color-success)'
                             }}
                             icon={<BulbOutlined />}
                           >
@@ -1330,10 +1550,10 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                               
                               message.success('Moving to content creation...');
                             }}
-                            style={{ 
+                            style={{
                               minWidth: '200px',
-                              backgroundColor: '#52c41a',
-                              borderColor: '#52c41a'
+                              backgroundColor: 'var(--color-success)',
+                              borderColor: 'var(--color-success)'
                             }}
                             icon={<BulbOutlined />}
                           >
@@ -1363,10 +1583,10 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
           🎯 Choose Your Target Strategy
         </Title>
         
-        <Paragraph style={{ 
-          textAlign: 'center', 
-          marginBottom: '20px', 
-          color: theme.colors.textSecondary,
+        <Paragraph style={{
+          textAlign: 'center',
+          marginBottom: '20px',
+          color: 'var(--color-text-secondary)',
           fontSize: responsive.fontSize.text
         }}>
           Select the audience you want to target with your content. These strategies are ranked by business opportunity and include enhanced targeting data.
@@ -1377,21 +1597,21 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
           textAlign: 'center',
           marginBottom: '24px',
           padding: '12px',
-          backgroundColor: '#f6ffed',
+          backgroundColor: 'var(--color-success-bg)',
           borderRadius: '6px',
-          border: '1px solid #b7eb8f'
+          border: '1px solid var(--color-success-border)'
         }}>
-          <Text style={{ fontSize: responsive.fontSize.small, color: '#389e0d' }}>
+          <Text style={{ fontSize: responsive.fontSize.small, color: 'var(--color-success-dark)' }}>
             🎯 Strategies ranked using search data: volumes, competitive analysis, and conversion potential
           </Text>
         </div>
         
         {/* Strategy Selection Cards */}
         {strategies.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '40px', color: theme.colors.textSecondary }}>
-            <DatabaseOutlined style={{ fontSize: '48px', color: '#d9d9d9', marginBottom: '16px' }} />
-            <Title level={4} style={{ color: theme.colors.textTertiary }}>No Customer Strategies Found</Title>
-            <Text style={{ marginBottom: '20px', color: theme.colors.textSecondary }}>
+          <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-text-secondary)' }}>
+            <DatabaseOutlined style={{ fontSize: '48px', color: 'var(--color-gray-300)', marginBottom: '16px' }} />
+            <Title level={4} style={{ color: 'var(--color-text-tertiary)' }}>No Customer Strategies Found</Title>
+            <Text style={{ marginBottom: '20px', color: 'var(--color-text-secondary)' }}>
               Run website analysis to generate personalized customer strategies based on your business.
             </Text>
             <Button 
@@ -1403,7 +1623,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                 marginTop: '8px',
                 minWidth: '200px',
                 height: '40px',
-                fontSize: theme.typography.base
+                fontSize: 'var(--font-size-base)'
               }}
             >
               Run Website Analysis
@@ -1427,7 +1647,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                       zIndex: 10,
                       backgroundColor: 'white',
                       boxShadow: theme.shadows.sm,
-                      border: '1px solid #d9d9d9'
+                      border: '1px solid var(--color-gray-300)'
                     }}
                   />
                   <Button
@@ -1442,7 +1662,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                       zIndex: 10,
                       backgroundColor: 'white',
                       boxShadow: theme.shadows.sm,
-                      border: '1px solid #d9d9d9'
+                      border: '1px solid var(--color-gray-300)'
                     }}
                   />
                 </>
