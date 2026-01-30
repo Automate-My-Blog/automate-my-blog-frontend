@@ -178,17 +178,48 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
 
   // Fetch pricing for strategies (Phase 2 - Dynamic Pricing) — only when logged in (backend returns 401 without token)
   useEffect(() => {
-    if (!user) return;
+    console.log('🔍 Pricing useEffect triggered:', {
+      hasUser: !!user,
+      strategiesLength: strategies.length,
+      loadingPricing
+    });
+
+    if (!user) {
+      console.log('⚠️ Pricing fetch skipped: No user');
+      return;
+    }
 
     const fetchStrategyPricing = async () => {
-      if (strategies.length === 0 || loadingPricing) return;
+      if (strategies.length === 0) {
+        console.log('⚠️ Pricing fetch skipped: No strategies');
+        return;
+      }
+      if (loadingPricing) {
+        console.log('⚠️ Pricing fetch skipped: Already loading');
+        return;
+      }
 
       setLoadingPricing(true);
-      console.log('💰 Fetching pricing for strategies:', strategies.length);
 
       try {
-        // Fetch pricing for each strategy
-        const pricingPromises = strategies.map(async (strategy) => {
+        // Helper to check if ID is a valid UUID (database ID)
+        const isValidDatabaseId = (id) => {
+          if (!id) return false;
+          // Check if it's a UUID format (with hyphens) or temp ID
+          return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+        };
+
+        // Filter strategies to only fetch pricing for those with database IDs
+        const strategiesWithDbIds = strategies.filter(s => isValidDatabaseId(s.id || s.databaseId));
+
+        console.log('💰 Strategies to fetch pricing for:', {
+          total: strategies.length,
+          withDbIds: strategiesWithDbIds.length,
+          skipped: strategies.length - strategiesWithDbIds.length
+        });
+
+        // Fetch pricing for each strategy with a database ID
+        const pricingPromises = strategiesWithDbIds.map(async (strategy) => {
           try {
             const pricing = await autoBlogAPI.getStrategyPricing(strategy.id || strategy.databaseId);
             return { strategyId: strategy.id || strategy.databaseId, pricing: pricing.pricing };
@@ -208,17 +239,24 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
           }
         });
 
+        console.log('💰 Pricing map built:', {
+          count: Object.keys(pricingMap).length,
+          sampleStrategyId: Object.keys(pricingMap)[0],
+          samplePricing: pricingMap[Object.keys(pricingMap)[0]]
+        });
+
         setStrategyPricing(pricingMap);
         console.log('✅ Pricing fetched for strategies:', Object.keys(pricingMap).length);
       } catch (error) {
         console.error('Failed to fetch strategy pricing:', error);
       } finally {
+        console.log('💰 Resetting loadingPricing to false');
         setLoadingPricing(false);
       }
     };
 
     fetchStrategyPricing();
-  }, [user, strategies.length]); // Re-fetch when user or strategies change
+  }, [user, strategies.length, strategies.map(s => s.id || s.databaseId).join(',')]); // Re-fetch when user or strategies change (including ID changes)
 
   // Load audience strategies based on OpenAI analysis when entering workflow mode or when analysis data exists
   useEffect(() => {
@@ -656,6 +694,16 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
     const strategyId = strategy.id || strategy.databaseId;
     const pricing = strategyPricing[strategyId];
     const hasPricing = !!pricing;
+
+    if (index === 0) {
+      console.log('💰 Card 0 pricing lookup:', {
+        strategyId,
+        hasPricing,
+        pricing,
+        strategyPricingKeys: Object.keys(strategyPricing),
+        strategyPricingCount: Object.keys(strategyPricing).length
+      });
+    }
 
     return (
       <div key={strategy.id} style={{ padding: '0 8px' }}>

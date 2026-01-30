@@ -215,7 +215,7 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
   return (
     <div>
       
-      <div style={{ padding: '24px' }}>
+      <div style={{ padding: 'var(--space-6)' }}>
         {/* Unified Header - Shows for both logged-out workflow and logged-in users */}
         <UnifiedWorkflowHeader
           user={user}
@@ -233,13 +233,13 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
         {/* Welcome-back hint when user has cached analysis (anticipatory UX) */}
         {hasCachedAnalysis && welcomeBackContext && (
           <div style={{
-            padding: '10px 16px',
-            marginBottom: '16px',
-            backgroundColor: '#f6ffed',
-            border: '1px solid #b7eb8f',
-            borderRadius: '8px',
-            fontSize: '14px',
-            color: '#389e0d',
+            padding: '10px var(--space-4)',
+            marginBottom: 'var(--space-4)',
+            backgroundColor: 'var(--color-gray-50)',
+            border: '1px solid var(--color-border-base)',
+            borderRadius: 'var(--radius-md)',
+            fontSize: 'var(--font-size-sm)',
+            color: 'var(--color-text-secondary)',
           }}>
             {systemVoice.suggestions.welcomeBackCached(`"${welcomeBackContext}"`)}
           </div>
@@ -248,7 +248,7 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
         {/* Main Content Area - Consistent layout for both states */}
         <div style={{
           minHeight: '400px',
-          transition: 'all 0.3s ease',
+          transition: 'all var(--transition-normal)',
           position: 'relative'
         }}>
           {/* Website Analysis Section - Always show for authenticated users */}
@@ -261,7 +261,7 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
                 transition: 'opacity 0.6s ease, transform 0.6s ease'
               }}
             >
-            <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+            <Row gutter={[16, 16]} style={{ marginBottom: 'var(--space-6)' }}>
               <Col span={24}>
                 <WebsiteAnalysisStepStandalone
                   // Core state (from unified context)
@@ -297,9 +297,9 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
                 
                 {/* Continue Button + anticipatory suggestion - Show after analysis completes and only in workflow mode */}
                 {stepResults.home.analysisCompleted && stepResults.home.websiteAnalysis && (tabMode.mode === 'workflow' || forceWorkflowMode) && (
-                  <Card style={{ marginTop: '16px' }}>
-                    <div style={{ textAlign: 'center', padding: '16px' }}>
-                      <Paragraph style={{ marginBottom: '12px', fontSize: '15px', color: '#333' }}>
+                  <Card style={{ marginTop: 'var(--space-4)' }}>
+                    <div style={{ textAlign: 'center', padding: 'var(--space-4)' }}>
+                      <Paragraph style={{ marginBottom: 'var(--space-3)', fontSize: 'var(--font-size-base)', color: 'var(--color-text-primary)' }}>
                         {systemVoice.suggestions.afterAnalysis(
                           stepResults.home.websiteAnalysis.targetAudience || stepResults.home.websiteAnalysis.businessType
                         )}

@@ -200,44 +200,104 @@ export const ComponentHelpers = {
 
   /**
    * Get default colors (brand colors functionality removed)
+   * Returns colors from design-system.css
    * @returns {Object} Static default colors
    */
   getDefaultColors() {
     return {
-      primary: '#1890ff',
-      secondary: '#f0f2ff',
-      accent: '#722ed1'
+      primary: '#6366f1',   // --color-primary (indigo)
+      secondary: '#f1f5f9', // --color-secondary
+      accent: '#06b6d4'     // --color-accent (cyan)
     };
   },
 
   /**
    * Get theme object with design tokens
+   * Matches design-system.css custom properties
    * @returns {Object} Theme object with colors, typography, spacing, etc.
    */
   getTheme() {
     return {
       colors: {
-        primary: '#1890ff',
-        secondary: '#f0f2ff',
-        accent: '#722ed1',
-        text: '#262626',
-        textSecondary: '#666',
-        textTertiary: '#999',
-        gray800: '#333',
-        backgroundAlt: '#f0f5ff'
+        // Core colors from design-system.css
+        primary: '#6366f1',        // --color-primary (indigo)
+        primaryLight: '#818cf8',   // --color-primary-light
+        primaryDark: '#4f46e5',    // --color-primary-dark
+        secondary: '#f1f5f9',      // --color-secondary
+        accent: '#06b6d4',         // --color-accent (cyan)
+        success: '#10b981',        // --color-success
+        warning: '#f59e0b',        // --color-warning
+        error: '#ef4444',          // --color-error
+
+        // Neutral colors
+        white: '#ffffff',
+        gray50: '#f8fafc',
+        gray100: '#f1f5f9',
+        gray200: '#e2e8f0',
+        gray300: '#cbd5e1',
+        gray400: '#94a3b8',
+        gray500: '#64748b',
+        gray600: '#475569',
+        gray700: '#334155',
+        gray800: '#1e293b',
+        gray900: '#0f172a',
+
+        // Text colors (using design system neutrals)
+        text: '#0f172a',           // gray900
+        textSecondary: '#64748b',  // gray500
+        textTertiary: '#94a3b8',   // gray400
+        backgroundAlt: '#f8fafc'   // gray50
       },
       typography: {
-        base: '14px',
-        sm: '13px',
-        lg: '16px'
+        xs: '0.75rem',      // 12px
+        sm: '0.875rem',     // 14px
+        base: '1rem',       // 16px
+        lg: '1.125rem',     // 18px
+        xl: '1.25rem',      // 20px
+        '2xl': '1.5rem',    // 24px
+        '3xl': '1.875rem',  // 30px
+        '4xl': '2.25rem',   // 36px
+        '5xl': '3rem'       // 48px
+      },
+      fontWeight: {
+        light: 300,
+        normal: 400,
+        medium: 500,
+        semibold: 600,
+        bold: 700,
+        extrabold: 800
       },
       borderRadius: {
-        sm: '4px',
-        md: '8px',
-        lg: '12px'
+        sm: '0.25rem',      // 4px
+        base: '0.375rem',   // 6px
+        md: '0.5rem',       // 8px
+        lg: '0.75rem',      // 12px
+        xl: '1rem',         // 16px
+        '2xl': '1.5rem',    // 24px
+        full: '9999px'
+      },
+      spacing: {
+        1: '0.25rem',   // 4px
+        2: '0.5rem',    // 8px
+        3: '0.75rem',   // 12px
+        4: '1rem',      // 16px
+        5: '1.25rem',   // 20px
+        6: '1.5rem',    // 24px
+        8: '2rem',      // 32px
+        10: '2.5rem',   // 40px
+        12: '3rem',     // 48px
+        16: '4rem',     // 64px
+        20: '5rem',     // 80px
+        24: '6rem'      // 96px
       },
       shadows: {
-        sm: '0 2px 8px rgba(0,0,0,0.15)'
+        sm: '0 1px 2px 0 rgb(0 0 0 / 0.05)',
+        base: '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)',
+        md: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+        lg: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
+        xl: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)',
+        '2xl': '0 25px 50px -12px rgb(0 0 0 / 0.25)',
+        inner: 'inset 0 2px 4px 0 rgb(0 0 0 / 0.05)'
       }
     };
   },

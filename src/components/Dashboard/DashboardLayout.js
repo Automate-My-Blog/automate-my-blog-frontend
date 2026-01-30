@@ -650,11 +650,11 @@ const DashboardLayout = ({
         {/* Home Section (formerly Dashboard) - Always visible */}
         {(user || visibleSections.includes('home')) && (
           <section id="home" style={{ 
-            minHeight: '100vh', 
-            background: '#fff',
-            borderRadius: '8px',
-            padding: '24px',
-            marginBottom: '24px'
+            minHeight: '100vh',
+            background: 'var(--color-background-body)',
+            borderRadius: 'var(--radius-md)',
+            padding: 'var(--space-6)',
+            marginBottom: 'var(--space-6)'
           }}>
             <DashboardTab 
               forceWorkflowMode={forceWorkflowMode || (user && projectMode)} 
@@ -706,11 +706,11 @@ const DashboardLayout = ({
         {/* Audience Section - Unlocked after step 1 (light motion) */}
         {((!user && visibleSections.includes('audience-segments')) || (user && (!projectMode || stepResults.home.analysisCompleted))) && (
           <section id="audience-segments" className="workflow-section-enter" style={{ 
-            minHeight: '100vh', 
-            background: '#fff',
-            borderRadius: '8px',
-            padding: '24px',
-            marginBottom: '24px'
+            minHeight: '100vh',
+            background: 'var(--color-background-body)',
+            borderRadius: 'var(--radius-md)',
+            padding: 'var(--space-6)',
+            marginBottom: 'var(--space-6)'
           }}>
             <AudienceSegmentsTab 
               forceWorkflowMode={forceWorkflowMode || (user && projectMode)}
@@ -723,11 +723,11 @@ const DashboardLayout = ({
         {/* Posts Section - Unlocked after step 2 (light motion) */}
         {((!user && visibleSections.includes('posts')) || (user && (!projectMode || stepResults.audience.customerStrategy))) && (
           <section id="posts" className="workflow-section-enter" style={{ 
-            minHeight: '100vh', 
-            background: '#fff',
-            borderRadius: '8px',
-            padding: '24px',
-            marginBottom: '24px'
+            minHeight: '100vh',
+            background: 'var(--color-background-body)',
+            borderRadius: 'var(--radius-md)',
+            padding: 'var(--space-6)',
+            marginBottom: 'var(--space-6)'
           }}>
             <PostsTab
               forceWorkflowMode={forceWorkflowMode || (user && projectMode)}
@@ -818,22 +818,27 @@ const DashboardLayout = ({
           left: 0,
           bottom: 0,
           width: '240px',
-          background: '#fff',
-          borderRight: '1px solid #f0f0f0',
-          boxShadow: '2px 0 8px rgba(0,0,0,0.15)',
+          background: 'var(--color-background-body)',
+          borderRight: '1px solid var(--color-border-base)',
+          boxShadow: 'var(--shadow-sm)',
           display: 'flex',
           flexDirection: 'column',
           zIndex: 100,
           transform: effectiveShowDashboard ? 'translateX(0)' : 'translateX(-240px)',
-          transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+          transition: 'transform var(--transition-normal)'
         }}>
           {/* Logo/Title */}
-          <div style={{ 
-            padding: '16px', 
-            borderBottom: '1px solid #f0f0f0',
+          <div style={{
+            padding: 'var(--space-4)',
+            borderBottom: '1px solid var(--color-border-base)',
             textAlign: 'center'
           }}>
-            <h3 style={{ margin: 0, fontSize: collapsed ? '14px' : '18px' }}>
+            <h3 style={{
+              margin: 0,
+              fontSize: collapsed ? 'var(--font-size-sm)' : 'var(--font-size-lg)',
+              fontWeight: 'var(--font-weight-semibold)',
+              color: 'var(--color-text-primary)'
+            }}>
               {collapsed ? 'AMB' : 'Automate My Blog'}
             </h3>
           </div>
@@ -851,8 +856,8 @@ const DashboardLayout = ({
           
           {/* User Profile Section at Bottom */}
           <div style={{
-            borderTop: '1px solid #f0f0f0',
-            padding: '16px'
+            borderTop: '1px solid var(--color-border-base)',
+            padding: 'var(--space-4)'
           }}>
             <Dropdown
               menu={{ items: userMenuItems }}
@@ -910,13 +915,13 @@ const DashboardLayout = ({
           bottom: 0,
           left: 0,
           right: 0,
-          background: '#fff',
-          borderTop: '1px solid #f0f0f0',
-          padding: '8px',
+          background: 'var(--color-background-body)',
+          borderTop: '1px solid var(--color-border-base)',
+          padding: 'var(--space-2)',
           zIndex: 20,
           display: 'flex',
           justifyContent: 'space-around',
-          boxShadow: '0 -2px 8px rgba(0,0,0,0.15)'
+          boxShadow: 'var(--shadow-sm)'
         }}>
           {menuItems.slice(0, 6).map((item) => (
             <Button
@@ -981,9 +986,9 @@ const DashboardLayout = ({
 
 
       {/* Content area - always show */}
-        <div style={{ 
-          padding: isMobile ? '16px 16px 80px 16px' : '24px',
-          background: '#f5f5f5',
+        <div style={{
+          padding: isMobile ? 'var(--space-4) var(--space-4) 80px var(--space-4)' : 'var(--space-6)',
+          background: 'var(--color-gray-50)',
           overflow: 'auto',
           paddingTop: (() => {
             const baseHeaderHeight = (!user && forceWorkflowMode) || (user && isNewRegistration && projectMode) ? 100 : 24;
@@ -1009,10 +1014,10 @@ const DashboardLayout = ({
                   }
                 }}
                 style={{
-                  background: 'white',
-                  padding: '8px 16px',
-                  borderRadius: '8px',
-                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+                  background: 'var(--color-background-body)',
+                  padding: 'var(--space-2) var(--space-4)',
+                  borderRadius: 'var(--radius-lg)',
+                  boxShadow: 'var(--shadow-md)',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '8px',
@@ -1080,7 +1085,7 @@ const DashboardLayout = ({
                     backgroundColor: '#52c41a',
                     borderColor: '#52c41a',
                     fontWeight: 600,
-                    boxShadow: '0 4px 12px rgba(82, 196, 26, 0.3)'
+                    boxShadow: 'none'
                   }}
                 >
                   ⚡ Upgrade Now
@@ -1130,7 +1135,7 @@ const DashboardLayout = ({
                     backgroundColor: '#1890ff', 
                     borderColor: '#1890ff',
                     fontWeight: 600,
-                    boxShadow: '0 4px 12px rgba(24, 144, 255, 0.3)',
+                    boxShadow: 'none',
                     border: '2px solid #1890ff',
                     marginRight: projectMode ? '0' : '0' // No margin when alone
                   }}
@@ -1181,7 +1186,7 @@ const DashboardLayout = ({
                       borderColor: '#ff4d4f',
                       color: 'white',
                       fontWeight: 600,
-                      boxShadow: '0 4px 12px rgba(255, 77, 79, 0.3)',
+                      boxShadow: 'none',
                       border: '2px solid #ff4d4f'
                     }}
                   >
@@ -1193,10 +1198,10 @@ const DashboardLayout = ({
           )}
 
           <div style={{
-            background: activeTab === 'settings' || activeTab.startsWith('admin-') || activeTab === 'sandbox' ? '#fff' : 'transparent',
-            borderRadius: activeTab === 'settings' || activeTab.startsWith('admin-') || activeTab === 'sandbox' ? '8px' : '0',
+            background: activeTab === 'settings' || activeTab.startsWith('admin-') || activeTab === 'sandbox' ? 'var(--color-background-body)' : 'transparent',
+            borderRadius: activeTab === 'settings' || activeTab.startsWith('admin-') || activeTab === 'sandbox' ? 'var(--radius-lg)' : '0',
             minHeight: '100%',
-            padding: activeTab === 'settings' || activeTab.startsWith('admin-') || activeTab === 'sandbox' ? '24px' : '0'
+            padding: activeTab === 'settings' || activeTab.startsWith('admin-') || activeTab === 'sandbox' ? 'var(--space-6)' : '0'
           }}>
             {renderContent()}
           </div>
@@ -1204,12 +1209,12 @@ const DashboardLayout = ({
           {/* Footer with deploy commit hash for deployment verification */}
           <footer
             style={{
-              marginTop: '24px',
-              padding: '12px 24px',
-              borderTop: '1px solid #f0f0f0',
-              background: '#fafafa',
-              fontSize: '12px',
-              color: '#8c8c8c',
+              marginTop: 'var(--space-6)',
+              padding: 'var(--space-3) var(--space-6)',
+              borderTop: '1px solid var(--color-border-base)',
+              background: 'var(--color-gray-50)',
+              fontSize: 'var(--font-size-xs)',
+              color: 'var(--color-text-tertiary)',
               textAlign: 'center'
             }}
             title="Git commit of this deployment (for verification)"
@@ -1232,7 +1237,7 @@ const DashboardLayout = ({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
+          boxShadow: 'var(--shadow-md)'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <UserSwitchOutlined style={{ fontSize: '16px' }} />
