@@ -362,8 +362,9 @@ const UnifiedWorkflowHeader = ({
             <div
               className={showFlash === 'title' ? 'flash-highlight' : ''}
               style={{
-                marginBottom: 'var(--space-2)',
-                display: 'inline-block'
+                marginBottom: 'var(--space-4)',
+                display: 'block',
+                textAlign: 'center'
               }}
             >
               <Title level={2} style={{
@@ -386,9 +387,10 @@ const UnifiedWorkflowHeader = ({
             <div
               className={showFlash === 'subtitle' ? 'flash-highlight' : ''}
               style={{
-                display: 'inline-block',
+                display: 'block',
                 maxWidth: '800px',
-                margin: '0 auto'
+                margin: '0 auto',
+                textAlign: 'center'
               }}
             >
               <Paragraph style={{
