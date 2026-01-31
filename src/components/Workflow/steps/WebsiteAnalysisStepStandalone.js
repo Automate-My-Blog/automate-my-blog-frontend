@@ -570,7 +570,10 @@ const WebsiteAnalysisStepStandalone = ({
         <Space.Compact
           style={{
             width: '100%',
-            position: 'relative'
+            position: 'relative',
+            boxShadow: '0 4px 20px rgba(24, 144, 255, 0.15), 0 0 0 2px rgba(24, 144, 255, 0.1)',
+            borderRadius: '8px',
+            transition: 'box-shadow 0.3s ease'
           }}
           size="large"
           className={showSparkle ? 'input-sparkle' : ''}

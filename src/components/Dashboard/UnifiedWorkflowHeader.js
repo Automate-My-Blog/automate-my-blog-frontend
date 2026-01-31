@@ -149,8 +149,8 @@ const UnifiedWorkflowHeader = ({
       timeouts.push(timeout);
     }
 
-    // 4. Type subtitle part 2 (" without complication") - after pause
-    const part2StartDelay = clicksStartDelay + (clicksWord.length * charDelay) + clicksPauseDelay + 200;
+    // 4. Type subtitle part 2 (" without complication") - after pause + 0.5s additional delay
+    const part2StartDelay = clicksStartDelay + (clicksWord.length * charDelay) + clicksPauseDelay + 200 + 500;
     for (let i = 0; i <= subtitlePart2.length; i++) {
       const timeout = setTimeout(() => {
         setDisplayedSubtitlePart2(subtitlePart2.slice(0, i));
@@ -371,7 +371,7 @@ const UnifiedWorkflowHeader = ({
           // Typewriter animation mode
           <div
             style={{
-              opacity: dimText ? 0.75 : 1,
+              opacity: dimText ? 0.4 : 1,
               transition: 'opacity 0.5s ease-out',
               pointerEvents: 'none',
               position: 'relative'
@@ -383,8 +383,9 @@ const UnifiedWorkflowHeader = ({
               }
             }}
           >
-            {/* Title with typewriter effect - NO FLASH */}
+            {/* Title with typewriter effect - Highlights with subtitle during "clicks" animation */}
             <div
+              className={showClicksHighlight ? 'flash-highlight' : ''}
               style={{
                 marginBottom: 'var(--space-4)',
                 display: 'block',
@@ -407,8 +408,9 @@ const UnifiedWorkflowHeader = ({
               )}
             </div>
 
-            {/* Subtitle with typewriter effect - Split into 3 parts, only "clicks" gets highlight */}
+            {/* Subtitle with typewriter effect - Highlights with title during "clicks" animation */}
             <div
+              className={showClicksHighlight ? 'flash-highlight' : ''}
               style={{
                 display: 'block',
                 maxWidth: '800px',
@@ -426,10 +428,8 @@ const UnifiedWorkflowHeader = ({
                 {/* Part 1: "Automate website content to get " */}
                 {displayedSubtitlePart1}
 
-                {/* Part 2: "clicks" - HIGHLIGHTED when animation triggers */}
-                <span className={showClicksHighlight ? 'flash-highlight' : ''}>
-                  {displayedClicks}
-                </span>
+                {/* Part 2: "clicks" */}
+                {displayedClicks}
 
                 {/* Part 3: " without complication" */}
                 {displayedSubtitlePart2}
