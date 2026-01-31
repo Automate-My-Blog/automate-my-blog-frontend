@@ -1825,6 +1825,7 @@ html.dark-mode [class*="ant-badge"] * {
   box-shadow: 0 0 8px rgba(24, 144, 255, 0.5);
 }
 
+/* Yellow highlight animation - used for "clicks" word emphasis in typewriter sequence */
 @keyframes text-flash {
   0% {
     background-color: transparent;

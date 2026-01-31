@@ -37,12 +37,15 @@ const UnifiedWorkflowHeader = ({
 
   // Typewriter animation state
   const [displayedTitle, setDisplayedTitle] = useState('');
-  const [displayedSubtitle, setDisplayedSubtitle] = useState('');
+  const [displayedSubtitlePart1, setDisplayedSubtitlePart1] = useState(''); // Before "clicks"
+  const [displayedClicks, setDisplayedClicks] = useState(''); // The word "clicks"
+  const [displayedSubtitlePart2, setDisplayedSubtitlePart2] = useState(''); // After "clicks"
   const [showTitleCursor, setShowTitleCursor] = useState(true);
   const [showSubtitleCursor, setShowSubtitleCursor] = useState(false);
   const [titleComplete, setTitleComplete] = useState(false);
   const [subtitleComplete, setSubtitleComplete] = useState(false);
-  const [showFlash, setShowFlash] = useState(null); // 'title', 'subtitle', or 'ding'
+  const [showFlash, setShowFlash] = useState(null); // Only 'ding' now (no 'title' or 'subtitle')
+  const [showClicksHighlight, setShowClicksHighlight] = useState(false); // For "clicks" animation
   const [cursorRemoved, setCursorRemoved] = useState(false);
   const [animationComplete, setAnimationComplete] = useState(false);
   const [skipAnimation, setSkipAnimation] = useState(false);
@@ -76,10 +79,17 @@ const UnifiedWorkflowHeader = ({
     const animationKey = 'autoblog-step0-typewriter-played';
     const hasPlayed = sessionStorage.getItem(animationKey);
 
+    // Split subtitle into 3 parts for "clicks" animation
+    const subtitlePart1 = "Automate website content to get ";
+    const clicksWord = "clicks";
+    const subtitlePart2 = " without complication";
+
     if (hasPlayed) {
       // Show full text immediately
       setDisplayedTitle(systemVoice.header.step0Title);
-      setDisplayedSubtitle(systemVoice.header.step0Description);
+      setDisplayedSubtitlePart1(subtitlePart1);
+      setDisplayedClicks(clicksWord);
+      setDisplayedSubtitlePart2(subtitlePart2);
       setShowTitleCursor(false);
       setShowSubtitleCursor(false);
       setTitleComplete(true);
@@ -92,49 +102,63 @@ const UnifiedWorkflowHeader = ({
     }
 
     const fullTitle = systemVoice.header.step0Title;
-    const fullSubtitle = systemVoice.header.step0Description;
     const charDelay = 50; // 50ms per character
+    const clicksPauseDelay = 300; // 300ms pause after "clicks"
     const timeouts = [];
 
-    // Type title character by character
+    // 1. Type title character by character (NO FLASH when complete)
     for (let i = 0; i <= fullTitle.length; i++) {
       const timeout = setTimeout(() => {
         setDisplayedTitle(fullTitle.slice(0, i));
 
         if (i === fullTitle.length) {
-          // Title complete - flash it
+          // Title complete - NO FLASH, just move cursor immediately
           setTitleComplete(true);
-          setShowFlash('title');
-
-          const flashTimeout = setTimeout(() => setShowFlash(null), 200);
-          timeouts.push(flashTimeout);
-
-          // Hide title cursor, show subtitle cursor after flash
-          const cursorTimeout = setTimeout(() => {
-            setShowTitleCursor(false);
-            setShowSubtitleCursor(true);
-          }, 200);
-          timeouts.push(cursorTimeout);
+          setShowTitleCursor(false);
+          setShowSubtitleCursor(true);
         }
       }, i * charDelay);
       timeouts.push(timeout);
     }
 
-    // Type subtitle (starts after title + flash delay)
-    const subtitleStartDelay = (fullTitle.length * charDelay) + 200;
-    for (let i = 0; i <= fullSubtitle.length; i++) {
+    // 2. Type subtitle part 1 ("Automate website content to get ")
+    const subtitleStartDelay = fullTitle.length * charDelay;
+    for (let i = 0; i <= subtitlePart1.length; i++) {
       const timeout = setTimeout(() => {
-        setDisplayedSubtitle(fullSubtitle.slice(0, i));
+        setDisplayedSubtitlePart1(subtitlePart1.slice(0, i));
+      }, subtitleStartDelay + (i * charDelay));
+      timeouts.push(timeout);
+    }
 
-        if (i === fullSubtitle.length) {
-          // Subtitle complete - flash it
+    // 3. Type "clicks" word
+    const clicksStartDelay = subtitleStartDelay + (subtitlePart1.length * charDelay);
+    for (let i = 0; i <= clicksWord.length; i++) {
+      const timeout = setTimeout(() => {
+        setDisplayedClicks(clicksWord.slice(0, i));
+
+        if (i === clicksWord.length) {
+          // "clicks" complete - PAUSE and ANIMATE
+          const highlightTimeout = setTimeout(() => {
+            setShowClicksHighlight(true); // Trigger highlight animation
+            const highlightEndTimeout = setTimeout(() => setShowClicksHighlight(false), 200);
+            timeouts.push(highlightEndTimeout);
+          }, clicksPauseDelay);
+          timeouts.push(highlightTimeout);
+        }
+      }, clicksStartDelay + (i * charDelay));
+      timeouts.push(timeout);
+    }
+
+    // 4. Type subtitle part 2 (" without complication") - after pause
+    const part2StartDelay = clicksStartDelay + (clicksWord.length * charDelay) + clicksPauseDelay + 200;
+    for (let i = 0; i <= subtitlePart2.length; i++) {
+      const timeout = setTimeout(() => {
+        setDisplayedSubtitlePart2(subtitlePart2.slice(0, i));
+
+        if (i === subtitlePart2.length) {
+          // Subtitle complete - NO FLASH, just ding effect
           setSubtitleComplete(true);
-          setShowFlash('subtitle');
 
-          const flashTimeout = setTimeout(() => setShowFlash(null), 200);
-          timeouts.push(flashTimeout);
-
-          // Remove cursor with ding effect
           const dingTimeout = setTimeout(() => {
             setShowSubtitleCursor(false);
             setShowFlash('ding');
@@ -162,10 +186,10 @@ const UnifiedWorkflowHeader = ({
               timeouts.push(dimTimeout);
             }, 200);
             timeouts.push(completeTimeout);
-          }, 200);
+          }, 0);
           timeouts.push(dingTimeout);
         }
-      }, subtitleStartDelay + (i * charDelay));
+      }, part2StartDelay + (i * charDelay));
       timeouts.push(timeout);
     }
 
@@ -181,7 +205,9 @@ const UnifiedWorkflowHeader = ({
 
     // Show full text immediately
     setDisplayedTitle(systemVoice.header.step0Title);
-    setDisplayedSubtitle(systemVoice.header.step0Description);
+    setDisplayedSubtitlePart1("Automate website content to get ");
+    setDisplayedClicks("clicks");
+    setDisplayedSubtitlePart2(" without complication");
     setShowTitleCursor(false);
     setShowSubtitleCursor(false);
     setTitleComplete(true);
@@ -345,7 +371,7 @@ const UnifiedWorkflowHeader = ({
           // Typewriter animation mode
           <div
             style={{
-              opacity: dimText ? 0.3 : 1,
+              opacity: dimText ? 0.75 : 1,
               transition: 'opacity 0.5s ease-out',
               pointerEvents: 'none',
               position: 'relative'
@@ -357,9 +383,8 @@ const UnifiedWorkflowHeader = ({
               }
             }}
           >
-            {/* Title with typewriter effect */}
+            {/* Title with typewriter effect - NO FLASH */}
             <div
-              className={showFlash === 'title' ? 'flash-highlight' : ''}
               style={{
                 marginBottom: 'var(--space-4)',
                 display: 'block',
@@ -382,9 +407,8 @@ const UnifiedWorkflowHeader = ({
               )}
             </div>
 
-            {/* Subtitle with typewriter effect */}
+            {/* Subtitle with typewriter effect - Split into 3 parts, only "clicks" gets highlight */}
             <div
-              className={showFlash === 'subtitle' ? 'flash-highlight' : ''}
               style={{
                 display: 'block',
                 maxWidth: '800px',
@@ -399,7 +423,16 @@ const UnifiedWorkflowHeader = ({
                 lineHeight: 'var(--line-height-relaxed)',
                 display: 'inline'
               }}>
-                {displayedSubtitle}
+                {/* Part 1: "Automate website content to get " */}
+                {displayedSubtitlePart1}
+
+                {/* Part 2: "clicks" - HIGHLIGHTED when animation triggers */}
+                <span className={showClicksHighlight ? 'flash-highlight' : ''}>
+                  {displayedClicks}
+                </span>
+
+                {/* Part 3: " without complication" */}
+                {displayedSubtitlePart2}
               </Paragraph>
               {showSubtitleCursor && (
                 <span className="typewriter-cursor" style={{ verticalAlign: 'middle' }} />
