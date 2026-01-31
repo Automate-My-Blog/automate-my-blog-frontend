@@ -33,7 +33,7 @@ const WebsiteAnalysisStepStandalone = ({
   setAnalysisResults,
   webSearchInsights,
   setWebSearchInsights,
-  
+
   // Loading states
   isLoading,
   setIsLoading,
@@ -41,26 +41,30 @@ const WebsiteAnalysisStepStandalone = ({
   setScanningMessage,
   analysisCompleted,
   setAnalysisCompleted,
-  
+
   // User context
   user,
   requireAuth,
-  
+
   // Event handlers
   onAnalysisComplete,
   onStartOver,
   addStickyWorkflowStep,
   updateStickyWorkflowStep,
-  
+
   // Configuration
   embedded = false,
   showTitle = true,
   autoAnalyze = false,
-  
+
+  // Animation props
+  delayedReveal = false,
+  showInput = true,
+
   // Style overrides
   cardStyle = {},
   className = '',
-  
+
   // Default helpers
   getDefaultColors = ComponentHelpers.getDefaultColors
 }) => {
@@ -89,6 +93,10 @@ const WebsiteAnalysisStepStandalone = ({
   // Success highlight when analysis result first appears
   const [showSuccessHighlight, setShowSuccessHighlight] = useState(false);
 
+  // Animation state for delayed reveal
+  const [inputVisible, setInputVisible] = useState(!delayedReveal);
+  const [showSparkle, setShowSparkle] = useState(false);
+
   // Use local state if parent doesn't provide state management
   const loading = isLoading !== undefined ? isLoading : localLoading;
   const currentScanningMessage = scanningMessage !== undefined ? scanningMessage : localScanningMessage;
@@ -116,6 +124,30 @@ const WebsiteAnalysisStepStandalone = ({
       return () => clearTimeout(t);
     }
   }, [loading, analysisResults]);
+
+  // Handle delayed reveal animation
+  useEffect(() => {
+    if (showInput && !inputVisible) {
+      setInputVisible(true);
+      // Start sparkle effect after input appears
+      const sparkleTimeout = setTimeout(() => {
+        setShowSparkle(true);
+        // Remove sparkle after animation completes (3 cycles × 2s = 6s)
+        const removeSparkleTimeout = setTimeout(() => {
+          setShowSparkle(false);
+        }, 6000);
+        return () => clearTimeout(removeSparkleTimeout);
+      }, 300);
+      return () => clearTimeout(sparkleTimeout);
+    }
+  }, [showInput, inputVisible]);
+
+  // Remove sparkle on input focus or interaction
+  const handleInputFocus = () => {
+    if (showSparkle) {
+      setShowSparkle(false);
+    }
+  };
   
   // Load cached analysis for logged-in users when component mounts
   useEffect(() => {
@@ -515,46 +547,59 @@ const WebsiteAnalysisStepStandalone = ({
    * Render URL input form
    */
   const renderUrlInput = () => (
-    <div style={{ marginBottom: '30px' }}>
+    <div
+      style={{
+        marginBottom: '30px',
+        animation: delayedReveal && inputVisible ? 'fadeInInput 0.8s ease-out forwards' : 'none',
+        opacity: delayedReveal && !inputVisible ? 0 : 1,
+        position: 'relative'
+      }}
+    >
       {showTitle && (
-        <Title level={3} style={{ 
-          textAlign: 'center', 
+        <Title level={3} style={{
+          textAlign: 'center',
           marginBottom: '20px',
-          fontSize: responsive.fontSize.title 
+          fontSize: responsive.fontSize.title
         }}>
-          <GlobalOutlined style={{ marginRight: '8px', color: defaultColors.primary }} />
+          <GlobalOutlined style={{ marginRight: '8px', color: 'var(--color-text-secondary)' }} />
           {systemVoice.analysis.title}
         </Title>
       )}
-      
+
       <Form onFinish={handleWebsiteSubmit} style={{ maxWidth: '600px', margin: '0 auto' }}>
-        <Space.Compact style={{ width: '100%' }} size="large">
+        <Space.Compact
+          style={{
+            width: '100%',
+            position: 'relative'
+          }}
+          size="large"
+          className={showSparkle ? 'input-sparkle' : ''}
+        >
           <Input
             value={websiteUrl}
             onChange={(e) => setWebsiteUrl && setWebsiteUrl(e.target.value)}
             placeholder={systemVoice.analysis.inputPlaceholder}
             size="large"
-            prefix={<GlobalOutlined style={{ color: '#999' }} />}
+            prefix={<GlobalOutlined style={{ color: 'var(--color-text-tertiary)' }} />}
             disabled={shouldDisableInput || loading}
+            onFocus={handleInputFocus}
             style={{
               borderRadius: '8px 0 0 8px',
               borderRight: 'none',
               fontSize: responsive.fontSize.text,
-              backgroundColor: hasAnalysisRestriction ? '#f5f5f5' : undefined,
-              color: hasAnalysisRestriction ? '#999' : undefined
+              backgroundColor: hasAnalysisRestriction ? 'var(--color-background-container)' : '#ffffff',
+              color: hasAnalysisRestriction ? 'var(--color-text-tertiary)' : undefined
             }}
             onPressEnter={handleWebsiteSubmit}
           />
-          <Button 
-            type="primary" 
+          <Button
+            type="primary"
             size="large"
             onClick={handleWebsiteSubmit}
             loading={loading}
             disabled={!websiteUrl?.trim()}
             style={{
               borderRadius: '0 8px 8px 0',
-              backgroundColor: defaultColors.primary,
-              borderColor: defaultColors.primary,
               minWidth: '120px',
               fontSize: responsive.fontSize.text
             }}
@@ -567,7 +612,7 @@ const WebsiteAnalysisStepStandalone = ({
       {/* Override option for admin users */}
       {userOrganizationWebsite && !urlOverrideMode && (
         <div style={{ textAlign: 'center', marginTop: '16px' }}>
-          <Text style={{ color: '#666', fontSize: responsive.fontSize.small }}>
+          <Text style={{ color: 'var(--color-text-secondary)', fontSize: responsive.fontSize.small }}>
             Using organization website: <Text strong>{userOrganizationWebsite}</Text>
           </Text>
           {isAdminUser && (
@@ -581,7 +626,7 @@ const WebsiteAnalysisStepStandalone = ({
             </Button>
           )}
           {!isAdminUser && (
-            <Text style={{ color: '#999', fontSize: responsive.fontSize.small, marginLeft: '8px' }}>
+            <Text style={{ color: 'var(--color-text-tertiary)', fontSize: responsive.fontSize.small, marginLeft: '8px' }}>
               (Contact admin to change website URL)
             </Text>
           )}
@@ -598,12 +643,12 @@ const WebsiteAnalysisStepStandalone = ({
       <div style={{ textAlign: 'center', padding: '40px 20px' }}>
         <Spin size="large" />
         <div style={{ marginTop: '20px' }}>
-          <Title level={4} style={{ color: defaultColors.primary, marginBottom: '8px' }}>
+          <Title level={4} style={{ color: 'var(--color-text-primary)', marginBottom: '8px' }}>
             <ScanOutlined style={{ marginRight: '8px' }} />
             {systemVoice.analysis.loadingTitle}
           </Title>
           <Paragraph style={{ 
-            color: '#666', 
+            color: 'var(--color-text-secondary)', 
             marginBottom: '0',
             fontSize: responsive.fontSize.text 
           }}>
@@ -612,9 +657,9 @@ const WebsiteAnalysisStepStandalone = ({
         </div>
         {/* Skeleton hint so the result feels like a reveal */}
         <div style={{ marginTop: '24px', textAlign: 'left', maxWidth: '400px', margin: '24px auto 0' }}>
-          <div style={{ height: '14px', background: '#f0f0f0', borderRadius: '4px', marginBottom: '12px', width: '70%' }} />
-          <div style={{ height: '14px', background: '#f0f0f0', borderRadius: '4px', marginBottom: '12px', width: '90%' }} />
-          <div style={{ height: '14px', background: '#f0f0f0', borderRadius: '4px', width: '60%' }} />
+          <div style={{ height: '14px', background: 'var(--color-gray-100)', borderRadius: '4px', marginBottom: '12px', width: '70%' }} />
+          <div style={{ height: '14px', background: 'var(--color-gray-100)', borderRadius: '4px', marginBottom: '12px', width: '90%' }} />
+          <div style={{ height: '14px', background: 'var(--color-gray-100)', borderRadius: '4px', width: '60%' }} />
         </div>
       </div>
     </Card>
@@ -634,12 +679,13 @@ const WebsiteAnalysisStepStandalone = ({
       '';
 
     return (
-      <Card 
+      <Card
         className={showSuccessHighlight ? 'success-highlight' : ''}
-        style={{ 
-          border: `2px solid ${defaultColors.primary}`,
-          borderRadius: '12px',
-          background: `linear-gradient(135deg, ${defaultColors.secondary}15, #ffffff)`,
+        style={{
+          border: '1px solid var(--color-border-base)',
+          borderRadius: 'var(--radius-lg)',
+          background: 'var(--color-background-body)',
+          boxShadow: 'var(--shadow-sm)',
           marginBottom: '20px'
         }}
       >
@@ -663,7 +709,7 @@ const WebsiteAnalysisStepStandalone = ({
                   }}
                 />
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Text style={{ fontSize: responsive.fontSize.text, color: '#666' }}>
+                  <Text style={{ fontSize: responsive.fontSize.text, color: 'var(--color-text-secondary)' }}>
                     {domain} •
                   </Text>
                   <Input
@@ -672,7 +718,7 @@ const WebsiteAnalysisStepStandalone = ({
                     placeholder="Business Type"
                     style={{ 
                       fontSize: responsive.fontSize.text,
-                      color: '#666',
+                      color: 'var(--color-text-secondary)',
                       border: 'none',
                       boxShadow: 'none',
                       padding: '0',
@@ -684,11 +730,11 @@ const WebsiteAnalysisStepStandalone = ({
               </div>
             ) : (
               <div>
-                <Title 
-                  level={3} 
-                  style={{ 
-                    margin: 0, 
-                    color: defaultColors.primary,
+                <Title
+                  level={3}
+                  style={{
+                    margin: 0,
+                    color: 'var(--color-text-primary)',
                     fontSize: responsive.fontSize.title,
                     fontWeight: 600,
                     marginBottom: '4px'
@@ -696,7 +742,7 @@ const WebsiteAnalysisStepStandalone = ({
                 >
                   {analysis.businessName || 'Business Profile'}
                 </Title>
-                <Text style={{ fontSize: responsive.fontSize.text, color: '#666' }}>
+                <Text style={{ fontSize: responsive.fontSize.text, color: 'var(--color-text-secondary)' }}>
                   {domain} • {analysis.businessType}
                 </Text>
               </div>
@@ -725,15 +771,15 @@ const WebsiteAnalysisStepStandalone = ({
         {webSearchInsights?.researchQuality === 'basic' && (
           <div style={{
             padding: '16px',
-            backgroundColor: '#fafafa',
-            border: '1px solid #d9d9d9',
-            borderRadius: '8px',
+            backgroundColor: 'var(--color-background-container)',
+            border: '1px solid var(--color-border-base)',
+            borderRadius: 'var(--radius-lg)',
             marginBottom: '20px'
           }}>
-            <Text strong style={{ color: '#666', fontSize: '14px', marginBottom: '8px', display: 'block' }}>
+            <Text strong style={{ color: 'var(--color-text-secondary)', fontSize: '14px', marginBottom: '8px', display: 'block' }}>
               📊 Standard Analysis
             </Text>
-            <div style={{ fontSize: '13px', color: '#666' }}>
+            <div style={{ fontSize: '13px', color: 'var(--color-text-secondary)' }}>
               Analysis based on website content. Upgrade for enhanced research with brand guidelines, competitor analysis, and real-time keyword data.
             </div>
           </div>
@@ -743,18 +789,18 @@ const WebsiteAnalysisStepStandalone = ({
         {/* Business Overview Cards */}
         <Row gutter={responsive.gutter}>
           <Col xs={24} md={12}>
-            <div style={{ 
-              padding: '16px', 
-              backgroundColor: defaultColors.primary + '08', 
-              borderRadius: '8px',
-              border: `1px solid ${defaultColors.primary}20`,
+            <div style={{
+              padding: '16px',
+              backgroundColor: 'var(--color-background-container)',
+              borderRadius: 'var(--radius-lg)',
+              border: '1px solid var(--color-border-base)',
               height: '100%'
             }}>
-              <Text strong style={{ 
-                color: defaultColors.primary, 
-                fontSize: responsive.fontSize.text, 
-                marginBottom: '8px', 
-                display: 'block' 
+              <Text strong style={{
+                color: 'var(--color-text-primary)',
+                fontSize: responsive.fontSize.text,
+                marginBottom: '8px',
+                display: 'block'
               }}>
                 What They Do
               </Text>
@@ -775,18 +821,18 @@ const WebsiteAnalysisStepStandalone = ({
           </Col>
 
           <Col xs={24} md={12}>
-            <div style={{ 
-              padding: '16px', 
-              backgroundColor: defaultColors.accent + '08', 
-              borderRadius: '8px',
-              border: `1px solid ${defaultColors.accent}20`,
+            <div style={{
+              padding: '16px',
+              backgroundColor: 'var(--color-background-container)',
+              borderRadius: 'var(--radius-lg)',
+              border: '1px solid var(--color-border-base)',
               height: '100%'
             }}>
-              <Text strong style={{ 
-                color: defaultColors.accent, 
-                fontSize: responsive.fontSize.text, 
-                marginBottom: '8px', 
-                display: 'block' 
+              <Text strong style={{
+                color: 'var(--color-text-primary)',
+                fontSize: responsive.fontSize.text,
+                marginBottom: '8px',
+                display: 'block'
               }}>
                 Target Audience
               </Text>
@@ -806,18 +852,18 @@ const WebsiteAnalysisStepStandalone = ({
           </Col>
 
           <Col xs={24} md={12}>
-            <div style={{ 
-              padding: '16px', 
-              backgroundColor: defaultColors.secondary + '30', 
-              borderRadius: '8px',
-              border: `1px solid ${defaultColors.secondary}60`,
+            <div style={{
+              padding: '16px',
+              backgroundColor: 'var(--color-background-container)',
+              borderRadius: 'var(--radius-lg)',
+              border: '1px solid var(--color-border-base)',
               height: '100%'
             }}>
-              <Text strong style={{ 
-                color: defaultColors.primary, 
-                fontSize: responsive.fontSize.text, 
-                marginBottom: '8px', 
-                display: 'block' 
+              <Text strong style={{
+                color: 'var(--color-text-primary)',
+                fontSize: responsive.fontSize.text,
+                marginBottom: '8px',
+                display: 'block'
               }}>
                 Brand Voice
               </Text>
@@ -837,18 +883,18 @@ const WebsiteAnalysisStepStandalone = ({
           </Col>
 
           <Col xs={24} md={12}>
-            <div style={{ 
-              padding: '16px', 
-              backgroundColor: defaultColors.primary + '06', 
-              borderRadius: '8px',
-              border: `1px solid ${defaultColors.primary}15`,
+            <div style={{
+              padding: '16px',
+              backgroundColor: 'var(--color-background-container)',
+              borderRadius: 'var(--radius-lg)',
+              border: '1px solid var(--color-border-base)',
               height: '100%'
             }}>
-              <Text strong style={{ 
-                color: defaultColors.primary, 
-                fontSize: responsive.fontSize.text, 
-                marginBottom: '8px', 
-                display: 'block' 
+              <Text strong style={{
+                color: 'var(--color-text-primary)',
+                fontSize: responsive.fontSize.text,
+                marginBottom: '8px',
+                display: 'block'
               }}>
                 Content Focus
               </Text>
@@ -875,12 +921,12 @@ const WebsiteAnalysisStepStandalone = ({
             <Col xs={24}>
               <div style={{
                 padding: '16px',
-                backgroundColor: defaultColors.primary + '06',
-                borderRadius: '8px',
-                border: `1px solid ${defaultColors.primary}20`
+                backgroundColor: 'var(--color-background-container)',
+                borderRadius: 'var(--radius-lg)',
+                border: '1px solid var(--color-border-base)'
               }}>
                 <Text strong style={{
-                  color: defaultColors.primary,
+                  color: 'var(--color-text-primary)',
                   fontSize: responsive.fontSize.text,
                   marginBottom: '12px',
                   display: 'block'
@@ -894,23 +940,10 @@ const WebsiteAnalysisStepStandalone = ({
                     {organizationCTAs.slice(0, 5).map((cta, index) => (
                       <div key={cta.id || index} style={{
                         padding: '12px',
-                        backgroundColor: 'white',
+                        backgroundColor: 'var(--color-background-body)',
                         borderRadius: '6px',
-                        border: `1px solid ${defaultColors.primary}10`
+                        border: '1px solid var(--color-border-light)'
                       }}>
-                        {/* Small type/placement tags at top */}
-                        <div style={{ marginBottom: '8px', display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-                          <Tag size="small" color="default" style={{ fontSize: '11px', margin: 0 }}>
-                            {cta.type.replace('_', ' ')}
-                          </Tag>
-                          <Tag size="small" color="default" style={{ fontSize: '11px', margin: 0 }}>
-                            {cta.placement}
-                          </Tag>
-                          <Tag color={cta.data_source === 'manual' ? 'blue' : 'green'} size="small" style={{ fontSize: '11px', margin: 0 }}>
-                            {cta.data_source === 'manual' ? 'Manual' : 'Scraped'}
-                          </Tag>
-                        </div>
-
                         {/* Prominent CTA text */}
                         <Text strong style={{ fontSize: '16px', display: 'block', marginBottom: '6px' }}>
                           {cta.text}
@@ -918,12 +951,12 @@ const WebsiteAnalysisStepStandalone = ({
 
                         {/* Link display with icon */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <LinkOutlined style={{ color: defaultColors.primary, fontSize: '12px' }} />
+                          <LinkOutlined style={{ color: 'var(--color-text-secondary)', fontSize: '12px' }} />
                           <a
                             href={cta.href.startsWith('http') ? cta.href : `https://${cta.href}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            style={{ fontSize: '14px', color: defaultColors.primary, wordBreak: 'break-all' }}
+                            style={{ fontSize: '14px', color: 'var(--color-primary)', wordBreak: 'break-all' }}
                           >
                             {cta.href.length > 50 ? cta.href.substring(0, 50) + '...' : cta.href}
                           </a>
@@ -931,7 +964,7 @@ const WebsiteAnalysisStepStandalone = ({
                       </div>
                     ))}
                     {organizationCTAs.length > 5 && (
-                      <Text style={{ fontSize: responsive.fontSize.small, color: '#999', marginTop: '4px' }}>
+                      <Text style={{ fontSize: responsive.fontSize.small, color: 'var(--color-text-tertiary)', marginTop: '4px' }}>
                         ...and {organizationCTAs.length - 5} more CTAs
                       </Text>
                     )}
@@ -947,18 +980,18 @@ const WebsiteAnalysisStepStandalone = ({
           <Row gutter={responsive.gutter} style={{ marginTop: '16px' }}>
             {(analysis.businessModel || editMode) && (
               <Col xs={24} lg={8}>
-                <div style={{ 
-                  padding: '16px', 
-                  backgroundColor: defaultColors.accent + '08', 
-                  borderRadius: '8px',
-                  border: `1px solid ${defaultColors.accent}20`,
+                <div style={{
+                  padding: '16px',
+                  backgroundColor: 'var(--color-background-container)',
+                  borderRadius: 'var(--radius-lg)',
+                  border: '1px solid var(--color-border-base)',
                   height: '100%'
                 }}>
-                  <Text strong style={{ 
-                    color: defaultColors.accent, 
-                    fontSize: responsive.fontSize.text, 
-                    marginBottom: '8px', 
-                    display: 'block' 
+                  <Text strong style={{
+                    color: 'var(--color-text-primary)',
+                    fontSize: responsive.fontSize.text,
+                    marginBottom: '8px',
+                    display: 'block'
                   }}>
                     Business Model
                   </Text>
@@ -981,18 +1014,18 @@ const WebsiteAnalysisStepStandalone = ({
 
             {(analysis.websiteGoals || editMode) && (
               <Col xs={24} lg={8}>
-                <div style={{ 
-                  padding: '16px', 
-                  backgroundColor: defaultColors.primary + '08', 
-                  borderRadius: '8px',
-                  border: `1px solid ${defaultColors.primary}20`,
+                <div style={{
+                  padding: '16px',
+                  backgroundColor: 'var(--color-background-container)',
+                  borderRadius: 'var(--radius-lg)',
+                  border: '1px solid var(--color-border-base)',
                   height: '100%'
                 }}>
-                  <Text strong style={{ 
-                    color: defaultColors.primary, 
-                    fontSize: responsive.fontSize.text, 
-                    marginBottom: '8px', 
-                    display: 'block' 
+                  <Text strong style={{
+                    color: 'var(--color-text-primary)',
+                    fontSize: responsive.fontSize.text,
+                    marginBottom: '8px',
+                    display: 'block'
                   }}>
                     Website Goals
                   </Text>
@@ -1015,18 +1048,18 @@ const WebsiteAnalysisStepStandalone = ({
 
             {(analysis.blogStrategy || editMode) && (
               <Col xs={24} lg={8}>
-                <div style={{ 
-                  padding: '16px', 
-                  backgroundColor: defaultColors.secondary + '40', 
-                  borderRadius: '8px',
-                  border: `1px solid ${defaultColors.secondary}60`,
+                <div style={{
+                  padding: '16px',
+                  backgroundColor: 'var(--color-background-container)',
+                  borderRadius: 'var(--radius-lg)',
+                  border: '1px solid var(--color-border-base)',
                   height: '100%'
                 }}>
-                  <Text strong style={{ 
-                    color: defaultColors.primary, 
-                    fontSize: responsive.fontSize.text, 
-                    marginBottom: '8px', 
-                    display: 'block' 
+                  <Text strong style={{
+                    color: 'var(--color-text-primary)',
+                    fontSize: responsive.fontSize.text,
+                    marginBottom: '8px',
+                    display: 'block'
                   }}>
                     Blog Strategy
                   </Text>
@@ -1051,17 +1084,17 @@ const WebsiteAnalysisStepStandalone = ({
 
         {/* Keywords if available or in edit mode */}
         {((analysis.keywords && analysis.keywords.length > 0) || editMode) && (
-          <div style={{ 
+          <div style={{
             marginTop: '20px',
-            padding: '16px', 
-            backgroundColor: '#f8f9fa', 
+            padding: '16px',
+            backgroundColor: 'var(--color-background-container)',
             borderRadius: '8px'
           }}>
-            <Text strong style={{ 
-              color: defaultColors.primary, 
-              fontSize: responsive.fontSize.text, 
-              marginBottom: '12px', 
-              display: 'block' 
+            <Text strong style={{
+              color: 'var(--color-text-primary)',
+              fontSize: responsive.fontSize.text,
+              marginBottom: '12px',
+              display: 'block'
             }}>
               Key Topics & Keywords
             </Text>
@@ -1076,11 +1109,10 @@ const WebsiteAnalysisStepStandalone = ({
             ) : (
               <Space wrap>
                 {analysis.keywords.map((keyword, index) => (
-                  <Tag 
-                    key={index} 
-                    color={defaultColors.primary}
-                    style={{ 
-                      borderRadius: '12px',
+                  <Tag
+                    key={index}
+                    style={{
+                      borderRadius: 'var(--radius-xl)',
                       fontSize: responsive.fontSize.small,
                       padding: '4px 8px'
                     }}
@@ -1106,10 +1138,10 @@ const WebsiteAnalysisStepStandalone = ({
       <Card style={{ ...cardStyle }}>
         {/* Always show URL input - greyed out when analysis exists and not in edit mode */}
         {renderUrlInput()}
-        
+
         {/* Show loading state when analyzing */}
         {loading && renderAnalysisLoading()}
-        
+
         {/* Show analysis results when available AND not currently loading */}
         {analysisCompleted && !loading && renderAnalysisResults()}
       </Card>

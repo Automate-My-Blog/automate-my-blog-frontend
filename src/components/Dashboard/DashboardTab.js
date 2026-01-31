@@ -42,6 +42,7 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
   
   // Keep only UI-specific local state
   const [scanningMessage, setScanningMessage] = useState('');
+  const [textAnimationComplete, setTextAnimationComplete] = useState(false);
 
   // Load cached analysis for logged-in users
   useEffect(() => {
@@ -228,6 +229,8 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
           isNewRegistration={isNewRegistration}
           completedSteps={[]} // Will be populated based on workflow progress
           projectJustSaved={projectJustSaved}
+          enableSequentialAnimation={!user && currentStep === 0}
+          onSequenceComplete={() => setTextAnimationComplete(true)}
         />
 
         {/* Welcome-back hint when user has cached analysis (anticipatory UX) */}
@@ -271,7 +274,7 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
                   setAnalysisResults={(data) => updateWebsiteAnalysis(data)}
                   webSearchInsights={stepResults.home.webSearchInsights}
                   setWebSearchInsights={(data) => updateWebSearchInsights(data)}
-                  
+
                   // Loading states
                   isLoading={isLoading}
                   setIsLoading={setIsLoading}
@@ -279,20 +282,24 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
                   setScanningMessage={setScanningMessage}
                   analysisCompleted={stepResults.home.analysisCompleted}
                   setAnalysisCompleted={(completed) => updateAnalysisCompleted(completed)}
-                  
+
                   // User context
                   user={user}
                   requireAuth={requireAuth}
-                  
+
                   // Event handlers
                   onAnalysisComplete={handleAnalysisComplete}
                   addStickyWorkflowStep={addStickyWorkflowStep}
                   updateStickyWorkflowStep={updateStickyWorkflowStep}
-                  
+
                   // Configuration
                   embedded={true}
                   showTitle={false}
                   autoAnalyze={false}
+
+                  // Animation props
+                  delayedReveal={!user && currentStep === 0}
+                  showInput={textAnimationComplete}
                 />
                 
                 {/* Continue Button + anticipatory suggestion - Show after analysis completes and only in workflow mode */}

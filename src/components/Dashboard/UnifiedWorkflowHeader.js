@@ -27,11 +27,20 @@ const UnifiedWorkflowHeader = ({
   onSaveProject,
   isNewRegistration = false,
   completedSteps = [],
-  projectJustSaved = false
+  projectJustSaved = false,
+  enableSequentialAnimation = false,
+  onSequenceComplete = null
 }) => {
   const [textKey, setTextKey] = useState(0);
   const [previousUser, setPreviousUser] = useState(user);
   const [showGradientSweep, setShowGradientSweep] = useState(false);
+
+  // Sequential animation state
+  const [currentPhraseIndex, setCurrentPhraseIndex] = useState(-1);
+  const [visiblePhrases, setVisiblePhrases] = useState(new Set());
+  const [animationComplete, setAnimationComplete] = useState(false);
+  const [skipAnimation, setSkipAnimation] = useState(false);
+  const [dimText, setDimText] = useState(false);
 
   // Trigger text transition animation when auth state changes
   useEffect(() => {
@@ -40,7 +49,7 @@ const UnifiedWorkflowHeader = ({
         // User just logged in - trigger gradient sweep
         setTimeout(() => {
           setShowGradientSweep(true);
-          
+
           // End gradient sweep after animation completes (1.5s)
           setTimeout(() => {
             setShowGradientSweep(false);
@@ -51,6 +60,89 @@ const UnifiedWorkflowHeader = ({
       setPreviousUser(user);
     }
   }, [user, previousUser]);
+
+  // Sequential animation effect
+  useEffect(() => {
+    if (!enableSequentialAnimation) return;
+
+    // Check if animation has already played this session
+    const animationKey = 'autoblog-step0-animation-played';
+    const hasPlayed = sessionStorage.getItem(animationKey);
+
+    if (hasPlayed) {
+      setSkipAnimation(true);
+      setAnimationComplete(true);
+      setVisiblePhrases(new Set([0, 1, 2, 3]));
+      onSequenceComplete?.();
+      return;
+    }
+
+    // Phrase timing configuration (75% slower = 1.75x original timings)
+    const phraseTiming = [
+      { index: 0, delay: 0 },        // Immediate
+      { index: 1, delay: 1750 },     // 1000ms * 1.75
+      { index: 2, delay: 3150 },     // 1800ms * 1.75
+      { index: 3, delay: 4900 }      // 2800ms * 1.75
+    ];
+
+    const timeouts = [];
+
+    // Schedule each phrase
+    phraseTiming.forEach(({ index, delay }) => {
+      const timeout = setTimeout(() => {
+        setVisiblePhrases(prev => new Set([...prev, index]));
+        setCurrentPhraseIndex(index);
+      }, delay);
+      timeouts.push(timeout);
+    });
+
+    // Mark animation complete and notify parent
+    const completeTimeout = setTimeout(() => {
+      setAnimationComplete(true);
+      sessionStorage.setItem(animationKey, 'true');
+      onSequenceComplete?.();
+
+      // Dim text after input appears (300ms delay for input fade-in)
+      const dimTimeout = setTimeout(() => {
+        setDimText(true);
+
+        // Auto un-dim after 5 seconds
+        const undimTimeout = setTimeout(() => {
+          setDimText(false);
+        }, 5000);
+        timeouts.push(undimTimeout);
+      }, 300);
+      timeouts.push(dimTimeout);
+    }, 7000); // 4000ms * 1.75
+    timeouts.push(completeTimeout);
+
+    // Cleanup timeouts on unmount
+    return () => {
+      timeouts.forEach(timeout => clearTimeout(timeout));
+    };
+  }, [enableSequentialAnimation, onSequenceComplete]);
+
+  // Skip animation handler
+  const handleSkipAnimation = () => {
+    if (animationComplete || !enableSequentialAnimation) return;
+
+    setSkipAnimation(true);
+    setVisiblePhrases(new Set([0, 1, 2, 3]));
+    setAnimationComplete(true);
+
+    const animationKey = 'autoblog-step0-animation-played';
+    sessionStorage.setItem(animationKey, 'true');
+    onSequenceComplete?.();
+
+    // Dim text shortly after skip
+    setTimeout(() => {
+      setDimText(true);
+      // Auto un-dim after 5 seconds
+      setTimeout(() => {
+        setDimText(false);
+      }, 5000);
+    }, 300);
+  };
 
   // Workflow steps data
   const workflowSteps = [
@@ -148,7 +240,7 @@ const UnifiedWorkflowHeader = ({
                 padding: 0, 
                 fontSize: 'inherit',
                 height: 'auto',
-                color: '#1890ff',
+                color: 'var(--color-primary)',
                 fontWeight: 500
               }}
               onClick={() => {
@@ -180,42 +272,129 @@ const UnifiedWorkflowHeader = ({
 
   return (
     <>
-      <div style={{ 
+      <div style={{
         marginBottom: '24px',
         textAlign: 'center',
         padding: '24px',
-        position: 'relative'
-      }}>
-        <div
-          key={`title-${textKey}`}
-          style={{
-            animation: 'fadeInSlide 0.6s ease-out',
-            opacity: 1,
-            transform: 'translateY(0)'
-          }}
-        >
-          <Title level={2} style={{
-            color: showGradientSweep ? 'transparent' : '#1890ff',
-            marginBottom: '8px',
-            background: showGradientSweep ? 'linear-gradient(90deg, transparent, black)' : 'none',
-            backgroundSize: showGradientSweep ? '100% 100%' : 'auto',
-            backgroundClip: showGradientSweep ? 'text' : 'border-box',
-            WebkitBackgroundClip: showGradientSweep ? 'text' : 'border-box',
-            animation: showGradientSweep ? 'gradientSweep 1.5s ease-in-out' : 'none'
-          }}>
-            {content.title}
-          </Title>
-          <Paragraph style={{ 
-            color: '#666', 
-            fontSize: '16px', 
-            marginBottom: '24px',
-            maxWidth: '800px',
-            margin: '0 auto'
-          }}>
-            {content.description}
-          </Paragraph>
+        position: 'relative',
+        cursor: enableSequentialAnimation && !animationComplete ? 'pointer' : 'default'
+      }}
+      onClick={enableSequentialAnimation && !animationComplete ? handleSkipAnimation : undefined}
+      >
+        {enableSequentialAnimation ? (
+          // Sequential animation mode
+          <div
+            style={{
+              minHeight: '200px',
+              opacity: dimText ? 0.3 : 1,
+              transition: 'opacity 0.5s ease-out',
+              pointerEvents: 'none'
+            }}
+            onClick={(e) => {
+              if (dimText) {
+                e.stopPropagation();
+                setDimText(false);
+              }
+            }}
+          >
+            {systemVoice.header.step0Phrases.map((phrase, index) => {
+              // Skip phrase 2 here since it will be rendered inline with phrase 1
+              if (index === 2) return null;
 
-        </div>
+              return visiblePhrases.has(index) && (
+                <div
+                  key={`phrase-${index}`}
+                  style={{
+                    animation: skipAnimation ? 'none' : 'phraseReveal 0.6s ease-out forwards',
+                    opacity: 1,
+                    marginBottom: index === 0 ? 'var(--space-4)' : 'var(--space-2)'
+                  }}
+                >
+                  {index === 0 ? (
+                    <Title level={2} style={{
+                      color: 'var(--color-primary)',
+                      marginBottom: 0,
+                      fontFamily: 'var(--font-family-display)',
+                      fontSize: 'var(--font-size-3xl)',
+                      fontWeight: 'var(--font-weight-semibold)',
+                      letterSpacing: 'var(--letter-spacing-tight)'
+                    }}>
+                      🚀 {phrase}
+                    </Title>
+                  ) : index === 1 ? (
+                    <Paragraph style={{
+                      color: 'var(--color-text-secondary)',
+                      fontSize: 'var(--font-size-lg)',
+                      marginBottom: 0,
+                      maxWidth: '800px',
+                      margin: '0 auto',
+                      lineHeight: 'var(--line-height-relaxed)'
+                    }}>
+                      {phrase}
+                      {visiblePhrases.has(2) && (
+                        <span
+                          style={{
+                            animation: skipAnimation ? 'none' : 'phraseReveal 0.6s ease-out forwards'
+                          }}
+                        >
+                          {' '}{systemVoice.header.step0Phrases[2]}
+                        </span>
+                      )}
+                    </Paragraph>
+                  ) : (
+                    <Paragraph style={{
+                      color: 'var(--color-text-secondary)',
+                      fontSize: 'var(--font-size-lg)',
+                      marginBottom: 0,
+                      maxWidth: '800px',
+                      margin: '0 auto',
+                      lineHeight: 'var(--line-height-relaxed)'
+                    }}>
+                      {phrase}
+                    </Paragraph>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          // Standard animation mode (existing behavior)
+          <div
+            key={`title-${textKey}`}
+            style={{
+              animation: 'fadeInSlide 0.6s ease-out',
+              opacity: 1,
+              transform: 'translateY(0)'
+            }}
+          >
+            <Title level={2} style={{
+              color: showGradientSweep ? 'transparent' : 'var(--color-primary)',
+              marginBottom: 'var(--space-2)',
+              fontFamily: 'var(--font-family-display)',
+              fontSize: 'var(--font-size-3xl)',
+              fontWeight: 'var(--font-weight-semibold)',
+              letterSpacing: 'var(--letter-spacing-tight)',
+              background: showGradientSweep ? 'linear-gradient(90deg, transparent, var(--color-primary))' : 'none',
+              backgroundSize: showGradientSweep ? '100% 100%' : 'auto',
+              backgroundClip: showGradientSweep ? 'text' : 'border-box',
+              WebkitBackgroundClip: showGradientSweep ? 'text' : 'border-box',
+              animation: showGradientSweep ? 'gradientSweep 1.5s ease-in-out' : 'none'
+            }}>
+              {content.title}
+            </Title>
+            <Paragraph style={{
+              color: 'var(--color-text-secondary)',
+              fontSize: 'var(--font-size-lg)',
+              marginBottom: 'var(--space-6)',
+              maxWidth: '800px',
+              margin: '0 auto',
+              lineHeight: 'var(--line-height-relaxed)'
+            }}>
+              {content.description}
+            </Paragraph>
+
+          </div>
+        )}
         
         {content.showButton && (
           <div
@@ -231,8 +410,8 @@ const UnifiedWorkflowHeader = ({
               icon={<PlusOutlined />} 
               onClick={onCreateNewPost}
               style={{ 
-                backgroundColor: '#1890ff', 
-                borderColor: '#1890ff',
+                backgroundColor: 'var(--color-primary)', 
+                borderColor: 'var(--color-primary)',
                 minWidth: '160px'
               }}
             >
@@ -254,10 +433,10 @@ const UnifiedWorkflowHeader = ({
             }}
           >
             <div style={{ marginBottom: '12px' }}>
-              <div style={{ fontSize: '16px', fontWeight: 600, color: '#52c41a', marginBottom: '4px' }}>
+              <div style={{ fontSize: 'var(--font-size-base)', fontWeight: 'var(--font-weight-semibold)', color: 'var(--color-success)', marginBottom: 'var(--space-1)' }}>
                 🎉 {systemVoice.header.newUserWelcome}
               </div>
-              <div style={{ fontSize: '14px', color: '#666' }}>
+              <div style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-secondary)' }}>
                 {systemVoice.header.newUserSavePrompt}
               </div>
             </div>
@@ -266,8 +445,8 @@ const UnifiedWorkflowHeader = ({
               size="large" 
               onClick={onSaveProject}
               style={{ 
-                backgroundColor: '#52c41a', 
-                borderColor: '#52c41a',
+                backgroundColor: 'var(--color-success)', 
+                borderColor: 'var(--color-success)',
                 minWidth: '180px',
                 fontWeight: 600
               }}
@@ -303,13 +482,23 @@ const UnifiedWorkflowHeader = ({
           }
         }
 
-
         @keyframes gradientSweep {
           0% {
             background-position: -100% 0;
           }
           100% {
             background-position: 0% 0;
+          }
+        }
+
+        @keyframes phraseReveal {
+          from {
+            opacity: 0;
+            transform: translateY(-5px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
           }
         }
 

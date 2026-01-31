@@ -12,6 +12,13 @@ export const systemVoice = {
     // Step 0: Start
     step0Title: "Your next post starts here",
     step0Description: "We've got your site—now we'll match it to your audience. This guided flow takes you step by step to create a post that fits your goals.",
+    // Split into phrases for sequential animation
+    step0Phrases: [
+      "Your next post starts here",
+      "We've got your site",
+      "—now we'll match it to your audience.",
+      "This guided flow takes you step by step to create a post that fits your goals."
+    ],
     // Step 1: Analyzing
     step1Title: "Reading your site",
     step1Description: "We're learning about your business and audience so we can suggest content that fits.",

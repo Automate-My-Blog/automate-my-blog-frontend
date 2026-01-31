@@ -2,14 +2,52 @@
 
 /* ===== CSS CUSTOM PROPERTIES (Design Tokens) ===== */
 :root {
-  /* Color Palette - Stripe-inspired */
-  --color-primary: #635BFF;           /* Stripe purple - strategic accent */
-  --color-primary-hover: #0A2540;     /* Stripe navy - hover states */
+  /* Color Palette - Royal Luxury (Deep Purple + Gold) */
+  /* Primary: Rich Royal Purple - Luxury, premium, sophisticated */
+  --color-primary: #6366F1;           /* Rich indigo-purple (500) - Main brand color */
+  --color-primary-50: #EEF2FF;
+  --color-primary-100: #E0E7FF;
+  --color-primary-200: #C7D2FE;
+  --color-primary-300: #A5B4FC;
+  --color-primary-400: #818CF8;
+  --color-primary-500: #6366F1;       /* Main */
+  --color-primary-600: #4F46E5;
+  --color-primary-700: #4338CA;
+  --color-primary-800: #3730A3;
+  --color-primary-900: #312E81;
+  --color-primary-hover: #4F46E5;     /* Deeper purple */
+
+  /* Accent: Refined Gold - Wealth, success, premium features */
+  --color-accent: #F59E0B;            /* Refined gold (500) */
+  --color-accent-50: #FFFBEB;
+  --color-accent-100: #FEF3C7;
+  --color-accent-200: #FDE68A;
+  --color-accent-300: #FCD34D;
+  --color-accent-400: #FBBF24;
+  --color-accent-500: #F59E0B;        /* Main */
+  --color-accent-600: #D97706;
+  --color-accent-700: #B45309;
+  --color-accent-800: #92400E;
+  --color-accent-900: #78350F;
+  --color-accent-hover: #D97706;      /* Deeper gold */
+
+  /* Semantic Colors - Premium complementary palette */
   --color-secondary: #F6F9FC;         /* Subtle gray background */
-  --color-accent: #635BFF;            /* Consistent with primary */
-  --color-success: #00D924;           /* Stripe green */
-  --color-warning: #FFB020;           /* Stripe amber */
-  --color-error: #DF1B41;             /* Stripe red */
+  --color-success: #059669;           /* Deep emerald green - more premium */
+  --color-success-bg: #ECFDF5;        /* Light emerald background */
+  --color-success-border: #A7F3D0;    /* Light emerald border */
+  --color-success-dark: #047857;      /* Darker emerald */
+  --color-warning: #F59E0B;           /* Amber */
+  --color-warning-bg: #FFFBEB;        /* Light amber background */
+  --color-warning-border: #FDE68A;    /* Light amber border */
+  --color-error: #EF4444;             /* Warm red */
+  --color-error-bg: #FEF2F2;          /* Light red background */
+  --color-error-border: #FECACA;      /* Light red border */
+
+  /* Gradients for premium features - Royal luxury */
+  --gradient-primary: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%);
+  --gradient-accent: linear-gradient(135deg, #F59E0B 0%, #FBBF24 100%);
+  --gradient-hero: linear-gradient(135deg, #6366F1 0%, #F59E0B 100%);
 
   /* Neutral Colors - Expanded Stripe-inspired scale */
   --color-white: #ffffff;
@@ -28,9 +66,23 @@
   --color-text-primary: #0A2540;      /* Dark navy text */
   --color-text-secondary: #425466;    /* Medium gray text */
   --color-text-tertiary: #6B7C8E;     /* Light gray text */
-  
-  /* Typography - Stripe-inspired professional */
-  --font-family-primary: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Ubuntu, sans-serif;
+
+  /* Background colors - Light mode */
+  --color-background-body: #FFFFFF;
+  --color-background-container: #FFFFFF;
+  --color-background-elevated: #FFFFFF;
+  --color-background-alt: #FAFBFC;    /* Alternate light background */
+  --color-background-overlay: rgba(0, 0, 0, 0.5);
+
+  /* Border colors - Light mode */
+  --color-border-base: #E3E8EF;       /* Default border */
+  --color-border-light: #F6F9FC;      /* Lighter border */
+  --color-border-dark: #CDD7E6;       /* Darker border */
+
+  /* Typography - Sophisticated dual-font system */
+  --font-family-display: 'Sora', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;  /* Display font for headings */
+  --font-family-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Ubuntu, sans-serif; /* Body font */
+  --font-family-primary: var(--font-family-body);  /* Alias for backwards compatibility */
   --font-family-mono: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, monospace;
 
   /* Font sizes - Clear hierarchy for enterprise */
@@ -43,12 +95,19 @@
   --font-size-3xl: 2rem;       /* 32px - Hero headings */
   --font-size-4xl: 2.5rem;     /* 40px - Large display */
   --font-size-5xl: 3rem;       /* 48px - Extra large display */
+  --font-size-6xl: 3.75rem;    /* 60px - Hero sections */
+  --font-size-7xl: 4.5rem;     /* 72px - Large hero */
+  --font-size-8xl: 6rem;       /* 96px - Extra large hero */
 
-  /* Font weights - Refined for professional look */
+  /* Font weights - Extended for variable fonts */
   --font-weight-light: 300;
+  --font-weight-350: 350;      /* Light-Medium */
   --font-weight-normal: 400;
+  --font-weight-450: 450;      /* Medium-Regular */
   --font-weight-medium: 500;   /* Primary weight for emphasis */
+  --font-weight-550: 550;      /* Medium-Semibold */
   --font-weight-semibold: 600; /* Headings */
+  --font-weight-650: 650;      /* Semibold-Bold */
   --font-weight-bold: 700;     /* Rare, strong emphasis */
   --font-weight-extrabold: 800;
 
@@ -83,18 +142,55 @@
   --radius-2xl: 1rem;      /* 16px - Extra rare */
   --radius-full: 9999px;   /* Pills, avatars only */
 
-  /* Shadows - Minimal, Stripe-inspired (very subtle) */
-  --shadow-xs: 0 1px 1px rgba(10, 37, 64, 0.03);
-  --shadow-sm: 0 1px 2px rgba(10, 37, 64, 0.05);
-  --shadow-base: 0 1px 2px rgba(10, 37, 64, 0.05);
-  --shadow-md: 0 2px 4px rgba(10, 37, 64, 0.08);    /* Max elevation for most UI */
-  --shadow-lg: 0 4px 8px rgba(10, 37, 64, 0.08);    /* Modals/popovers only */
-  --shadow-xl: 0 8px 16px rgba(10, 37, 64, 0.08);   /* Rare, elevated modals */
-  --shadow-2xl: 0 12px 24px rgba(10, 37, 64, 0.1);  /* Extra rare */
+  /* Shadows - Layered, sophisticated depth */
+  /* Subtle elevation */
+  --shadow-xs: 0 1px 2px rgba(10, 37, 64, 0.03);
+  --shadow-sm:
+    0 1px 2px rgba(10, 37, 64, 0.05),
+    0 1px 3px rgba(10, 37, 64, 0.03);
+  --shadow-base: var(--shadow-sm);
+
+  /* Standard elevation */
+  --shadow-md:
+    0 2px 4px rgba(10, 37, 64, 0.06),
+    0 4px 8px rgba(10, 37, 64, 0.04);
+
+  /* High elevation */
+  --shadow-lg:
+    0 4px 8px rgba(10, 37, 64, 0.08),
+    0 8px 16px rgba(10, 37, 64, 0.06);
+
+  /* Extra high elevation */
+  --shadow-xl:
+    0 8px 16px rgba(10, 37, 64, 0.1),
+    0 16px 32px rgba(10, 37, 64, 0.08);
+
+  --shadow-2xl:
+    0 12px 24px rgba(10, 37, 64, 0.12),
+    0 24px 48px rgba(10, 37, 64, 0.1);
+
   --shadow-inner: inset 0 1px 2px rgba(10, 37, 64, 0.05);
-  --shadow-focus: 0 0 0 3px rgba(99, 91, 255, 0.1); /* Focus ring */
+
+  /* Colored shadows for brand elements (teal/orange) */
+  --shadow-primary:
+    0 4px 12px rgba(13, 148, 136, 0.15),
+    0 2px 4px rgba(13, 148, 136, 0.1);
+
+  --shadow-accent:
+    0 4px 12px rgba(249, 115, 22, 0.15),
+    0 2px 4px rgba(249, 115, 22, 0.1);
+
+  --shadow-focus: 0 0 0 3px rgba(13, 148, 136, 0.1); /* Teal focus ring */
+
+  /* Context-specific shadows */
+  --shadow-elevated: 0 4px 12px rgba(10, 37, 64, 0.12);  /* Sidebar, prominent cards */
+  --shadow-card: 0 2px 8px rgba(10, 37, 64, 0.10);       /* Audience cards */
+  --shadow-dropdown:
+    0 12px 24px rgba(10, 37, 64, 0.12),
+    0 4px 8px rgba(10, 37, 64, 0.08),
+    0 0 0 1px rgba(10, 37, 64, 0.05);
   
-  /* Transitions - Subtle, professional (Stripe-inspired) */
+  /* Transitions - Sophisticated timing */
   --transition-fast: 100ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-base: 150ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-normal: 200ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -102,6 +198,17 @@
   --transition-step: 150ms cubic-bezier(0.4, 0, 0.2, 1);     /* step/section change */
   --transition-reveal: 150ms cubic-bezier(0.4, 0, 0.2, 1);   /* staggered reveal per item */
   --stagger-delay: 40ms;                                      /* delay between staggered items */
+
+  /* Enhanced easing functions */
+  --ease-out-expo: cubic-bezier(0.19, 1, 0.22, 1);          /* Smooth deceleration */
+  --ease-in-out-back: cubic-bezier(0.68, -0.55, 0.265, 1.55); /* Bounce */
+  --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);         /* Gentle ease out */
+
+  /* Standardized durations */
+  --duration-instant: 100ms;  /* Immediate feedback */
+  --duration-fast: 200ms;     /* Quick interactions */
+  --duration-normal: 300ms;   /* Standard transitions */
+  --duration-slow: 500ms;     /* Emphasis */
   
   /* Z-Index Scale */
   --z-dropdown: 1000;
@@ -123,9 +230,9 @@
 /* ===== BLOG CONTENT COLORS (Dynamic) ===== */
 :root {
   /* These will be updated by analyzed website colors for blog content only */
-  --blog-primary: #635BFF;  /* Stripe purple */
+  --blog-primary: #0D9488;  /* Teal brand color */
   --blog-secondary: #F6F9FC; /* Subtle gray */
-  --blog-accent: #635BFF;    /* Consistent with primary */
+  --blog-accent: #F97316;    /* Orange accent color */
 }
 
 /* ===== BASE STYLES ===== */
@@ -134,10 +241,10 @@
 }
 
 body {
-  font-family: var(--font-family-primary);
+  font-family: var(--font-family-body);  /* Inter for body text */
   line-height: var(--line-height-normal);
-  color: var(--color-text-primary);     /* Stripe navy for primary text */
-  background-color: var(--color-white); /* White background (Stripe-style) */
+  color: var(--color-text-primary);
+  background-color: var(--color-white);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   margin: 0;
@@ -168,30 +275,57 @@ body {
 .leading-normal { line-height: var(--line-height-normal); }
 .leading-relaxed { line-height: var(--line-height-relaxed); }
 
-/* Heading Utilities - Stripe-inspired typography hierarchy */
+/* Heading Utilities - Sophisticated typography hierarchy with Sora */
+.heading-hero {
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-5xl);  /* 48px */
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.02em;  /* Tighter tracking for large text */
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
 .heading-display {
+  font-family: var(--font-family-display);
   font-size: var(--font-size-4xl);  /* 40px */
   font-weight: var(--font-weight-bold);
   line-height: var(--line-height-tight);
+  letter-spacing: -0.015em;
   color: var(--color-text-primary);
 }
+
 .heading-page {
+  font-family: var(--font-family-display);
   font-size: var(--font-size-3xl);  /* 32px */
   font-weight: var(--font-weight-semibold);
   line-height: var(--line-height-tight);
+  letter-spacing: -0.01em;
   color: var(--color-text-primary);
 }
+
 .heading-section {
+  font-family: var(--font-family-display);
   font-size: var(--font-size-2xl);  /* 24px */
   font-weight: var(--font-weight-semibold);
   line-height: var(--line-height-tight);
   color: var(--color-text-primary);
 }
+
 .heading-subsection {
+  font-family: var(--font-family-display);
   font-size: var(--font-size-xl);  /* 20px */
   font-weight: var(--font-weight-semibold);
   line-height: var(--line-height-tight);
   color: var(--color-text-primary);
+}
+
+.text-feature {
+  font-size: var(--font-size-2xl);
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
 /* Color Utilities */
@@ -565,13 +699,1312 @@ body {
   .lg\:p-16 { padding: var(--space-16); }
 }
 
-/* ===== DARK MODE SUPPORT (Future Enhancement) ===== */
+/* ===== DARK MODE SUPPORT ===== */
+/* Principle: Dark mode isn't just inverted colors - warmer backgrounds, glows instead of shadows, more vibrant colors */
+
 @media (prefers-color-scheme: dark) {
-  .dark-mode {
-    --color-gray-50: #0f172a;
-    --color-gray-100: #1e293b;
-    --color-gray-200: #334155;
-    --color-white: #1e293b;
-    color: #f8fafc;
+  :root {
+    /* Backgrounds - Warmer dark (not pure black) */
+    --color-background-body: #0F1419;      /* Dark slate */
+    --color-background-container: #1A1F29; /* Slightly lighter */
+    --color-background-elevated: #242933;  /* Cards/modals */
+    --color-white: #0F1419;                /* Override white for dark mode */
+    --color-secondary: #1A1F29;
+
+    /* Text - Higher contrast for readability */
+    --color-text-primary: #F5F5F7;         /* Off-white */
+    --color-text-secondary: #A0A0AB;       /* Medium gray */
+    --color-text-tertiary: #6E6E78;        /* Light gray */
+
+    /* Borders - Lighter in dark mode */
+    --color-border-base: #2D3139;
+    --color-border-light: #242933;
+    --color-border-dark: #3D4149;
+
+    /* Gray scale - Inverted for dark mode */
+    --color-gray-50: #242933;
+    --color-gray-100: #2D3139;
+    --color-gray-200: #3D4149;
+    --color-gray-300: #4D5159;
+    --color-gray-400: #6E6E78;
+    --color-gray-500: #A0A0AB;
+    --color-gray-600: #C0C0C5;
+    --color-gray-700: #D0D0D5;
+    --color-gray-800: #E5E5E7;
+    --color-gray-900: #F5F5F7;
+
+    /* Primary colors - More vibrant in dark mode */
+    --color-primary: #818CF8;              /* Brighter purple */
+    --color-primary-hover: #A5B4FC;        /* Even brighter on hover */
+    --color-primary-500: #818CF8;
+
+    /* Accent - More vibrant in dark mode */
+    --color-accent: #FBBF24;               /* Brighter gold */
+    --color-accent-hover: #FCD34D;         /* Even brighter on hover */
+    --color-accent-500: #FBBF24;
+
+    /* Shadows - Use glows instead of shadows */
+    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.3);
+    --shadow-base: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.5);
+    --shadow-xl: 0 12px 24px rgba(0, 0, 0, 0.6);
+    --shadow-2xl: 0 16px 32px rgba(0, 0, 0, 0.7);
+
+    /* Colored glows instead of shadows */
+    --shadow-primary:
+      0 0 20px rgba(129, 140, 248, 0.3),
+      0 4px 12px rgba(0, 0, 0, 0.4);
+
+    --shadow-accent:
+      0 0 20px rgba(251, 191, 36, 0.3),
+      0 4px 12px rgba(0, 0, 0, 0.4);
+
+    --shadow-focus: 0 0 0 3px rgba(129, 140, 248, 0.2);
+
+    /* Context-specific shadows */
+    --shadow-elevated: 0 8px 16px rgba(0, 0, 0, 0.5);
+    --shadow-card: 0 4px 12px rgba(0, 0, 0, 0.4);
+    --shadow-dropdown: 0 12px 24px rgba(0, 0, 0, 0.6), 0 4px 8px rgba(0, 0, 0, 0.4);
+
+    /* Overlay - Lighter in dark mode */
+    --color-background-overlay: rgba(15, 20, 25, 0.8);
   }
+}
+
+/* Manual dark mode class (for theme toggle override) */
+.dark-mode {
+  /* Backgrounds - Warmer dark (not pure black) */
+  --color-background-body: #0F1419;      /* Dark slate */
+  --color-background-container: #1A1F29; /* Slightly lighter */
+  --color-background-elevated: #242933;  /* Cards/modals */
+  --color-white: #0F1419;                /* Override white for dark mode */
+  --color-secondary: #1A1F29;
+}
+
+/* Apply background to body and root elements */
+.dark-mode,
+.dark-mode body,
+.dark-mode #root {
+  background-color: var(--color-background-body) !important;
+  color: var(--color-text-primary) !important;
+
+  /* Text - Higher contrast for readability */
+  --color-text-primary: #F5F5F7;         /* Off-white */
+  --color-text-secondary: #A0A0AB;       /* Medium gray */
+  --color-text-tertiary: #6E6E78;        /* Light gray */
+
+  /* Borders - Lighter in dark mode */
+  --color-border-base: #2D3139;
+  --color-border-light: #242933;
+  --color-border-dark: #3D4149;
+
+  /* Gray scale - Inverted for dark mode */
+  --color-gray-50: #242933;
+  --color-gray-100: #2D3139;
+  --color-gray-200: #3D4149;
+  --color-gray-300: #4D5159;
+  --color-gray-400: #6E6E78;
+  --color-gray-500: #A0A0AB;
+  --color-gray-600: #C0C0C5;
+  --color-gray-700: #D0D0D5;
+  --color-gray-800: #E5E5E7;
+  --color-gray-900: #F5F5F7;
+
+  /* Primary colors - More vibrant in dark mode */
+  --color-primary: #818CF8;              /* Brighter purple */
+  --color-primary-hover: #A5B4FC;        /* Even brighter on hover */
+  --color-primary-500: #818CF8;
+
+  /* Accent - More vibrant in dark mode */
+  --color-accent: #FBBF24;               /* Brighter gold */
+  --color-accent-hover: #FCD34D;         /* Even brighter on hover */
+  --color-accent-500: #FBBF24;
+
+  /* Shadows - Use glows instead of shadows */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-base: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.5);
+  --shadow-xl: 0 12px 24px rgba(0, 0, 0, 0.6);
+  --shadow-2xl: 0 16px 32px rgba(0, 0, 0, 0.7);
+
+  /* Colored glows instead of shadows */
+  --shadow-primary:
+    0 0 20px rgba(129, 140, 248, 0.3),
+    0 4px 12px rgba(0, 0, 0, 0.4);
+
+  --shadow-accent:
+    0 0 20px rgba(251, 191, 36, 0.3),
+    0 4px 12px rgba(0, 0, 0, 0.4);
+
+  --shadow-focus: 0 0 0 3px rgba(129, 140, 248, 0.2);
+
+  /* Context-specific shadows */
+  --shadow-elevated: 0 8px 16px rgba(0, 0, 0, 0.5);
+  --shadow-card: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-dropdown: 0 12px 24px rgba(0, 0, 0, 0.6), 0 4px 8px rgba(0, 0, 0, 0.4);
+
+  /* Overlay - Lighter in dark mode */
+  --color-background-overlay: rgba(15, 20, 25, 0.8);
+
+  /* Update body background */
+  background-color: var(--color-background-body);
+  color: var(--color-text-primary);
+}
+
+/* Smooth theme transition */
+body {
+  transition: background-color 300ms ease, color 300ms ease;
+}
+
+/* Dark mode specific adjustments for components */
+/* ============================================
+   DARK MODE COMPONENT STYLING
+   ============================================ */
+
+/* Cards */
+.dark-mode .ant-card {
+  background-color: var(--color-background-elevated);
+  border-color: var(--color-border-base);
+  color: var(--color-text-primary);
+}
+
+.dark-mode .ant-card-head {
+  background-color: var(--color-background-elevated);
+  border-color: var(--color-border-base);
+  color: var(--color-text-primary);
+}
+
+.dark-mode .ant-card-head-title {
+  color: var(--color-text-primary);
+}
+
+.dark-mode .ant-card-body {
+  color: var(--color-text-primary);
+}
+
+/* Buttons */
+.dark-mode .ant-btn-default {
+  background-color: var(--color-background-elevated);
+  border-color: var(--color-border-base);
+  color: var(--color-text-primary);
+}
+
+.dark-mode .ant-btn-default:hover {
+  background-color: var(--color-gray-200);
+  border-color: var(--color-border-dark);
+  color: var(--color-text-primary);
+}
+
+.dark-mode .ant-btn-text {
+  color: var(--color-text-primary);
+}
+
+.dark-mode .ant-btn-text:hover {
+  background-color: var(--color-gray-100);
+  color: var(--color-text-primary);
+}
+
+/* Inputs */
+.dark-mode .ant-input {
+  background-color: var(--color-background-elevated);
+  border-color: var(--color-border-base);
+  color: var(--color-text-primary);
+}
+
+.dark-mode .ant-input::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+.dark-mode .ant-input-textarea textarea {
+  background-color: var(--color-background-elevated);
+  border-color: var(--color-border-base);
+  color: var(--color-text-primary);
+}
+
+/* Select */
+.dark-mode .ant-select-selector {
+  background-color: var(--color-background-elevated) !important;
+  border-color: var(--color-border-base) !important;
+  color: var(--color-text-primary) !important;
+}
+
+.dark-mode .ant-select-dropdown {
+  background-color: var(--color-background-elevated);
+  color: var(--color-text-primary);
+}
+
+.dark-mode .ant-select-item {
+  color: var(--color-text-primary);
+}
+
+.dark-mode .ant-select-item-option-selected {
+  background-color: var(--color-gray-100);
+}
+
+.dark-mode .ant-select-item-option:hover {
+  background-color: var(--color-gray-100);
+}
+
+/* Tables */
+.dark-mode .ant-table {
+  background-color: var(--color-background-elevated);
+  color: var(--color-text-primary);
+}
+
+.dark-mode .ant-table-wrapper {
+  background-color: var(--color-background-elevated);
+}
+
+.dark-mode .ant-table-thead > tr > th {
+  background-color: var(--color-background-container) !important;
+  border-color: var(--color-border-base);
+  color: var(--color-text-primary) !important;
+}
+
+.dark-mode .ant-table-tbody > tr > td {
+  background-color: var(--color-background-elevated) !important;
+  border-color: var(--color-border-base);
+  color: var(--color-text-primary) !important;
+}
+
+.dark-mode .ant-table-tbody > tr:hover > td {
+  background-color: var(--color-gray-100) !important;
+}
+
+.dark-mode .ant-table-tbody > tr.ant-table-row:hover > td {
+  background-color: var(--color-gray-100) !important;
+}
+
+.dark-mode .ant-table-cell {
+  background-color: var(--color-background-elevated) !important;
+  color: var(--color-text-primary) !important;
+}
+
+.dark-mode .ant-table-cell-row-hover {
+  background-color: var(--color-gray-100) !important;
+}
+
+/* Pagination */
+.dark-mode .ant-pagination-item {
+  background-color: var(--color-background-elevated);
+  border-color: var(--color-border-base);
+}
+
+.dark-mode .ant-pagination-item a {
+  color: var(--color-text-primary);
+}
+
+.dark-mode .ant-pagination-item:hover {
+  border-color: var(--color-primary);
+}
+
+.dark-mode .ant-pagination-item-active {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.dark-mode .ant-pagination-item-active a {
+  color: white;
+}
+
+/* Modal */
+.dark-mode .ant-modal-content {
+  background-color: var(--color-background-elevated);
+  color: var(--color-text-primary);
+}
+
+.dark-mode .ant-modal-header {
+  background-color: var(--color-background-elevated);
+  border-color: var(--color-border-base);
+  color: var(--color-text-primary);
+}
+
+.dark-mode .ant-modal-title {
+  color: var(--color-text-primary);
+}
+
+.dark-mode .ant-modal-close {
+  color: var(--color-text-secondary);
+}
+
+.dark-mode .ant-modal-close:hover {
+  color: var(--color-text-primary);
+}
+
+/* Drawer */
+.dark-mode .ant-drawer-content {
+  background-color: var(--color-background-elevated);
+  color: var(--color-text-primary);
+}
+
+.dark-mode .ant-drawer-header {
+  background-color: var(--color-background-elevated);
+  border-color: var(--color-border-base);
+  color: var(--color-text-primary);
+}
+
+.dark-mode .ant-drawer-title {
+  color: var(--color-text-primary);
+}
+
+/* Dropdown */
+.dark-mode .ant-dropdown-menu {
+  background-color: var(--color-background-elevated);
+}
+
+.dark-mode .ant-dropdown-menu-item {
+  color: var(--color-text-primary);
+}
+
+.dark-mode .ant-dropdown-menu-item:hover {
+  background-color: var(--color-gray-100);
+}
+
+/* Tooltip */
+.dark-mode .ant-tooltip-inner {
+  background-color: var(--color-background-elevated);
+  color: var(--color-text-primary);
+}
+
+.dark-mode .ant-tooltip-arrow-content {
+  background-color: var(--color-background-elevated);
+}
+
+/* Menu */
+.dark-mode .ant-menu {
+  background-color: var(--color-background-elevated);
+  color: var(--color-text-primary);
+}
+
+.dark-mode .ant-menu-item {
+  color: var(--color-text-primary);
+}
+
+.dark-mode .ant-menu-item:hover {
+  background-color: var(--color-gray-100);
+}
+
+.dark-mode .ant-menu-item-selected {
+  background-color: var(--color-gray-100);
+  color: var(--color-primary);
+}
+
+/* Tabs */
+.dark-mode .ant-tabs-tab {
+  color: var(--color-text-secondary);
+}
+
+.dark-mode .ant-tabs-tab:hover {
+  color: var(--color-text-primary);
+}
+
+.dark-mode .ant-tabs-tab-active .ant-tabs-tab-btn {
+  color: var(--color-primary);
+}
+
+/* Alert */
+.dark-mode .ant-alert {
+  background-color: var(--color-background-elevated);
+  border-color: var(--color-border-base);
+}
+
+/* Message */
+.dark-mode .ant-message-notice-content {
+  background-color: var(--color-background-elevated);
+  color: var(--color-text-primary);
+}
+
+/* Notification */
+.dark-mode .ant-notification-notice {
+  background-color: var(--color-background-elevated);
+  color: var(--color-text-primary);
+}
+
+/* Tag */
+.dark-mode .ant-tag {
+  background-color: var(--color-gray-100);
+  border-color: var(--color-border-base);
+  color: var(--color-text-primary);
+}
+
+/* Badge */
+.dark-mode .ant-badge-count {
+  background-color: var(--color-primary);
+  color: white;
+}
+
+/* Divider */
+.dark-mode .ant-divider {
+  border-color: var(--color-border-base);
+}
+
+/* Spin */
+.dark-mode .ant-spin-dot-item {
+  background-color: var(--color-primary);
+}
+
+/* Checkbox */
+.dark-mode .ant-checkbox-wrapper {
+  color: var(--color-text-primary);
+}
+
+.dark-mode .ant-checkbox-inner {
+  background-color: var(--color-background-elevated);
+  border-color: var(--color-border-base);
+}
+
+/* Radio */
+.dark-mode .ant-radio-wrapper {
+  color: var(--color-text-primary);
+}
+
+.dark-mode .ant-radio-inner {
+  background-color: var(--color-background-elevated);
+  border-color: var(--color-border-base);
+}
+
+/* Switch */
+.dark-mode .ant-switch {
+  background-color: var(--color-gray-300);
+}
+
+/* Slider */
+.dark-mode .ant-slider-rail {
+  background-color: var(--color-gray-200);
+}
+
+/* Progress */
+.dark-mode .ant-progress-text {
+  color: var(--color-text-primary);
+}
+
+/* Typography */
+.dark-mode .ant-typography {
+  color: var(--color-text-primary);
+}
+
+/* Empty State */
+.dark-mode .ant-empty-description {
+  color: var(--color-text-secondary);
+}
+
+/* ============================================
+   DARK MODE GENERAL ELEMENT STYLING
+   ============================================ */
+
+/* Headings */
+.dark-mode h1,
+.dark-mode h2,
+.dark-mode h3,
+.dark-mode h4,
+.dark-mode h5,
+.dark-mode h6 {
+  color: var(--color-text-primary);
+}
+
+/* Paragraphs and text */
+.dark-mode p,
+.dark-mode span,
+.dark-mode div {
+  color: var(--color-text-primary);
+}
+
+/* Links */
+.dark-mode a {
+  color: var(--color-primary);
+}
+
+.dark-mode a:hover {
+  color: var(--color-primary-hover);
+}
+
+/* Override any inline white backgrounds - aggressive approach */
+.dark-mode [style*="background: #fff"],
+.dark-mode [style*="background: #ffffff"],
+.dark-mode [style*="background: white"],
+.dark-mode [style*="background-color: #fff"],
+.dark-mode [style*="background-color: #ffffff"],
+.dark-mode [style*="background-color: white"],
+.dark-mode [style*="background:white"],
+.dark-mode [style*="background:#fff"],
+.dark-mode [style*="background:#ffffff"],
+.dark-mode [style*="background: rgb(255, 255, 255)"],
+.dark-mode [style*="background-color: rgb(255, 255, 255)"] {
+  background-color: var(--color-background-elevated) !important;
+}
+
+/* Override any inline dark text colors for better visibility */
+.dark-mode [style*="color: #000"],
+.dark-mode [style*="color: #333"],
+.dark-mode [style*="color: #425466"],
+.dark-mode [style*="color: #666"],
+.dark-mode [style*="color: black"],
+.dark-mode [style*="color:#000"],
+.dark-mode [style*="color:#333"],
+.dark-mode [style*="color:#425466"],
+.dark-mode [style*="color:#666"],
+.dark-mode [style*="color: rgb(0, 0, 0)"],
+.dark-mode [style*="color: rgb(66, 84, 102)"] {
+  color: var(--color-text-primary) !important;
+}
+
+/* Catch all divs with padding/border-radius that might be cards */
+.dark-mode div[style*="padding"][style*="border"] {
+  background-color: var(--color-background-elevated) !important;
+}
+
+/* Specific override for secondary/tertiary text that needs to be lighter */
+.dark-mode [style*="color: #6B7C8E"],
+.dark-mode [style*="color:#6B7C8E"],
+.dark-mode [style*="color: rgb(107, 124, 142)"] {
+  color: var(--color-text-secondary) !important;
+}
+
+/* Override for any hardcoded token colors from tokens.js */
+.dark-mode [style*="color: #0A2540"],
+.dark-mode [style*="color:#0A2540"] {
+  color: var(--color-text-primary) !important;
+}
+
+.dark-mode [style*="color: #97A6BA"],
+.dark-mode [style*="color:#97A6BA"] {
+  color: var(--color-text-tertiary) !important;
+}
+
+/* Make sure all text elements inherit proper colors */
+.dark-mode * {
+  color: inherit;
+}
+
+/* Set default text color on common elements */
+.dark-mode div:not([class*="ant-"]),
+.dark-mode span:not([class*="ant-"]),
+.dark-mode p:not([class*="ant-"]) {
+  color: var(--color-text-primary);
+}
+
+/* ============================================
+   COMPREHENSIVE OVERRIDES FOR INLINE STYLES
+   Override all possible background colors
+   ============================================ */
+
+/* White/light backgrounds */
+.dark-mode div[style*="background"],
+.dark-mode section[style*="background"],
+.dark-mode article[style*="background"] {
+  background-color: var(--color-background-elevated) !important;
+}
+
+/* Gray backgrounds (like #FAFBFC) */
+.dark-mode [style*="background: #FAFBFC"],
+.dark-mode [style*="background-color: #FAFBFC"],
+.dark-mode [style*="background:#FAFBFC"],
+.dark-mode [style*="background: rgb(250, 251, 252)"] {
+  background-color: var(--color-background-container) !important;
+}
+
+/* Override gray-50 background */
+.dark-mode [style*="background: var(--color-gray-50)"],
+.dark-mode [style*="background-color: var(--color-gray-50)"] {
+  background-color: var(--color-background-container) !important;
+}
+
+/* Text color overrides for inline styles */
+.dark-mode [style*="fontSize"][style*="color"] {
+  color: var(--color-text-primary) !important;
+}
+
+/* Any element with both font size and color set (likely hardcoded text) */
+.dark-mode span[style*="fontSize"],
+.dark-mode div[style*="fontSize"] {
+  color: var(--color-text-primary) !important;
+}
+
+/* Secondary text (medium emphasis) */
+.dark-mode [style*="opacity: 0.7"],
+.dark-mode [style*="opacity: 0.8"],
+.dark-mode [style*="opacity: 0.9"] {
+  color: var(--color-text-primary) !important;
+  opacity: 1 !important;
+}
+
+/* Card-like structures with padding and border-radius */
+.dark-mode div[style*="padding: 16px"],
+.dark-mode div[style*="padding: 20px"],
+.dark-mode div[style*="padding: 24px"],
+.dark-mode div[style*="padding: var(--space-"] {
+  background-color: var(--color-background-elevated) !important;
+}
+
+/* Projected profit and deal cards */
+.dark-mode div[style*="💰"],
+.dark-mode div[style*="✅"] {
+  background-color: var(--color-background-elevated) !important;
+  color: var(--color-text-primary) !important;
+}
+
+/* Any div with subscription or deal text */
+.dark-mode div:has(+ div):not([class]) {
+  background-color: var(--color-background-elevated) !important;
+}
+
+/* React Select components and custom dropdowns */
+.dark-mode [class*="select"],
+.dark-mode [class*="Select"] {
+  background-color: var(--color-background-elevated) !important;
+  color: var(--color-text-primary) !important;
+}
+
+/* NUCLEAR OPTION - Override ALL inline backgrounds and text colors */
+.dark-mode * {
+  /* Override any inline style backgrounds that are white */
+}
+
+.dark-mode [style*="background"][style*="#fff"]:not([class*="ant-btn-primary"]):not([class*="ant-btn-success"]):not([class*="ant-tag"]),
+.dark-mode [style*="background"][style*="white"]:not([class*="ant-btn-primary"]):not([class*="ant-btn-success"]):not([class*="ant-tag"]),
+.dark-mode [style*="background"][style*="rgb(255"]:not([class*="ant-btn-primary"]):not([class*="ant-btn-success"]):not([class*="ant-tag"]) {
+  background-color: var(--color-background-elevated) !important;
+}
+
+/* Override dark text colors for better visibility */
+.dark-mode [style*="color: #0"],
+.dark-mode [style*="color: #1"],
+.dark-mode [style*="color: #2"],
+.dark-mode [style*="color: #3"],
+.dark-mode [style*="color: #4"],
+.dark-mode [style*="color: #5"],
+.dark-mode [style*="color: #6"] {
+  color: var(--color-text-primary) !important;
+}
+
+/* Ensure all text is visible by default - AGGRESSIVE OVERRIDE */
+.dark-mode div,
+.dark-mode span,
+.dark-mode p,
+.dark-mode h1,
+.dark-mode h2,
+.dark-mode h3,
+.dark-mode h4,
+.dark-mode h5,
+.dark-mode h6,
+.dark-mode li,
+.dark-mode td,
+.dark-mode th,
+.dark-mode label,
+.dark-mode a,
+.dark-mode strong,
+.dark-mode b,
+.dark-mode em,
+.dark-mode i,
+.dark-mode small {
+  color: var(--color-text-primary) !important;
+}
+
+/* Override Ant Design Text component */
+.dark-mode .ant-typography,
+.dark-mode [class*="ant-"] span,
+.dark-mode [class*="ant-"] div {
+  color: var(--color-text-primary) !important;
+}
+
+/* Specific fixes for audience segment cards */
+.dark-mode div[style*="fontSize"] span,
+.dark-mode div[style*="fontSize"] div,
+.dark-mode div[style*="lineHeight"] {
+  color: var(--color-text-primary) !important;
+}
+
+/* Force all children of card-like elements to be visible */
+.dark-mode div[style*="padding"] *,
+.dark-mode div[style*="borderRadius"] *,
+.dark-mode div[style*="border:"] * {
+  color: inherit !important;
+}
+
+/* Ensure checkmark and emoji card text is visible */
+.dark-mode div:has(svg) *,
+.dark-mode div[style*="✅"] *,
+.dark-mode div[style*="💰"] * {
+  color: var(--color-text-primary) !important;
+}
+
+/* Secondary text should still be visible but slightly dimmed */
+.dark-mode [style*="color: #425466"],
+.dark-mode [style*="color:#425466"],
+.dark-mode [style*="color: rgb(66, 84, 102)"] {
+  color: var(--color-text-secondary) !important;
+}
+
+.dark-mode [style*="color: #6B7C8E"],
+.dark-mode [style*="color:#6B7C8E"],
+.dark-mode [style*="color: rgb(107, 124, 142)"] {
+  color: var(--color-text-tertiary) !important;
+}
+
+/* Primary navy text needs to be light */
+.dark-mode [style*="color: #0A2540"],
+.dark-mode [style*="color:#0A2540"],
+.dark-mode [style*="color: rgb(10, 37, 64)"] {
+  color: var(--color-text-primary) !important;
+}
+
+/* Any remaining dark colors */
+.dark-mode [style*="color: #283D54"],
+.dark-mode [style*="color: #97A6BA"],
+.dark-mode [style*="color: #666"],
+.dark-mode [style*="color:#283D54"],
+.dark-mode [style*="color:#97A6BA"],
+.dark-mode [style*="color:#666"] {
+  color: var(--color-text-secondary) !important;
+}
+
+/* Target common text-containing elements without classes (custom components) */
+.dark-mode div:not([class]):not([class*="ant-"]),
+.dark-mode span:not([class]):not([class*="ant-"]),
+.dark-mode p:not([class]):not([class*="ant-"]) {
+  color: var(--color-text-primary) !important;
+}
+
+/* Any element with fontSize is likely text content */
+.dark-mode [style*="fontSize"]:not([class*="ant-btn"]):not([class*="ant-tag"]) {
+  color: var(--color-text-primary) !important;
+}
+
+/* Any element with fontWeight is likely text content */
+.dark-mode [style*="fontWeight"]:not([class*="ant-btn"]):not([class*="ant-tag"]) {
+  color: var(--color-text-primary) !important;
+}
+
+/* Target Ant Design Text components specifically */
+.dark-mode .ant-typography:not(.ant-typography-secondary):not(.ant-typography-success):not(.ant-typography-warning):not(.ant-typography-danger) {
+  color: var(--color-text-primary) !important;
+}
+
+/* Last resort: any text-like content */
+.dark-mode div[style*="lineHeight"],
+.dark-mode span[style*="display: block"],
+.dark-mode div[style*="display: block"] {
+  color: var(--color-text-primary) !important;
+}
+
+/* FINAL NUCLEAR OPTION - Override ALL text regardless of inline styles */
+/* This catches everything with inline color that's dark */
+.dark-mode [style*="color"][style*="#0"],
+.dark-mode [style*="color"][style*="#1"],
+.dark-mode [style*="color"][style*="#2"],
+.dark-mode [style*="color"][style*="#3"],
+.dark-mode [style*="color"][style*="#4"],
+.dark-mode [style*="color"][style*="#5"],
+.dark-mode [style*="color"][style*="#6"],
+.dark-mode [style*="color"][style*="#7"],
+.dark-mode [style*="color"][style*="#8"],
+.dark-mode [style*="color"][style*="#9"],
+.dark-mode [style*="color"][style*="rgb(0"],
+.dark-mode [style*="color"][style*="rgb(10"],
+.dark-mode [style*="color"][style*="rgb(66"],
+.dark-mode [style*="color"][style*="rgb(107"] {
+  color: var(--color-text-primary) !important;
+}
+
+/* Override just the color property for all elements */
+.dark-mode * {
+  --text-color: var(--color-text-primary);
+}
+
+/* Apply computed text color */
+.dark-mode div:not([class*="ant-btn"]):not([class*="ant-tag"]):not([class*="ant-select"]):not([class*="ant-input"]),
+.dark-mode span:not([class*="ant-btn"]):not([class*="ant-tag"]):not([class*="ant-select"]):not([class*="ant-input"]),
+.dark-mode p:not([class*="ant-btn"]):not([class*="ant-tag"]):not([class*="ant-select"]):not([class*="ant-input"]) {
+  color: var(--text-color) !important;
+}
+
+/* HIGHEST SPECIFICITY - Force all text to be light */
+html.dark-mode body div,
+html.dark-mode body span,
+html.dark-mode body p,
+html.dark-mode body h1,
+html.dark-mode body h2,
+html.dark-mode body h3,
+html.dark-mode body h4,
+html.dark-mode body h5,
+html.dark-mode body h6,
+html.dark-mode body li,
+html.dark-mode body td,
+html.dark-mode body th,
+html.dark-mode body a {
+  color: var(--color-text-primary) !important;
+}
+
+/* Preserve button and badge colors */
+html.dark-mode [class*="ant-btn-primary"] *,
+html.dark-mode [class*="ant-btn-success"] *,
+html.dark-mode [class*="ant-btn-danger"] *,
+html.dark-mode [class*="ant-btn-warning"] *,
+html.dark-mode [class*="ant-tag"] *,
+html.dark-mode [class*="ant-badge"] * {
+  color: inherit !important;
+}
+
+/* ============================================
+   MICRO-INTERACTIONS - BUTTONS
+   ============================================ */
+
+/* Primary Button Interactions */
+.ant-btn-primary,
+.ant-btn-primary:not(:disabled):not(.ant-btn-disabled) {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: translateY(0);
+}
+
+.ant-btn-primary:hover:not(:disabled):not(.ant-btn-disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(13, 148, 136, 0.25) !important;
+}
+
+.ant-btn-primary:active:not(:disabled):not(.ant-btn-disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(13, 148, 136, 0.15) !important;
+}
+
+/* Dark mode button shadows */
+.dark-mode .ant-btn-primary:hover:not(:disabled):not(.ant-btn-disabled) {
+  box-shadow: 0 8px 16px rgba(20, 184, 166, 0.3), 0 0 20px rgba(20, 184, 166, 0.2) !important;
+}
+
+/* Ripple effect on click */
+.ant-btn-primary::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s ease-out, height 0.6s ease-out, opacity 0.6s ease-out;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.ant-btn-primary:active::after {
+  width: 300px;
+  height: 300px;
+  opacity: 1;
+  transition: width 0s, height 0s, opacity 0s;
+}
+
+/* Default Button Interactions */
+.ant-btn-default:not(:disabled):not(.ant-btn-disabled) {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: translateY(0);
+}
+
+.ant-btn-default:hover:not(:disabled):not(.ant-btn-disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(10, 37, 64, 0.12) !important;
+}
+
+.ant-btn-default:active:not(:disabled):not(.ant-btn-disabled) {
+  transform: translateY(0);
+}
+
+/* Text Button Interactions */
+.ant-btn-text:not(:disabled):not(.ant-btn-disabled) {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ant-btn-text:hover:not(:disabled):not(.ant-btn-disabled) {
+  background-color: rgba(13, 148, 136, 0.08) !important;
+}
+
+.dark-mode .ant-btn-text:hover:not(:disabled):not(.ant-btn-disabled) {
+  background-color: rgba(20, 184, 166, 0.15) !important;
+}
+
+/* Button Loading State */
+.ant-btn-loading {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+/* ============================================
+   CARDS - NO HOVER EFFECTS (not clickable)
+   ============================================ */
+
+/* Cards have no hover effects by default */
+.ant-card {
+  transition: none;
+  position: relative;
+}
+
+/* ============================================
+   MICRO-INTERACTIONS - INPUTS
+   ============================================ */
+
+/* Input focus animations */
+.ant-input:focus,
+.ant-input-focused,
+.ant-select-focused .ant-select-selector {
+  border-color: var(--color-primary) !important;
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.1) !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dark-mode .ant-input:focus,
+.dark-mode .ant-input-focused,
+.dark-mode .ant-select-focused .ant-select-selector {
+  box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.15) !important;
+}
+
+/* Input error state with shake animation - DISABLED */
+/* .ant-input-status-error,
+.ant-select-status-error .ant-select-selector {
+  animation: input-shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+}
+
+@keyframes input-shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+  20%, 40%, 60%, 80% { transform: translateX(4px); }
+} */
+
+/* ============================================
+   MICRO-INTERACTIONS - TABS
+   ============================================ */
+
+/* Tab indicator slide animation */
+.ant-tabs-ink-bar {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.ant-tabs-tab {
+  transition: color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ============================================
+   MICRO-INTERACTIONS - MODAL & DRAWER
+   ============================================ */
+
+/* Modal entrance animation */
+.ant-modal {
+  animation: modal-scale-in 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+@keyframes modal-scale-in {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Modal backdrop fade */
+.ant-modal-mask {
+  animation: fade-in 0.3s ease;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Sequential text animation keyframes */
+@keyframes phraseReveal {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInInput {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes backdropDim {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.4;
+  }
+}
+
+/* Input sparkle effect to draw attention */
+@keyframes inputSparkle {
+  0% {
+    box-shadow: 0 0 0 0 rgba(24, 144, 255, 0);
+  }
+  50% {
+    box-shadow: 0 0 20px 4px rgba(24, 144, 255, 0.4),
+                0 0 40px 8px rgba(24, 144, 255, 0.2);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(24, 144, 255, 0);
+  }
+}
+
+@keyframes inputGlow {
+  0%, 100% {
+    border-color: #d9d9d9;
+  }
+  50% {
+    border-color: #1890ff;
+  }
+}
+
+/* Animation utility classes */
+.phrase-reveal {
+  animation: phraseReveal 0.6s ease-out forwards;
+}
+
+.input-reveal {
+  animation: fadeInInput 0.8s ease-out forwards;
+}
+
+.dimmed-backdrop {
+  animation: backdropDim 0.5s ease-out forwards;
+  pointer-events: none;
+}
+
+.input-sparkle {
+  animation: inputSparkle 2s ease-in-out 3;
+  position: relative;
+}
+
+.input-sparkle input {
+  animation: inputGlow 2s ease-in-out 3;
+}
+
+/* Drawer slide animation enhanced */
+.ant-drawer-content-wrapper {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* ============================================
+   PREMIUM TYPOGRAPHY SYSTEM
+   Consistent heading styles for all tabs
+   ============================================ */
+
+/* Page Title - Main header at top of each tab */
+.page-title {
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-3xl);      /* 32px */
+  font-weight: var(--font-weight-semibold);  /* 600 */
+  color: var(--color-primary);
+  letter-spacing: var(--letter-spacing-tight);
+  line-height: var(--line-height-tight);
+  margin-bottom: var(--space-2);
+}
+
+/* Page Subtitle - Description under main title */
+.page-subtitle {
+  font-family: var(--font-family-body);
+  font-size: var(--font-size-lg);        /* 18px */
+  font-weight: var(--font-weight-normal);   /* 400 */
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-relaxed);
+  margin-bottom: var(--space-6);
+  max-width: 800px;
+}
+
+/* Section Heading - Major sections within a tab */
+.section-heading {
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-2xl);       /* 24px */
+  font-weight: var(--font-weight-semibold);  /* 600 */
+  color: var(--color-text-primary);
+  letter-spacing: var(--letter-spacing-normal);
+  line-height: var(--line-height-snug);
+  margin-bottom: var(--space-4);
+}
+
+/* Subsection Heading - Subsections within sections */
+.subsection-heading {
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-xl);        /* 20px */
+  font-weight: var(--font-weight-semibold);  /* 600 */
+  color: var(--color-text-primary);
+  line-height: var(--line-height-snug);
+  margin-bottom: var(--space-3);
+}
+
+/* Card Title - Titles within cards */
+.card-title {
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-lg);        /* 18px */
+  font-weight: var(--font-weight-semibold);  /* 600 */
+  color: var(--color-text-primary);
+  line-height: var(--line-height-snug);
+  margin-bottom: var(--space-2);
+}
+
+/* Body Text - Standard paragraph text */
+.body-text {
+  font-family: var(--font-family-body);
+  font-size: var(--font-size-base);      /* 16px */
+  font-weight: var(--font-weight-normal);   /* 400 */
+  color: var(--color-text-primary);
+  line-height: var(--line-height-normal);
+}
+
+/* Secondary Text - Less emphasis */
+.secondary-text {
+  font-family: var(--font-family-body);
+  font-size: var(--font-size-sm);        /* 14px */
+  font-weight: var(--font-weight-normal);   /* 400 */
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-normal);
+}
+
+/* Tertiary Text - Least emphasis (labels, captions) */
+.tertiary-text {
+  font-family: var(--font-family-body);
+  font-size: var(--font-size-xs);        /* 12px */
+  font-weight: var(--font-weight-normal);   /* 400 */
+  color: var(--color-text-tertiary);
+  line-height: var(--line-height-normal);
+}
+
+/* Emphasis Text - Highlighted inline text */
+.emphasis-text {
+  font-weight: var(--font-weight-semibold);  /* 600 */
+  color: var(--color-primary);
+}
+
+/* Ant Design overrides for consistency */
+.ant-typography h1,
+.ant-typography.h1 {
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary);
+  letter-spacing: var(--letter-spacing-tight);
+  line-height: var(--line-height-tight);
+}
+
+.ant-typography h2,
+.ant-typography.h2 {
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  letter-spacing: var(--letter-spacing-normal);
+  line-height: var(--line-height-snug);
+}
+
+.ant-typography h3,
+.ant-typography.h3 {
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  line-height: var(--line-height-snug);
+}
+
+.ant-typography h4,
+.ant-typography.h4 {
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  line-height: var(--line-height-snug);
+}
+
+/* Responsive typography for mobile */
+@media (max-width: 768px) {
+  .page-title {
+    font-size: var(--font-size-2xl);     /* 24px on mobile */
+  }
+
+  .page-subtitle {
+    font-size: var(--font-size-base);    /* 16px on mobile */
+  }
+
+  .section-heading {
+    font-size: var(--font-size-xl);      /* 20px on mobile */
+  }
+
+  .subsection-heading {
+    font-size: var(--font-size-lg);      /* 18px on mobile */
+  }
+}
+
+/* Lists */
+.dark-mode ul,
+.dark-mode ol,
+.dark-mode li {
+  color: var(--color-text-primary);
+}
+
+/* Code blocks */
+.dark-mode code {
+  background-color: var(--color-gray-100);
+  color: var(--color-text-primary);
+}
+
+.dark-mode pre {
+  background-color: var(--color-background-container);
+  color: var(--color-text-primary);
+  border-color: var(--color-border-base);
+}
+
+/* Specific card types with emoji headers */
+.dark-mode [style*="padding"][style*="borderRadius"] {
+  background-color: var(--color-background-elevated) !important;
+}
+
+/* Navigation arrows and icon buttons */
+.dark-mode button[aria-label*="arrow"],
+.dark-mode button[aria-label*="previous"],
+.dark-mode button[aria-label*="next"] {
+  background-color: var(--color-background-elevated) !important;
+  border-color: var(--color-border-base) !important;
+  color: var(--color-text-primary) !important;
+}
+
+/* Sidebar and navigation */
+.dark-mode nav,
+.dark-mode aside {
+  background-color: var(--color-background-elevated);
+  color: var(--color-text-primary);
+}
+
+/* Form labels */
+.dark-mode label {
+  color: var(--color-text-primary);
+}
+
+/* Placeholder text */
+.dark-mode ::placeholder {
+  color: var(--color-text-tertiary);
+  opacity: 1;
+}
+
+.dark-mode :-ms-input-placeholder {
+  color: var(--color-text-tertiary);
+}
+
+.dark-mode ::-ms-input-placeholder {
+  color: var(--color-text-tertiary);
 }
